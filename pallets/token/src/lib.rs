@@ -15,8 +15,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 use ascii::AsciiStr;
-use codec::{Codec, Decode, Encode, FullCodec};
-use frame_support::traits::{BalanceStatus, Currency};
+use codec::{Codec, Decode, Encode};
+use frame_support::traits::BalanceStatus;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::ensure_signed;
 use fuso_support::traits::ReservableToken;
@@ -29,13 +29,13 @@ use sp_std::{fmt::Debug, vec::Vec};
 
 type TokenSequence = u32;
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct TokenAccountData<Balance> {
     pub free: Balance,
     pub reserved: Balance,
 }
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct TokenInfo<Balance> {
     pub total: Balance,
     pub symbol: Vec<u8>,
@@ -108,7 +108,7 @@ decl_storage! {
         Tokens get(fn get_token_info): map hasher(twox_64_concat)
             T::TokenId => TokenInfo<T::Balance>;
 
-        NextTokenId get(fn next_token_id): TokenSequence;
+        NextTokenId get(fn next_token_id): TokenSequence = 0;
     }
 }
 
@@ -178,15 +178,6 @@ decl_module! {
             })?;
             Self::deposit_event(RawEvent::TokenTransfered(token, origin, target, amount));
         }
-
-        // #[weight = 0]
-        // fn burn(origin, token: <T as Trait>::Token) {
-        //     let origin = ensure_signed(origin)?;
-        //     let balance = <Balances<T>>::take((token, &origin));
-        //     ensure!(!balance.is_zero(), Error::<T>::BalanceZero);
-        //     <TotalSupply<T>>::mutate(token, |total_supply| *total_supply -= balance);
-        //     Self::deposit_event(RawEvent::Destroyed(token, origin, balance));
-        // }
     }
 }
 
@@ -320,5 +311,193 @@ impl<T: Trait> ReservableToken<T::TokenId, T::AccountId> for Module<T> {
             value,
         ));
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use frame_support::{
+        assert_noop, assert_ok, impl_outer_origin, parameter_types, weights::Weight,
+    };
+    use sp_core::H256;
+    use sp_runtime::{
+        testing::Header,
+        traits::{BlakeTwo256, IdentityLookup},
+        Perbill,
+    };
+
+    impl_outer_origin! {
+        pub enum Origin for Test where system = frame_system {}
+    }
+
+    #[derive(Clone, Eq, PartialEq)]
+    pub struct Test;
+    parameter_types! {
+        pub const BlockHashCount: u64 = 250;
+        pub const MaximumBlockWeight: Weight = 1024;
+        pub const MaximumBlockLength: u32 = 2 * 1024;
+        pub const AvailableBlockRatio: Perbill = Perbill::one();
+    }
+    impl frame_system::Trait for Test {
+        type BaseCallFilter = ();
+        type Origin = Origin;
+        type Index = u64;
+        type Call = ();
+        type BlockNumber = u64;
+        type Hash = H256;
+        type Hashing = BlakeTwo256;
+        type AccountId = u64;
+        type Lookup = IdentityLookup<Self::AccountId>;
+        type Header = Header;
+        type Event = ();
+        type BlockHashCount = BlockHashCount;
+        type MaximumBlockWeight = MaximumBlockWeight;
+        type DbWeight = ();
+        type BlockExecutionWeight = ();
+        type ExtrinsicBaseWeight = ();
+        type MaximumExtrinsicWeight = MaximumBlockWeight;
+        type AvailableBlockRatio = AvailableBlockRatio;
+        type MaximumBlockLength = MaximumBlockLength;
+        type Version = ();
+        type PalletInfo = ();
+        type AccountData = ();
+        type OnNewAccount = ();
+        type OnKilledAccount = ();
+        type SystemWeightInfo = ();
+    }
+    impl Trait for Test {
+        type Event = ();
+
+        type Balance = u128;
+
+        type TokenId = Self::Hash;
+
+        type Hashing = <Self as frame_system::Trait>::Hashing;
+    }
+    type Token = Module<Test>;
+
+    fn new_test_ext() -> sp_io::TestExternalities {
+        frame_system::GenesisConfig::default()
+            .build_storage::<Test>()
+            .unwrap()
+            .into()
+    }
+
+    #[test]
+    fn issuing_token_and_transfer_should_work() {
+        new_test_ext().execute_with(|| {
+            assert_ok!(Token::issue(
+                Origin::signed(1),
+                1000000,
+                br#"USDT"#.to_vec()
+            ));
+            let id = <Test as Trait>::Hashing::hash(&0u32.to_ne_bytes());
+            assert_eq!(
+                Token::get_token_info(&id),
+                TokenInfo {
+                    total: 1000000,
+                    symbol: br#"USDT"#.to_vec(),
+                }
+            );
+            assert_eq!(
+                Token::get_token_balance((&id, &1)),
+                TokenAccountData {
+                    free: 1000000,
+                    reserved: Zero::zero(),
+                }
+            );
+            assert_ok!(Token::transfer(Origin::signed(1), id.clone(), 2, 1000000));
+            assert_eq!(
+                Token::get_token_balance((&id, &1)),
+                TokenAccountData {
+                    free: Zero::zero(),
+                    reserved: Zero::zero(),
+                }
+            );
+            assert_eq!(
+                Token::get_token_balance((&id, &2)),
+                TokenAccountData {
+                    free: 1000000,
+                    reserved: Zero::zero(),
+                }
+            );
+        });
+    }
+
+    #[test]
+    fn reservable_token_should_work() {
+        new_test_ext().execute_with(|| {
+            assert_ok!(Token::issue(
+                Origin::signed(1),
+                1000000,
+                br#"USDT"#.to_vec()
+            ));
+            let id = <Test as Trait>::Hashing::hash(&0u32.to_ne_bytes());
+            assert_eq!(Token::can_reserve(&id, &1, 1000000), true);
+            assert_ok!(Token::reserve(&id, &1, 500000));
+            assert_eq!(Token::can_reserve(&id, &1, 1000000), false);
+            assert_eq!(
+                Token::get_token_balance((&id, &1)),
+                TokenAccountData {
+                    free: 500000,
+                    reserved: 500000,
+                }
+            );
+            assert_noop!(
+                Token::transfer(Origin::signed(1), id.clone(), 2, 1000000),
+                Error::<Test>::InsufficientBalance
+            );
+            assert_eq!(
+                Token::get_token_balance((&id, &1)),
+                TokenAccountData {
+                    free: 500000,
+                    reserved: 500000,
+                }
+            );
+            assert_ok!(Token::reserve(&id, &1, 500000));
+            assert_eq!(
+                Token::get_token_balance((&id, &1)),
+                TokenAccountData {
+                    free: Zero::zero(),
+                    reserved: 1000000,
+                }
+            );
+            assert_ok!(Token::unreserve(&id, &1, 500000));
+            assert_eq!(
+                Token::get_token_balance((&id, &1)),
+                TokenAccountData {
+                    free: 500000,
+                    reserved: 500000,
+                }
+            );
+            assert_ok!(Token::transfer(Origin::signed(1), id.clone(), 2, 1));
+            assert_ok!(Token::repatriate_reserved(
+                &id,
+                &1,
+                &2,
+                1,
+                BalanceStatus::Free
+            ));
+            assert_eq!(
+                Token::get_token_balance((&id, &1)),
+                TokenAccountData {
+                    free: 499999,
+                    reserved: 499999,
+                }
+            );
+            assert_eq!(
+                Token::get_token_balance((&id, &2)),
+                TokenAccountData {
+                    free: 2,
+                    reserved: Zero::zero(),
+                }
+            );
+            assert_noop!(
+                Token::repatriate_reserved(&id, &2, &1, 1, BalanceStatus::Free),
+                Error::<Test>::InsufficientBalance
+            );
+        });
     }
 }
