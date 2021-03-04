@@ -19,6 +19,7 @@ parameter_types! {
 	pub const MaximumBlockWeight: Weight = 1024;
 	pub const MaximumBlockLength: u32 = 2 * 1024;
 	pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
+	pub const MinimumVotingLock: u64 = 1000;
 }
 
 impl system::Trait for Test {
@@ -47,11 +48,6 @@ impl system::Trait for Test {
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
 	type SystemWeightInfo = ();
-}
-
-impl Trait for Test {
-	type Event = ();
-	type Randomness = pallet_randomness_collective_flip::Module<Test>;
 }
 
 pub type ElectionsModule = Module<Test>;

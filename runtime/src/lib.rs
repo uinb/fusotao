@@ -260,16 +260,13 @@ impl pallet_balances::Trait for Runtime {
 }
 
 parameter_types! {
-	pub const VotingPeriod: BlockNumber = 14 * DAYS;
 	pub const MinimumVotingLock: Balance = 10 * DOLLARS;
 }
 
 impl fuso_pallet_elections::Trait for Runtime {
 	type Event = Event;
 	type MinimumVotingLock = MinimumVotingLock;
-	type VotingPeriod = VotingPeriod;
 	type VoteIndex = u32;
-	type MaxMembers = MaxMembers;
 	type Balance = Balance;
 	type Locks = Runtime;
 }

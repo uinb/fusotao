@@ -83,7 +83,7 @@ pub trait Referendum<BlockNumber, Index> {
 
     type Result: Clone;
 
-    fn proposal(start_include: BlockNumber, end_include: BlockNumber) -> Option<Index>;
+    fn proposal(start_include: BlockNumber, end_include: BlockNumber) -> Index;
 
     fn is_end(index: Index) -> bool;
 

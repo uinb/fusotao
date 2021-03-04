@@ -2,14 +2,14 @@
 #![recursion_limit = "256"]
 use codec::{Codec, Encode, Decode};
 use frame_support::{Hashable, traits::{Get, LockableCurrency, LockIdentifier, WithdrawReasons}};
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, dispatch::DispatchResult, debug};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, dispatch::DispatchResult};
 use frame_support::weights::{Weight};
 use frame_system::{ensure_signed};
 use fuso_support::traits::Referendum;
-use sp_runtime::{RuntimeDebug, print};
+use sp_runtime::{RuntimeDebug};
 use sp_runtime::traits::{
     AtLeast32Bit, AtLeast32BitUnsigned, Bounded, CheckedAdd,
-    MaybeSerializeDeserialize, Member, Zero, One
+    MaybeSerializeDeserialize, Member, Zero
 };
 use sp_std::prelude::*;
 use sp_std::{fmt::Debug, vec::Vec, convert::TryInto};
@@ -44,11 +44,7 @@ pub trait Trait: frame_system::Trait {
 	/// Minimum about that can be used as the locked value for voting.
 	type MinimumVotingLock: Get<BalanceOf<Self>>;
 
-	type VotingPeriod: Get<Self::BlockNumber>;
-
 	type VoteIndex: Parameter + Member + AtLeast32Bit + Bounded + Default + Copy;
-
-	type MaxMembers: Get<u32>;
 
     type Balance: Member
 		+ Parameter
@@ -67,17 +63,19 @@ decl_event! {
     where
         AccountId = <T as frame_system::Trait>::AccountId,
 		Balance = BalanceOf<T>,
-		VoteIndex = <T as Trait>::VoteIndex
+		VoteIndex = <T as Trait>::VoteIndex,
+		BlockNumber = <T as frame_system::Trait>::BlockNumber,
     {
-		StartVote(AccountId, VoteIndex),
+		StartProposal(BlockNumber, BlockNumber, VoteIndex),
 		Voted(AccountId, AccountId, Balance),
-		VoteFinalized(VoteIndex),
+		StopProposal(VoteIndex),
     }
 }
 
 decl_error! {
     pub enum Error for Module<T: Trait> {
-		NoVotingStarted,
+		NoProposalStarted,
+		ProposalOver,
 		VoteIsOver,
 		AmountZero,
 		AmountTooLow,
@@ -104,6 +102,8 @@ decl_storage! {
 
 		StartBlockNumber get(fn start_block_number): Option<T::BlockNumber>;
 
+		EndBlockNumber get(fn end_block_number): Option<T::BlockNumber>;
+
 		Leaderboard get(fn leaderboard): Option<Vec<(T::AccountId, BalanceOf<T>)>>;
 	}
 }
@@ -114,18 +114,8 @@ decl_module! {
 
         fn deposit_event() = default;
 
-		/// How often (in blocks) to check for new votes.
-		const VotingPeriod: T::BlockNumber = T::VotingPeriod::get();
-
 		/// The minimum amount to be used as a deposit for a public referendum proposal.
 		const MinimumVotingLock: BalanceOf<T> = T::MinimumVotingLock::get();
-
-		#[weight = 1_000_000_000]
-		fn start_vote(origin) {
-			let sender = ensure_signed(origin)?;
-
-			Self::start_vote_tally(sender);
-		}
 
 		#[weight = 1_000_000_000]
 		fn add_candidate(
@@ -144,9 +134,7 @@ decl_module! {
 			#[compact] amount: BalanceOf<T>) -> DispatchResult {
 			let sender = ensure_signed(origin)?;
 
-			ensure!(Self::start_block_number().is_some(), Error::<T>::NoVotingStarted);
-
-			ensure!(!Self::is_end_vote(), Error::<T>::VoteIsOver);
+			Self::is_proposal()?;
 
 			ensure!(vote_round == Self::vote_round_count(), Error::<T>::NotCurrentVoteRound);
 
@@ -169,10 +157,11 @@ decl_module! {
 			Ok(())
 		}
 
-		fn on_initialize(n: T::BlockNumber) -> Weight {
-			if let Err(e) = Self::init_block(n) {
-				debug::info!("Guru meditation");
-				print(e);
+		fn on_initialize(block_number: T::BlockNumber) -> Weight {
+			if let Some(number) = Self::end_block_number() {
+				if block_number == number {
+					Self::sort_leaderboard();
+				}
 			}
 			0
 		}
@@ -180,23 +169,21 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-	fn is_end_vote() -> bool {
-		let start_block_number = Self::start_block_number().unwrap();
+	fn is_proposal() -> DispatchResult {
+		ensure!(Self::start_block_number().is_some(), Error::<T>::NoProposalStarted);
+
 		let current_block_number = <frame_system::Module<T>>::block_number();
-		let diff_block_number = current_block_number - start_block_number;
-		if diff_block_number > T::VotingPeriod::get() {
-			return true
-		}
-		false
+		let end_block_number = Self::end_block_number().unwrap();
+
+		ensure!(current_block_number < end_block_number, Error::<T>::ProposalOver);
+		Ok(())
 	}
 
 	// set candidate
 	fn set_candidate(
 		who: T::AccountId,
 	) -> DispatchResult {
-		ensure!(Self::start_block_number().is_some(), Error::<T>::NoVotingStarted);
-
-		ensure!(!Self::is_end_vote(), Error::<T>::VoteIsOver);
+		Self::is_proposal()?;
 
 		ensure!(!VoterInfoData::<T>::contains_key(&who), Error::<T>::AlreadyIsVoter);
 
@@ -241,8 +228,6 @@ impl<T: Trait> Module<T> {
 			amount: amount.clone(),
 			pledger: v
 		});
-
-		let voter_data = Self::voter_info(&voter);
 
 		let mut members = Self::vote_member();
 		let acc = voter.clone();
@@ -328,27 +313,10 @@ impl<T: Trait> Module<T> {
 			<Leaderboard<T>>::put(data);
 		}
 
-		Self::deposit_event(RawEvent::VoteFinalized(Self::vote_round_count()));
+		Self::deposit_event(RawEvent::StopProposal(Self::vote_round_count()));
 	}
 
-	fn init_block(block_number: T::BlockNumber) -> DispatchResult {
-		// vote over
-		if let Some(number) = Self::start_block_number() {
-			let stop_vote_number = Self::stop_vote_from(number);
-			if block_number == stop_vote_number {
-				Self::sort_leaderboard();
-			}
-		}
-		Ok(())
-	}
-
-	// stop vote pre block number
-	fn stop_vote_from(n: T::BlockNumber) -> T::BlockNumber {
-		let voting_period = T::VotingPeriod::get();
-		n + voting_period - One::one()
-	}
-
-	pub fn start_vote_tally(sender: T::AccountId) {
+	pub fn start_proposal(start: T::BlockNumber, end: T::BlockNumber) -> T::VoteIndex {
 		// initialize
 		<Candidates<T>>::kill();
 		<VoteMember<T>>::kill();
@@ -356,25 +324,25 @@ impl<T: Trait> Module<T> {
 		<Leaderboard<T>>::kill();
 
 		// set start block number
-		<StartBlockNumber<T>>::put(<frame_system::Module<T>>::block_number());
+		<StartBlockNumber<T>>::put(start);
+
+		// set end block number
+		<EndBlockNumber<T>>::put(end);
 
 		<VoteRoundCount<T>>::put(Self::vote_round_count() + (1 as u32).into());
 
 		let count = Self::vote_round_count();
-		Self::deposit_event(RawEvent::StartVote(sender, count));
+		Self::deposit_event(RawEvent::StartProposal(start, end, count));
+
+		count
 	}
 }
 
 impl<T: Trait> Referendum<T::BlockNumber, T::VoteIndex> for Module<T> {
 	type Result = Option<Vec<(T::AccountId, BalanceOf<T>)>>;
 
-	fn proposal(start: T::BlockNumber, end: T::BlockNumber) -> Option<T::VoteIndex> {
-		let start_block_number = Self::start_block_number();
-		let stop_vote_from = Self::stop_vote_from(start);
-		if start_block_number.is_some() && start > start_block_number.unwrap() && stop_vote_from > end {
-			return Some(Self::vote_round_count());
-		}
-		None
+	fn proposal(start: T::BlockNumber, end: T::BlockNumber) -> T::VoteIndex {
+		Self::start_proposal(start, end)
 	}
 
 	fn is_end(index: T::VoteIndex) -> bool {
