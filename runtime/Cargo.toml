@@ -29,6 +29,7 @@ frame-support = { default-features = false, version = '2.0.1' }
 frame-system = { default-features = false, version = '2.0.1' }
 frame-system-benchmarking = { default-features = false, optional = true, version = '2.0.1' }
 frame-system-rpc-runtime-api = { default-features = false, version = '2.0.1' }
+fuso-pallet-elections = { path = '../pallets/elections', default-features = false, version = '0.1.0' }
 fuso-pallet-receipts = { path = '../pallets/receipts', default-features = false, version = '0.1.0' }
 fuso-pallet-token = { path = '../pallets/token', default-features = false, version = '0.1.0' }
 fuso-pallet-council = { path = '../pallets/council', default-features = false, version = '0.1.0' }
@@ -75,6 +76,7 @@ std = [
     'frame-support/std',
     'frame-system/std',
     'frame-system-rpc-runtime-api/std',
+    'fuso-pallet-elections/std',
     'fuso-pallet-receipts/std',
     'fuso-pallet-token/std',
     'fuso-pallet-foundation/std',
