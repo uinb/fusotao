@@ -14,3 +14,5 @@
 
 #![no_std]
 pub mod traits;
+pub extern crate alloc;
+pub use alloc::collections;

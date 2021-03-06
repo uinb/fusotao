@@ -1,5 +1,6 @@
 # FUSOTAO
 [![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](#LICENSE)
+[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/uinb/fusotao/Rust%20CI/master)](https://github.com/uinb/fusotao/actions?query=branch%3Amaster)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](CONTRIBUTING.md)
 
 [FUSOTAO](https://wiki.fusotao.org/en_US)|[扶桑道](https://wiki.fusotao.org/zh_CN)|[ふそうタオ](https://wiki.fusotao.org/ja_JP)

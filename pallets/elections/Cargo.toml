@@ -21,7 +21,7 @@ frame-system = { version = "2.0.1", default-features = false }
 frame-benchmarking = { version = "2.0.1", default-features = false, optional = true }
 pallet-balances = { version = "2.0.1", default-features = false }
 ascii = { version = "1.0", default-features = false }
-fuso-support = {version = "0.1.0", path = "../../fuso-support", default-features = false }
+fuso-support = { version = "0.1.0", path = "../../fuso-support", default-features = false }
 
 [dev-dependencies]
 sp-core = { version = "2.0.1" }
@@ -38,7 +38,7 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"frame-benchmarking/std",
-	"pallet-balances/std",
+	"pallet-balances/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking",
