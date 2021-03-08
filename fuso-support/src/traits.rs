@@ -38,17 +38,9 @@ pub trait ReservableToken<TokenId, AccountId> {
 
     fn can_reserve(token: &TokenId, who: &AccountId, value: Self::Balance) -> bool;
 
-    fn reserve(
-        token: &TokenId,
-        who: &AccountId,
-        value: Self::Balance,
-    ) -> DispatchResult;
+    fn reserve(token: &TokenId, who: &AccountId, value: Self::Balance) -> DispatchResult;
 
-    fn unreserve(
-        token: &TokenId,
-        who: &AccountId,
-        value: Self::Balance,
-    ) -> DispatchResult;
+    fn unreserve(token: &TokenId, who: &AccountId, value: Self::Balance) -> DispatchResult;
 
     fn repatriate_reserved(
         token: &TokenId,
@@ -60,12 +52,10 @@ pub trait ReservableToken<TokenId, AccountId> {
 }
 
 pub trait Participants<AccountId> {
-
     fn get_participants() -> BTreeSet<AccountId>;
 }
 
 pub trait ProofOfSecurity<AccountId> {
-
     type ExternalChainAddress: Parameter
         + Member
         + MaybeSerializeDeserialize
@@ -80,7 +70,6 @@ pub trait ProofOfSecurity<AccountId> {
 }
 
 pub trait Referendum<BlockNumber, Index> {
-
     type Result: Clone;
 
     fn proposal(start_include: BlockNumber, end_include: BlockNumber) -> Index;
@@ -88,4 +77,56 @@ pub trait Referendum<BlockNumber, Index> {
     fn is_end(index: Index) -> bool;
 
     fn get_result(index: Index) -> Self::Result;
+}
+
+pub type ExternalChainId = u32;
+
+pub type ExternalTransactionId = u64;
+
+pub trait Inspector {
+    type ExternalChainAddress: Clone
+        + Parameter
+        + Member
+        + MaybeSerializeDeserialize
+        + Debug
+        + MaybeDisplay
+        + Ord
+        + Default;
+
+    type ExternalChainBalance: AtLeast32BitUnsigned
+        + FullCodec
+        + Parameter
+        + Member
+        + Copy
+        + MaybeDisplay
+        + MaybeSerializeDeserialize
+        + Default
+        + Debug;
+
+    type ExternalChainTransHash: Clone
+        + Parameter
+        + Member
+        + MaybeSerializeDeserialize
+        + Debug
+        + MaybeDisplay
+        + Ord
+        + Default;
+
+    fn expect_transaction(
+        external_chain_id: ExternalChainId,
+        to: Self::ExternalChainAddress,
+        memo: sp_std::vec::Vec<u8>,
+        amount: Self::ExternalChainBalance,
+    );
+
+    fn decl_secure_address(external_chain_id: ExternalChainId, addr: Self::ExternalChainAddress);
+
+    fn approve(
+        external_chain_id: ExternalChainId,
+        from: Self::ExternalChainAddress,
+        to: Self::ExternalChainAddress,
+        memo: sp_std::vec::Vec<u8>,
+        amount: Self::ExternalChainBalance,
+        external_transaction_hash: Self::ExternalChainTransHash,
+    );
 }
