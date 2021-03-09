@@ -15,19 +15,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 use codec::{Decode, Encode};
+use frame_support::traits::{Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, Parameter,
 };
-use frame_support::{
-    traits::{Get, LockIdentifier, LockableCurrency, WithdrawReasons},
-    Hashable,
-};
 use frame_system::ensure_signed;
 use fuso_support::{collections::binary_heap::BinaryHeap, traits::Referendum};
-use sp_runtime::traits::{AtLeast32Bit, Bounded, CheckedAdd, Member, Zero};
+use sp_runtime::traits::{AtLeast32Bit, Bounded, CheckedAdd, Member, One, Zero};
 use sp_runtime::RuntimeDebug;
 use sp_std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
-use sp_std::{convert::TryInto, vec::Vec};
+use sp_std::vec::Vec;
 
 #[cfg(test)]
 mod mock;
@@ -69,6 +66,8 @@ impl<V: Eq, A: Eq, B: Eq, T: Ord> PartialEq for Voter<V, A, B, T> {
         self.amount == other.amount
     }
 }
+
+pub const ELECTIONS_ID: LockIdentifier = *b"election";
 
 pub type BalanceOf<T> = <<T as Trait>::Locks as pallet_balances::Trait>::Balance;
 
@@ -116,6 +115,8 @@ decl_error! {
         NotCurrentVoteRound,
         NotCandidatePeriod,
         CandidatePeriodExpired,
+        InvalidCandidate,
+        InvalidElectionsId,
     }
 }
 
@@ -124,7 +125,7 @@ decl_storage! {
         /// The present candidate list.
         Candidates get(fn candidates): Vec<T::AccountId>;
 
-        VoterMembers get(fn voter_members): Option<BinaryHeap<Voter<T::VoteIndex, T::AccountId, T::BlockNumber, BalanceOf<T>>>>;
+        VoterMembers get(fn voter_members): BinaryHeap<Voter<T::VoteIndex, T::AccountId, T::BlockNumber, BalanceOf<T>>>;
 
         VoteRoundCount get(fn vote_round_count): T::VoteIndex;
 
@@ -173,7 +174,7 @@ decl_module! {
         #[weight = 1_000_000_000]
         fn vote(origin,
             voter: T::AccountId,
-            #[compact] vote_round: T::VoteIndex,
+            vote_round: T::VoteIndex,
             #[compact] amount: BalanceOf<T>) -> DispatchResult {
             let sender = ensure_signed(origin)?;
 
@@ -183,16 +184,12 @@ decl_module! {
             // check input vote round
             ensure!(vote_round == Self::vote_round_count(), Error::<T>::NotCurrentVoteRound);
 
-            if let Some(voter_members) = Self::voter_members() {
-                let voter_option = voter_members.iter().find(|v| v.account == voter);
+            let voter_members = Self::voter_members();
+            let voter_option = voter_members.iter().find(|v| v.account == voter);
 
-                // if voter not included in members
-                if voter_option.is_none() {
-                    // ensure voter include in candidates
-                    ensure!(Self::candidates().contains(&voter), Error::<T>::NotCandidate);
-                }
-            } else {
-                // if members is empty, ensure voter include in candidates
+            // if voter not included in members
+            if voter_option.is_none() {
+                // ensure voter include in candidates
                 ensure!(Self::candidates().contains(&voter), Error::<T>::NotCandidate);
             }
 
@@ -265,11 +262,10 @@ impl<T: Trait> Module<T> {
     // set candidate
     fn set_candidate(who: &T::AccountId) -> DispatchResult {
         // if is voter, notice already
-        if let Some(voter_members) = Self::voter_members() {
-            let voter_option = voter_members.iter().find(|v| &v.account == who);
+        let voter_members = Self::voter_members();
+        let voter_option = voter_members.iter().find(|v| &v.account == who);
 
-            ensure!(voter_option.is_none(), Error::<T>::AlreadyIsVoter);
-        }
+        ensure!(voter_option.is_none(), Error::<T>::AlreadyIsVoter);
 
         ensure!(
             !Self::candidates().contains(&who),
@@ -293,38 +289,36 @@ impl<T: Trait> Module<T> {
         // ensure usable balance greater than input amount
         ensure!(usable_balance > amount, Error::<T>::InsufficientBalance);
 
-        if let Some(voter_members) = Self::voter_members() {
-            let voter_option = voter_members.iter().find(|v| &v.account == voter);
+        let voter_members = Self::voter_members();
+        let voter_option = voter_members.iter().find(|v| &v.account == voter);
 
-            if voter_option.is_some() {
-                // edit vote
-                Self::edit_vote(sender, account, voter, amount);
-            } else {
-                // insert vote
-                Self::insert_vote(sender, account, voter, amount);
-            }
+        if voter_option.is_some() {
+            // update vote
+            Self::update_vote(sender, voter, amount)?;
         } else {
             // insert vote
-            Self::insert_vote(sender, account, voter, amount);
+            Self::insert_vote(sender, voter, amount)?;
         }
+
+        Self::lock_currency(account, amount)?;
 
         Ok(())
     }
 
     fn insert_vote(
         sender: &T::AccountId,
-        account: &AccountIdOf<T>,
         voter: &T::AccountId,
         amount: BalanceOf<T>,
-    ) {
+    ) -> DispatchResult {
         // remove candidate
-        let candidates = Self::candidates();
-        let new_candidates: Vec<_> = candidates
-            .iter()
-            .filter(|a| a != &voter)
-            .map(|b| b)
-            .collect();
-        <Candidates<T>>::put(new_candidates);
+        Candidates::<T>::try_mutate(|candidates| -> DispatchResult {
+            let index = candidates
+                .iter()
+                .position(|a| a == voter)
+                .ok_or(Error::<T>::InvalidCandidate)?;
+            candidates.remove(index);
+            Ok(())
+        })?;
 
         // current pledger
         let pledger = Pledger {
@@ -345,51 +339,35 @@ impl<T: Trait> Module<T> {
             pledger: pledger_vec,
         };
 
-        if let Some(voter_members) = Self::voter_members() {
-            let mut new_voter_members = voter_members;
-            new_voter_members.push(voter_member);
+        VoterMembers::<T>::try_mutate(|voters| -> DispatchResult {
+            voters.push(voter_member);
+            Ok(())
+        })?;
 
-            // push voter
-            <VoterMembers<T>>::put(new_voter_members);
-        } else {
-            let mut new_voter_members: BinaryHeap<
-                Voter<T::VoteIndex, T::AccountId, T::BlockNumber, BalanceOf<T>>,
-            > = BinaryHeap::new();
-            new_voter_members.push(voter_member);
-
-            // insert voter
-            <VoterMembers<T>>::put(new_voter_members);
-        }
-
-        Self::lock_currency(sender, account, amount, false);
+        Ok(())
     }
 
-    fn edit_vote(
+    fn update_vote(
         sender: &T::AccountId,
-        account: &AccountIdOf<T>,
         voter: &T::AccountId,
         amount: BalanceOf<T>,
-    ) {
-        // voter info
-        let mut voter_members = Self::voter_members().unwrap();
+    ) -> DispatchResult {
+        // update voter members
+        let mut voter_members = Self::voter_members();
         let mut new_voter_members: BinaryHeap<
             Voter<T::VoteIndex, T::AccountId, T::BlockNumber, BalanceOf<T>>,
         > = BinaryHeap::new();
-
-        // default total amount is zero
-        let mut total_amount = Zero::zero();
 
         // iter voter members, and removed elements
         for i in voter_members.drain() {
             let mut data = i;
             if &data.account == voter {
                 // current voter add amount
-                total_amount = data
+                let total_amount = data
                     .amount
                     .checked_add(&amount)
-                    .ok_or(Error::<T>::Overflow)
-                    .unwrap();
-                data.amount = total_amount.clone();
+                    .ok_or(Error::<T>::Overflow)?;
+                data.amount = total_amount;
 
                 // current sender has not pledge
                 let mut has_pledger = false;
@@ -401,13 +379,13 @@ impl<T: Trait> Module<T> {
 
                         // current sender add to total amount
                         let pledger_total_amount =
-                            j.amount.checked_add(&amount).ok_or(Error::<T>::Overflow);
+                            j.amount.checked_add(&amount).ok_or(Error::<T>::Overflow)?;
 
                         // update the latest block
                         j.block_number = <frame_system::Module<T>>::block_number();
 
                         // set current pledger total amount
-                        j.amount = pledger_total_amount.unwrap();
+                        j.amount = pledger_total_amount;
                     }
                 }
 
@@ -426,36 +404,32 @@ impl<T: Trait> Module<T> {
         // update storage from voter members
         <VoterMembers<T>>::put(new_voter_members);
 
-        Self::lock_currency(sender, account, total_amount, true);
+        Ok(())
     }
 
     // lock currency
-    fn lock_currency(
-        sender: &T::AccountId,
-        account: &AccountIdOf<T>,
-        amount: BalanceOf<T>,
-        is_edit: bool,
-    ) {
-        let identity = sender.identity();
-
-        // LockId
-        let id: LockIdentifier = identity.try_into().unwrap_or_default();
-
-        if is_edit {
+    fn lock_currency(account: &AccountIdOf<T>, amount: BalanceOf<T>) -> DispatchResult {
+        let lock_balance = pallet_balances::Locks::<T::Locks>::get(account);
+        let vote_lock = lock_balance.iter().find(|b| b.id == ELECTIONS_ID);
+        if let Some(lock) = vote_lock {
+            let total_lock_balance = amount
+                .checked_add(&lock.amount)
+                .ok_or(Error::<T>::Overflow)?;
             <pallet_balances::Module<T::Locks>>::extend_lock(
-                id,
+                ELECTIONS_ID,
                 account,
-                amount,
+                total_lock_balance,
                 WithdrawReasons::all(),
             );
         } else {
             <pallet_balances::Module<T::Locks>>::set_lock(
-                id,
+                ELECTIONS_ID,
                 account,
                 amount,
                 WithdrawReasons::all(),
             );
         }
+        Ok(())
     }
 
     pub fn start_proposal(start: T::BlockNumber, end: T::BlockNumber) -> T::VoteIndex {
@@ -469,7 +443,7 @@ impl<T: Trait> Module<T> {
         // set end block number
         <EndBlockNumber<T>>::put(end);
 
-        <VoteRoundCount<T>>::put(Self::vote_round_count() + (1 as u32).into());
+        <VoteRoundCount<T>>::put(Self::vote_round_count() + One::one());
 
         let count = Self::vote_round_count();
         Self::deposit_event(RawEvent::StartProposal(start, end, count));
@@ -492,7 +466,7 @@ impl<T: Trait> Referendum<T::BlockNumber, T::VoteIndex> for Module<T> {
 
     fn get_result(index: T::VoteIndex) -> Self::Result {
         if Self::vote_round_count() == index {
-            return Self::voter_members();
+            return Some(Self::voter_members());
         } else {
             None
         }
