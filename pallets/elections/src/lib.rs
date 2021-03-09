@@ -15,13 +15,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 use codec::{Decode, Encode};
-use frame_support::traits::{Get, LockIdentifier, LockableCurrency, WithdrawReasons};
+use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, Parameter,
 };
 use frame_system::ensure_signed;
 use fuso_support::{collections::binary_heap::BinaryHeap, traits::Referendum};
-use sp_runtime::traits::{AtLeast32Bit, Bounded, CheckedAdd, Member, One, Zero};
+use sp_runtime::traits::{AtLeast32Bit, Bounded, CheckedAdd, CheckedSub, Member, One, Zero};
 use sp_runtime::RuntimeDebug;
 use sp_std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use sp_std::vec::Vec;
@@ -75,6 +75,8 @@ pub type AccountIdOf<T> = <<T as Trait>::Locks as frame_system::Trait>::AccountI
 
 pub trait Trait: frame_system::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+
+    type Currency: LockableCurrency<Self::AccountId>;
 
     type CandidatePeriod: Get<Self::BlockNumber>;
 
@@ -146,14 +148,14 @@ decl_module! {
         /// The minimum amount to be used as a deposit for a public referendum proposal.
         const MinimumVotingLock: BalanceOf<T> = T::MinimumVotingLock::get();
 
-        #[weight = 1_000_000_000]
+        #[weight = 1_000]
         fn init_proposal(origin, start: T::BlockNumber, end: T::BlockNumber) -> DispatchResult {
             ensure_signed(origin)?;
             Self::start_proposal(start, end);
             Ok(())
         }
 
-        #[weight = 1_000_000_000]
+        #[weight = 1_000]
         fn add_candidate(
             origin,
             who: T::AccountId,
@@ -171,7 +173,7 @@ decl_module! {
         }
 
         // vote
-        #[weight = 1_000_000_000]
+        #[weight = 0]
         fn vote(origin,
             voter: T::AccountId,
             vote_round: T::VoteIndex,
@@ -283,8 +285,22 @@ impl<T: Trait> Module<T> {
         voter: &T::AccountId,
         amount: BalanceOf<T>,
     ) -> DispatchResult {
-        let usable_balance: BalanceOf<T> =
-            <pallet_balances::Module<T::Locks>>::usable_balance(account);
+        let total_balance: BalanceOf<T> =
+            <pallet_balances::Module<T::Locks>>::total_balance(account);
+        // account all lock balance
+        let lock_vec = pallet_balances::Locks::<T::Locks>::get(account);
+        let mut lock_total_balance: BalanceOf<T> = Zero::zero();
+        for i in lock_vec.iter() {
+            lock_total_balance = i
+                .amount
+                .checked_add(&lock_total_balance)
+                .ok_or(Error::<T>::Overflow)?;
+        }
+
+        // not lockable balance
+        let usable_balance = total_balance
+            .checked_sub(&lock_total_balance)
+            .ok_or(Error::<T>::Overflow)?;
 
         // ensure usable balance greater than input amount
         ensure!(usable_balance > amount, Error::<T>::InsufficientBalance);

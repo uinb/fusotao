@@ -266,6 +266,7 @@ parameter_types! {
 
 impl fuso_pallet_elections::Trait for Runtime {
 	type Event = Event;
+	type Currency = Balances;
 	type CandidatePeriod = CandidatePeriod;
 	type MinimumVotingLock = MinimumVotingLock;
 	type VoteIndex = u32;
