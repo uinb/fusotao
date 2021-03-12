@@ -45,7 +45,7 @@ pub type PositiveImbalanceOf<T> =
 pub type NegativeImbalanceOf<T> =
     <<T as Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::NegativeImbalance;
 
-pub type Pair<T> = (
+pub type HostingPair<T> = (
     <T as frame_system::Trait>::AccountId,
     <T as frame_system::Trait>::AccountId,
 );
@@ -102,12 +102,12 @@ pub type UID = u128;
 decl_storage! {
     trait Store for Module<T: Trait> as Receipts {
         Receipts get(fn receipts): map
-            hasher(blake2_128_concat) Pair<T>
+            hasher(blake2_128_concat) HostingPair<T>
         => Option<Receipt<(), BalanceOf<T>>>;
 
         TokenReceipts get(fn token_receipts): double_map
             hasher(blake2_128_concat) T::TokenId,
-            hasher(blake2_128_concat) Pair<T>
+            hasher(blake2_128_concat) HostingPair<T>
         => Option<Receipt<T::TokenId, TokenBalanceOf<T>>>;
 
         Dominators get(fn dominators): map

@@ -21,6 +21,7 @@ use sp_runtime::traits::{
 };
 use sp_runtime::DispatchResult;
 use sp_std::{collections::btree_set::BTreeSet, fmt::Debug};
+use crate::external_chain::ExternalChainAddress;
 
 pub trait ReservableToken<TokenId, AccountId> {
     type Balance: AtLeast32BitUnsigned
@@ -79,19 +80,9 @@ pub trait Referendum<BlockNumber, Index> {
     fn get_result(index: Index) -> Self::Result;
 }
 
-pub type ExternalChainId = u32;
-
 pub type ExternalTransactionId = u64;
 
-pub trait Inspector {
-    type ExternalChainAddress: Clone
-        + Parameter
-        + Member
-        + MaybeSerializeDeserialize
-        + Debug
-        + MaybeDisplay
-        + Ord
-        + Default;
+pub trait Inspector<T: frame_system::Trait> {
 
     type ExternalChainBalance: AtLeast32BitUnsigned
         + FullCodec
@@ -103,7 +94,7 @@ pub trait Inspector {
         + Default
         + Debug;
 
-    type ExternalChainTransHash: Clone
+    type ExternalChainTxHash: Clone
         + Parameter
         + Member
         + MaybeSerializeDeserialize
@@ -113,20 +104,21 @@ pub trait Inspector {
         + Default;
 
     fn expect_transaction(
-        external_chain_id: ExternalChainId,
-        to: Self::ExternalChainAddress,
+        to: ExternalChainAddress,
         memo: sp_std::vec::Vec<u8>,
         amount: Self::ExternalChainBalance,
     );
 
-    fn decl_secure_address(external_chain_id: ExternalChainId, addr: Self::ExternalChainAddress);
+    fn claim_secure_address(
+        claimer: <T::Lookup as StaticLookup>::Source,
+        addr: ExternalChainAddress,
+    );
 
     fn approve(
-        external_chain_id: ExternalChainId,
-        from: Self::ExternalChainAddress,
-        to: Self::ExternalChainAddress,
+        from: ExternalChainAddress,
+        to: ExternalChainAddress,
         memo: sp_std::vec::Vec<u8>,
         amount: Self::ExternalChainBalance,
-        external_transaction_hash: Self::ExternalChainTransHash,
+        external_transaction_hash: Self::ExternalChainTxHash,
     );
 }
