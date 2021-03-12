@@ -21,7 +21,7 @@ use frame_support::{
     Parameter,
 };
 use frame_system::ensure_signed;
-use fuso_support::traits::ReservableToken;
+use fuso_support::{external_chain::*, traits::ReservableToken};
 use sp_runtime::{
     traits::{
         CheckEqual, CheckedAdd, CheckedSub, MaybeDisplay, MaybeMallocSizeOf,
@@ -68,6 +68,7 @@ pub struct Dominator<TokenId, Balance> {
     pub assets_type: Option<TokenId>,
     pub total_pledged: Balance,
     pub total_hosted: Balance,
+    pub support_chains: Vec<ExternalChain>,
     pub status: DominatorStatus,
 }
 
@@ -129,7 +130,7 @@ decl_event!(
         Balance = BalanceOf<T>,
         TokenBalance = TokenBalanceOf<T>,
     {
-        DominatorClaimed(AccountId, Balance),
+        DominatorClaimed(AccountId, Balance, Vec<ExternalChain>),
         TokenDominatorClaimed(TokenId, AccountId, TokenBalance),
         AssetsHosted(AccountId, AccountId, Balance),
         TokenHosted(TokenId, AccountId, AccountId, TokenBalance),
@@ -163,18 +164,34 @@ decl_module! {
 
         fn deposit_event() = default;
 
-        #[weight = 100]
+        #[weight = 1_000_000]
+        pub fn claim_dominator(origin, #[compact] amount: BalanceOf<T>, support_chains: Vec<ExternalChain>) {
+            let dominator = ensure_signed(origin)?;
+            ensure!(!<Dominators<T>>::contains_key(&dominator), Error::<T>::DominatorAlreadyExists);
+            T::Currency::reserve(&dominator, amount)?;
+            <Dominators<T>>::insert(&dominator, Dominator {
+                total_pledged: amount,
+                total_hosted: Zero::zero(),
+                status: DominatorStatus::Active,
+                support_chains: support_chains.clone(),
+                assets_type: None,
+            });
+            Self::deposit_event(RawEvent::DominatorClaimed(dominator, amount, support_chains));
+        }
+
+        #[weight = 100_000]
         pub fn grant(origin,
                      dominator: <T::Lookup as StaticLookup>::Source,
                      #[compact] amount: BalanceOf<T>,
+                     declared_addresses: Vec<(ExternalChain, Vec<u8>)>,
                      memo: UID) {
             let fund_owner = ensure_signed(origin)?;
             let dominator = T::Lookup::lookup(dominator)?;
             let claimed = Dominators::<T>::get(&dominator).ok_or(Error::<T>::DominatorNotFound)?;
             ensure!(claimed.status == DominatorStatus::Active, Error::<T>::InvalidStatus);
             ensure!(!Receipts::<T>::contains_key((&fund_owner, &dominator)), Error::<T>::ReceiptAlreadyExists);
-            // FIXME what does saturating_add mean
             ensure!(claimed.total_hosted.saturating_add(amount) <= claimed.total_pledged, Error::<T>::PledgeUnsatisfied);
+            declared_addresses.iter().all(|(chain, _)|claimed.support_chains.contains(chain));
             ensure!(T::Currency::can_reserve(&fund_owner, amount), Error::<T>::InsufficientBalance);
             T::Currency::reserve(&fund_owner, amount)?;
             Receipts::<T>::insert((&fund_owner, &dominator), Receipt {
@@ -182,48 +199,43 @@ decl_module! {
                 status: ReceiptStatus::Active,
                 assets_type: None,
             });
-            // FIXME what does saturating_add mean
-
             Dominators::<T>::insert(&dominator, Dominator {
                 total_pledged: claimed.total_pledged,
                 total_hosted: claimed.total_hosted.saturating_add(amount),
                 status: DominatorStatus::Active,
+                support_chains: claimed.support_chains,
                 assets_type: None,
             });
             Self::deposit_event(RawEvent::AssetsHosted(fund_owner, dominator, amount));
         }
 
-        #[weight = 100]
-        pub fn grant_token(origin,
-                     token: T::TokenId,
-                     dominator: <T::Lookup as StaticLookup>::Source,
-                     #[compact] amount: TokenBalanceOf<T>,
-                     memo: UID) {
-            let fund_owner = ensure_signed(origin)?;
-            let dominator = T::Lookup::lookup(dominator)?;
-            let claimed = TokenDominators::<T>::get(&token, &dominator).ok_or(Error::<T>::DominatorNotFound)?;
-            ensure!(claimed.status == DominatorStatus::Active, Error::<T>::InvalidStatus);
-            ensure!(!TokenReceipts::<T>::contains_key(&token, (&fund_owner, &dominator)), Error::<T>::ReceiptAlreadyExists);
-            // FIXME what does saturating_add mean
-
-            ensure!(claimed.total_hosted.saturating_add(amount) <= claimed.total_pledged, Error::<T>::PledgeUnsatisfied);
-            ensure!(T::Token::can_reserve(&token, &fund_owner, amount), Error::<T>::InsufficientBalance);
-            T::Token::reserve(&token, &fund_owner, amount)?;
-            TokenReceipts::<T>::insert(&token, (&fund_owner, &dominator), Receipt {
-                value: amount,
-                status: ReceiptStatus::Active,
-                assets_type: Some(token),
-            });
-            // FIXME what does saturating_add mean
-
-            TokenDominators::<T>::insert(&token, &dominator, Dominator {
-                total_pledged: claimed.total_pledged,
-                total_hosted: claimed.total_hosted.saturating_add(amount),
-                status: DominatorStatus::Active,
-                assets_type: Some(token),
-            });
-            Self::deposit_event(RawEvent::TokenHosted(token, fund_owner, dominator, amount));
-        }
+        // #[weight = 100]
+        // pub fn grant_token(origin,
+        //              token: T::TokenId,
+        //              dominator: <T::Lookup as StaticLookup>::Source,
+        //              #[compact] amount: TokenBalanceOf<T>,
+        //              memo: UID) {
+        //     let fund_owner = ensure_signed(origin)?;
+        //     let dominator = T::Lookup::lookup(dominator)?;
+        //     let claimed = TokenDominators::<T>::get(&token, &dominator).ok_or(Error::<T>::DominatorNotFound)?;
+        //     ensure!(claimed.status == DominatorStatus::Active, Error::<T>::InvalidStatus);
+        //     ensure!(!TokenReceipts::<T>::contains_key(&token, (&fund_owner, &dominator)), Error::<T>::ReceiptAlreadyExists);
+        //     ensure!(claimed.total_hosted.saturating_add(amount) <= claimed.total_pledged, Error::<T>::PledgeUnsatisfied);
+        //     ensure!(T::Token::can_reserve(&token, &fund_owner, amount), Error::<T>::InsufficientBalance);
+        //     T::Token::reserve(&token, &fund_owner, amount)?;
+        //     TokenReceipts::<T>::insert(&token, (&fund_owner, &dominator), Receipt {
+        //         value: amount,
+        //         status: ReceiptStatus::Active,
+        //         assets_type: Some(token),
+        //     });
+        //     TokenDominators::<T>::insert(&token, &dominator, Dominator {
+        //         total_pledged: claimed.total_pledged,
+        //         total_hosted: claimed.total_hosted.saturating_add(amount),
+        //         status: DominatorStatus::Active,
+        //         assets_type: Some(token),
+        //     });
+        //     Self::deposit_event(RawEvent::TokenHosted(token, fund_owner, dominator, amount));
+        // }
 
         #[weight = 100]
         pub fn revoke(origin, dominator: <T::Lookup as StaticLookup>::Source) {
@@ -266,12 +278,11 @@ decl_module! {
             ensure!(receipt.value >= amount, Error::<T>::InsufficientStashAccount);
             ensure!(T::Currency::reserved_balance(&fund_owner) >= amount, Error::<T>::InsufficientStashAccount);
             T::Currency::repatriate_reserved(&fund_owner, &dominator, amount, BalanceStatus::Free)?;
-            // FIXME what does saturating_add mean
-
             Dominators::<T>::insert(&dominator, Dominator {
                 total_hosted: claimed.total_hosted.saturating_sub(amount),
                 total_pledged: claimed.total_pledged,
                 status: claimed.status,
+                support_chains: claimed.support_chains,
                 assets_type: None,
             });
             if receipt.value == amount {
@@ -285,35 +296,35 @@ decl_module! {
             }
         }
 
-        #[weight = 100]
-        pub fn merge_to_deduct_stash_token(origin,
-                                           token: T::TokenId,
-                                           fund_owner: T::AccountId,
-                                           #[compact] amount: TokenBalanceOf<T>,
-                                           digest: Vec<u8>) {
-            let dominator = ensure_signed(origin)?;
-            let claimed = TokenDominators::<T>::get(&token, &dominator).ok_or(Error::<T>::DominatorNotFound)?;
-            ensure!(claimed.total_hosted >= amount, Error::<T>::InsufficientStashAccount);
-            let receipt = TokenReceipts::<T>::get(&token, (&fund_owner, &dominator)).ok_or(Error::<T>::ReceiptNotExists)?;
-            ensure!(receipt.value >= amount, Error::<T>::InsufficientStashAccount);
-            ensure!(T::Token::reserved_balance(&token, &fund_owner) >= amount, Error::<T>::InsufficientStashAccount);
-            T::Token::repatriate_reserved(&token, &fund_owner, &dominator, amount, BalanceStatus::Free)?;
-            TokenDominators::<T>::insert(&token, &dominator, Dominator {
-                total_hosted: claimed.total_hosted.saturating_sub(amount),
-                total_pledged: claimed.total_pledged,
-                status: claimed.status,
-                assets_type: Some(token),
-            });
-            if receipt.value == amount {
-                TokenReceipts::<T>::remove(&token, (&fund_owner, &dominator));
-            } else {
-                TokenReceipts::<T>::insert(&token, (&fund_owner, &dominator), Receipt {
-                    value: receipt.value.saturating_sub(amount),
-                    status: receipt.status,
-                    assets_type: Some(token),
-                });
-            }
-        }
+        // #[weight = 100]
+        // pub fn merge_to_deduct_stash_token(origin,
+        //                                    token: T::TokenId,
+        //                                    fund_owner: T::AccountId,
+        //                                    #[compact] amount: TokenBalanceOf<T>,
+        //                                    digest: Vec<u8>) {
+        //     let dominator = ensure_signed(origin)?;
+        //     let claimed = TokenDominators::<T>::get(&token, &dominator).ok_or(Error::<T>::DominatorNotFound)?;
+        //     ensure!(claimed.total_hosted >= amount, Error::<T>::InsufficientStashAccount);
+        //     let receipt = TokenReceipts::<T>::get(&token, (&fund_owner, &dominator)).ok_or(Error::<T>::ReceiptNotExists)?;
+        //     ensure!(receipt.value >= amount, Error::<T>::InsufficientStashAccount);
+        //     ensure!(T::Token::reserved_balance(&token, &fund_owner) >= amount, Error::<T>::InsufficientStashAccount);
+        //     T::Token::repatriate_reserved(&token, &fund_owner, &dominator, amount, BalanceStatus::Free)?;
+        //     TokenDominators::<T>::insert(&token, &dominator, Dominator {
+        //         total_hosted: claimed.total_hosted.saturating_sub(amount),
+        //         total_pledged: claimed.total_pledged,
+        //         status: claimed.status,
+        //         assets_type: Some(token),
+        //     });
+        //     if receipt.value == amount {
+        //         TokenReceipts::<T>::remove(&token, (&fund_owner, &dominator));
+        //     } else {
+        //         TokenReceipts::<T>::insert(&token, (&fund_owner, &dominator), Receipt {
+        //             value: receipt.value.saturating_sub(amount),
+        //             status: receipt.status,
+        //             assets_type: Some(token),
+        //         });
+        //     }
+        // }
 
         /// signed by the dominator, not fund owner
         #[weight = 100]
@@ -327,24 +338,25 @@ decl_module! {
                 total_hosted: claimed.total_hosted,
                 total_pledged: claimed.total_pledged.saturating_sub(amount),
                 status: claimed.status,
+                support_chains: claimed.support_chains,
                 assets_type: None,
             });
         }
 
-        #[weight = 100]
-        pub fn merge_to_add_stash_token(origin, token: T::TokenId, fund_owner: T::AccountId, #[compact] amount: TokenBalanceOf<T>, digest: Vec<u8>) {
-            let dominator = ensure_signed(origin)?;
-            let claimed = TokenDominators::<T>::get(&token, &dominator).ok_or(Error::<T>::DominatorNotFound)?;
-            ensure!(claimed.total_pledged >= amount, Error::<T>::InsufficientStashAccount);
-            ensure!(T::Token::reserved_balance(&token, &dominator) >= amount, Error::<T>::InsufficientStashAccount);
-            T::Token::repatriate_reserved(&token, &dominator, &fund_owner, amount, BalanceStatus::Free)?;
-            TokenDominators::<T>::insert(&token, &dominator, Dominator {
-                total_hosted: claimed.total_hosted,
-                total_pledged: claimed.total_pledged.saturating_sub(amount),
-                status: claimed.status,
-                assets_type: Some(token),
-            });
-        }
+        // #[weight = 100]
+        // pub fn merge_to_add_stash_token(origin, token: T::TokenId, fund_owner: T::AccountId, #[compact] amount: TokenBalanceOf<T>, digest: Vec<u8>) {
+        //     let dominator = ensure_signed(origin)?;
+        //     let claimed = TokenDominators::<T>::get(&token, &dominator).ok_or(Error::<T>::DominatorNotFound)?;
+        //     ensure!(claimed.total_pledged >= amount, Error::<T>::InsufficientStashAccount);
+        //     ensure!(T::Token::reserved_balance(&token, &dominator) >= amount, Error::<T>::InsufficientStashAccount);
+        //     T::Token::repatriate_reserved(&token, &dominator, &fund_owner, amount, BalanceStatus::Free)?;
+        //     TokenDominators::<T>::insert(&token, &dominator, Dominator {
+        //         total_hosted: claimed.total_hosted,
+        //         total_pledged: claimed.total_pledged.saturating_sub(amount),
+        //         status: claimed.status,
+        //         assets_type: Some(token),
+        //     });
+        // }
 
         #[weight = 100]
         pub fn confirm_withdraw(origin, fund_owner: T::AccountId) {
@@ -358,57 +370,45 @@ decl_module! {
                 total_pledged: claimed.total_pledged,
                 total_hosted: claimed.total_hosted.saturating_sub(receipt.value),
                 status: claimed.status,
+                support_chains: claimed.support_chains,
                 assets_type: None,
             });
             Receipts::<T>::remove((&fund_owner, &dominator));
             Self::deposit_event(RawEvent::AssetsRevokeConfirmed(fund_owner, dominator));
         }
 
-        #[weight = 100]
-        pub fn confirm_token_withdraw(origin, token: T::TokenId, fund_owner: T::AccountId) {
-            let dominator = ensure_signed(origin)?;
-            let claimed = TokenDominators::<T>::get(&token, &dominator).ok_or(Error::<T>::DominatorNotFound)?;
-            let receipt = TokenReceipts::<T>::get(&token, (&fund_owner, &dominator)).ok_or(Error::<T>::ReceiptNotExists)?;
-            ensure!(receipt.status == ReceiptStatus::Revoking, Error::<T>::InvalidStatus);
-            ensure!(T::Token::reserved_balance(&token, &fund_owner) >= receipt.value, Error::<T>::InvalidStatus);
-            T::Token::unreserve(&token, &fund_owner, receipt.value)?;
-            TokenDominators::<T>::insert(&token, &dominator, Dominator {
-                total_pledged: claimed.total_pledged,
-                total_hosted: claimed.total_hosted.saturating_sub(receipt.value),
-                status: claimed.status,
-                assets_type: Some(token),
-            });
-            TokenReceipts::<T>::remove(&token, (&fund_owner, &dominator));
-            Self::deposit_event(RawEvent::TokenRevokeConfirmed(token, fund_owner, dominator));
-        }
+        // #[weight = 100]
+        // pub fn confirm_token_withdraw(origin, token: T::TokenId, fund_owner: T::AccountId) {
+        //     let dominator = ensure_signed(origin)?;
+        //     let claimed = TokenDominators::<T>::get(&token, &dominator).ok_or(Error::<T>::DominatorNotFound)?;
+        //     let receipt = TokenReceipts::<T>::get(&token, (&fund_owner, &dominator)).ok_or(Error::<T>::ReceiptNotExists)?;
+        //     ensure!(receipt.status == ReceiptStatus::Revoking, Error::<T>::InvalidStatus);
+        //     ensure!(T::Token::reserved_balance(&token, &fund_owner) >= receipt.value, Error::<T>::InvalidStatus);
+        //     T::Token::unreserve(&token, &fund_owner, receipt.value)?;
+        //     TokenDominators::<T>::insert(&token, &dominator, Dominator {
+        //         total_pledged: claimed.total_pledged,
+        //         total_hosted: claimed.total_hosted.saturating_sub(receipt.value),
+        //         status: claimed.status,
+        //         assets_type: Some(token),
+        //     });
+        //     TokenReceipts::<T>::remove(&token, (&fund_owner, &dominator));
+        //     Self::deposit_event(RawEvent::TokenRevokeConfirmed(token, fund_owner, dominator));
+        // }
 
-        #[weight = 100]
-        pub fn claim_dominator(origin, #[compact] amount: BalanceOf<T>) {
-            let dominator = ensure_signed(origin)?;
-            ensure!(!<Dominators<T>>::contains_key(&dominator), Error::<T>::DominatorAlreadyExists);
-            T::Currency::reserve(&dominator, amount)?;
-            <Dominators<T>>::insert(&dominator, Dominator {
-                total_pledged: amount,
-                total_hosted: Zero::zero(),
-                status: DominatorStatus::Active,
-                assets_type: None,
-            });
-            Self::deposit_event(RawEvent::DominatorClaimed(dominator, amount));
-        }
 
-        #[weight = 100]
-        pub fn claim_token_dominator(origin, token: T::TokenId, #[compact] amount: TokenBalanceOf<T>) {
-            let dominator = ensure_signed(origin)?;
-            ensure!(!<TokenDominators<T>>::contains_key(&token, &dominator), Error::<T>::DominatorAlreadyExists);
-            T::Token::reserve(&token, &dominator, amount)?;
-            <TokenDominators<T>>::insert(&token, &dominator, Dominator {
-                total_pledged: amount,
-                total_hosted: Zero::zero(),
-                status: DominatorStatus::Active,
-                assets_type: Some(token),
-            });
-            Self::deposit_event(RawEvent::TokenDominatorClaimed(token, dominator, amount));
-        }
+        // #[weight = 100]
+        // pub fn claim_token_dominator(origin, token: T::TokenId, #[compact] amount: TokenBalanceOf<T>) {
+        //     let dominator = ensure_signed(origin)?;
+        //     ensure!(!<TokenDominators<T>>::contains_key(&token, &dominator), Error::<T>::DominatorAlreadyExists);
+        //     T::Token::reserve(&token, &dominator, amount)?;
+        //     <TokenDominators<T>>::insert(&token, &dominator, Dominator {
+        //         total_pledged: amount,
+        //         total_hosted: Zero::zero(),
+        //         status: DominatorStatus::Active,
+        //         assets_type: Some(token),
+        //     });
+        //     Self::deposit_event(RawEvent::TokenDominatorClaimed(token, dominator, amount));
+        // }
 
         // pub fn incr_pledge(origin) {
 

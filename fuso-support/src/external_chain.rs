@@ -16,58 +16,86 @@ use codec::{Codec, Decode, Encode};
 use sp_core::hexdisplay::HexDisplay;
 use sp_runtime::RuntimeDebug;
 use sp_std::{
+    convert::TryFrom,
     fmt::{Debug, Display, Formatter},
     vec::Vec,
 };
 
 #[derive(Encode, Decode, PartialEq, Eq, Clone, RuntimeDebug)]
-pub enum ExternalChainAddress {
-    BTC(Vec<u8>),
-    ETH(Vec<u8>),
-    ERC20(Vec<u8>, Vec<u8>),
-    TRX(Vec<u8>),
-    TRC20(Vec<u8>, Vec<u8>),
-    FIL(Vec<u8>),
-    DOT(Vec<u8>),
+pub enum ExternalChain {
+    BTC,
+    LTC,
+    ETH,
+    ERC20(Vec<u8>),
+    TRX,
+    TRC20(Vec<u8>),
+    DOT,
+    FIL,
 }
 
-#[derive(Clone, Copy, Eq, PartialEq, Debug)]
-pub enum AddressError {
-    BadSs58,
-    BadKeccak256,
+impl TryFrom<(u16, Option<Vec<u8>>)> for ExternalChain {
+    type Error = ();
+
+    fn try_from((chain, contract): (u16, Option<Vec<u8>>)) -> Result<ExternalChain, ()> {
+        match chain {
+            0 => Ok(ExternalChain::BTC),
+            1 => Ok(ExternalChain::LTC),
+            2 => match contract {
+                Some(addr) => Ok(ExternalChain::ERC20(addr)),
+                None => Ok(ExternalChain::ETH),
+            },
+            3 => match contract {
+                Some(addr) => Ok(ExternalChain::TRC20(addr)),
+                None => Ok(ExternalChain::TRX),
+            },
+            4 => Ok(ExternalChain::DOT),
+            5 => Ok(ExternalChain::FIL),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Encode, Decode, PartialEq, Eq, Clone, RuntimeDebug)]
+pub struct ExternalChainAddress {
+    chain: ExternalChain,
+    pubkey: Vec<u8>,
 }
 
 // TODO
-impl ExternalChainAddress {
-    pub fn from_btc_ss58_check(ss58_check: &str) -> Result<Self, AddressError> {
-        Err(AddressError::BadSs58)
-    }
+#[derive(Clone, Copy, Eq, PartialEq, Debug)]
+pub enum AddressError {
+    IllegalSs58,
+    IllegalKeccak256,
+}
 
-    pub fn from_eth_keccak256_check(keccak256_check: &str) -> Result<Self, AddressError> {
-        Err(AddressError::BadKeccak256)
+impl TryFrom<(ExternalChain, Vec<u8>)> for ExternalChainAddress {
+    type Error = AddressError;
+
+    // TODO
+    fn try_from((chain, encoded_addr): (ExternalChain, Vec<u8>)) -> Result<Self, AddressError> {
+        match chain {
+            ExternalChain::BTC => Err(AddressError::IllegalSs58),
+            ExternalChain::ETH | ExternalChain::ERC20(_) => Err(AddressError::IllegalKeccak256),
+            _ => Err(AddressError::IllegalKeccak256),
+        }
     }
 }
 
-impl Display for ExternalChainAddress {
-    fn fmt(&self, f: &mut Formatter) -> sp_std::fmt::Result {
+#[cfg(feature = "std")]
+impl Display for ExternalChain {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            ExternalChainAddress::BTC(addr) => write!(f, "BTC:{}", HexDisplay::from(addr)),
-            ExternalChainAddress::ETH(addr) => write!(f, "ETH:{}", HexDisplay::from(addr)),
-            ExternalChainAddress::ERC20(contract, addr) => write!(
-                f,
-                "ERC20({}):{}",
-                HexDisplay::from(contract),
-                HexDisplay::from(addr)
-            ),
-            ExternalChainAddress::TRX(addr) => write!(f, "TRX:{}", HexDisplay::from(addr)),
-            ExternalChainAddress::TRC20(contract, addr) => write!(
-                f,
-                "TRC20({}):{}",
-                HexDisplay::from(contract),
-                HexDisplay::from(addr)
-            ),
-            ExternalChainAddress::FIL(addr) => write!(f, "FIL:{}", HexDisplay::from(addr)),
-            ExternalChainAddress::DOT(addr) => write!(f, "DOT:{}", HexDisplay::from(addr)),
+            // TODO codec
+            ExternalChain::ERC20(addr) => write!(f, "ERC20({})", HexDisplay::from(contract)),
+            ExternalChain::TRC20(addr) => write!(f, "TRC20({})", HexDisplay::from(contract)),
+            _ => write!(f, "{:?}", self),
         }
+    }
+}
+
+#[cfg(feature = "std")]
+impl Display for ExternalChainAddress {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
