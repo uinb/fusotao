@@ -109,11 +109,6 @@ pub trait Inspector<T: frame_system::Trait> {
         amount: Self::ExternalChainBalance,
     );
 
-    fn claim_secure_address(
-        claimer: <T::Lookup as StaticLookup>::Source,
-        addr: ExternalChainAddress,
-    );
-
     fn approve(
         from: ExternalChainAddress,
         to: ExternalChainAddress,
