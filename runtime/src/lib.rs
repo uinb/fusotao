@@ -351,8 +351,7 @@ impl pallet_sudo::Trait for Runtime {
 impl fuso_pallet_token::Trait for Runtime {
     type Event = Event;
     type Balance = Balance;
-    // type TokenId = Hash;
-    // type Hashing = BlakeTwo256;
+    type TokenId = u32;
 }
 
 impl fuso_pallet_receipts::Trait for Runtime {
