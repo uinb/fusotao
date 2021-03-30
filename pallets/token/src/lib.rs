@@ -21,13 +21,11 @@ use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, P
 use frame_system::ensure_signed;
 use fuso_support::traits::ReservableToken;
 use sp_runtime::traits::{
-    AtLeast32BitUnsigned, CheckEqual, CheckedAdd, CheckedSub, Hash, MaybeDisplay,
-    MaybeMallocSizeOf, MaybeSerializeDeserialize, Member, SimpleBitOps, StaticLookup, Zero,
+    AtLeast32BitUnsigned, CheckedAdd, CheckedSub, MaybeSerializeDeserialize, Member, StaticLookup,
+    Zero,
 };
 use sp_runtime::DispatchResult;
 use sp_std::{fmt::Debug, vec::Vec};
-
-type TokenSequence = u32;
 
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug)]
 pub struct TokenAccountData<Balance> {
@@ -41,6 +39,8 @@ pub struct TokenInfo<Balance> {
     pub symbol: Vec<u8>,
 }
 
+pub type TokenId = u32;
+
 pub trait Trait: frame_system::Trait {
     type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
@@ -52,31 +52,13 @@ pub trait Trait: frame_system::Trait {
         + Codec
         + Debug
         + MaybeSerializeDeserialize;
-
-    type TokenId: Parameter
-        + Member
-        + MaybeSerializeDeserialize
-        + MaybeDisplay
-        + SimpleBitOps
-        + Ord
-        + sp_std::hash::Hash
-        + Default
-        + Copy
-        + Codec
-        + CheckEqual
-        + Debug
-        + MaybeMallocSizeOf
-        + AsRef<[u8]>
-        + AsMut<[u8]>;
-
-    type Hashing: Hash<Output = <Self as Trait>::TokenId>;
 }
 
 decl_event! {
     pub enum Event<T>
     where
         AccountId = <T as frame_system::Trait>::AccountId,
-        TokenId = <T as Trait>::TokenId,
+        TokenId = TokenId,
         Balance = <T as Trait>::Balance,
     {
         TokenIssued(TokenId, AccountId, Balance),
@@ -103,12 +85,12 @@ decl_error! {
 decl_storage! {
     trait Store for Module<T: Trait> as Tokens {
         Balances get(fn get_token_balance): map hasher(blake2_128_concat)
-            (T::TokenId, T::AccountId) => TokenAccountData<T::Balance>;
+            (TokenId, T::AccountId) => TokenAccountData<T::Balance>;
 
         Tokens get(fn get_token_info): map hasher(twox_64_concat)
-            T::TokenId => TokenInfo<T::Balance>;
+            TokenId => TokenInfo<T::Balance>;
 
-        NextTokenId get(fn next_token_id): TokenSequence = 0;
+        NextTokenId get(fn next_token_id): TokenId = 0;
     }
 }
 
@@ -128,21 +110,21 @@ decl_module! {
             ensure!(name.len() >= 2 && name.len() <= 5, Error::<T>::InvalidTokenName);
             let id = Self::next_token_id();
             <NextTokenId>::mutate(|id| *id += 1);
-            let token_address = <T as Trait>::Hashing::hash(&id.to_ne_bytes());
-            <Balances<T>>::insert((token_address, &origin), TokenAccountData {
+            // let token_address = <T as Trait>::Hashing::hash(&id.to_ne_bytes());
+            <Balances<T>>::insert((id, &origin), TokenAccountData {
                 free: total,
                 reserved: Zero::zero(),
             });
-            <Tokens<T>>::insert(token_address, TokenInfo {
+            <Tokens<T>>::insert(id, TokenInfo {
                 total: total,
                 symbol: symbol,
             });
-            Self::deposit_event(RawEvent::TokenIssued(token_address, origin, total));
+            Self::deposit_event(RawEvent::TokenIssued(id, origin, total));
         }
 
         #[weight = 0]
         fn transfer(origin,
-            token: T::TokenId,
+            token: TokenId,
             target: <T::Lookup as StaticLookup>::Source,
             #[compact] amount: T::Balance,
         ) {
@@ -183,22 +165,22 @@ decl_module! {
 
 impl<T: Trait> Module<T> {}
 
-impl<T: Trait> ReservableToken<T::TokenId, T::AccountId> for Module<T> {
+impl<T: Trait> ReservableToken<TokenId, T::AccountId> for Module<T> {
     type Balance = T::Balance;
 
-    fn free_balance(token: &T::TokenId, who: &T::AccountId) -> Self::Balance {
+    fn free_balance(token: &TokenId, who: &T::AccountId) -> Self::Balance {
         Self::get_token_balance((token, who)).free
     }
 
-    fn reserved_balance(token: &T::TokenId, who: &T::AccountId) -> Self::Balance {
+    fn reserved_balance(token: &TokenId, who: &T::AccountId) -> Self::Balance {
         Self::get_token_balance((token, who)).reserved
     }
 
-    fn total_issuance(token: &T::TokenId) -> Self::Balance {
+    fn total_issuance(token: &TokenId) -> Self::Balance {
         Self::get_token_info(token).total
     }
 
-    fn can_reserve(token: &T::TokenId, who: &T::AccountId, value: Self::Balance) -> bool {
+    fn can_reserve(token: &TokenId, who: &T::AccountId, value: Self::Balance) -> bool {
         if value.is_zero() {
             return true;
         }
@@ -211,7 +193,7 @@ impl<T: Trait> ReservableToken<T::TokenId, T::AccountId> for Module<T> {
             .is_some()
     }
 
-    fn reserve(token: &T::TokenId, who: &T::AccountId, value: Self::Balance) -> DispatchResult {
+    fn reserve(token: &TokenId, who: &T::AccountId, value: Self::Balance) -> DispatchResult {
         if value.is_zero() {
             return Ok(());
         }
@@ -232,7 +214,7 @@ impl<T: Trait> ReservableToken<T::TokenId, T::AccountId> for Module<T> {
         Ok(())
     }
 
-    fn unreserve(token: &T::TokenId, who: &T::AccountId, value: Self::Balance) -> DispatchResult {
+    fn unreserve(token: &TokenId, who: &T::AccountId, value: Self::Balance) -> DispatchResult {
         if value.is_zero() {
             return Ok(());
         }
@@ -254,7 +236,7 @@ impl<T: Trait> ReservableToken<T::TokenId, T::AccountId> for Module<T> {
     }
 
     fn repatriate_reserved(
-        token: &T::TokenId,
+        token: &TokenId,
         slashed: &T::AccountId,
         beneficiary: &T::AccountId,
         value: Self::Balance,
@@ -372,9 +354,9 @@ mod tests {
 
         type Balance = u128;
 
-        type TokenId = Self::Hash;
+        // type TokenId = Self::Hash;
 
-        type Hashing = <Self as frame_system::Trait>::Hashing;
+        // type Hashing = <Self as frame_system::Trait>::Hashing;
     }
     type Token = Module<Test>;
 
@@ -393,7 +375,8 @@ mod tests {
                 1000000,
                 br#"USDT"#.to_vec()
             ));
-            let id = <Test as Trait>::Hashing::hash(&0u32.to_ne_bytes());
+            // let id = <Test as Trait>::Hashing::hash(&0u32.to_ne_bytes());
+            let id = 0u32;
             assert_eq!(
                 Token::get_token_info(&id),
                 TokenInfo {
@@ -434,7 +417,8 @@ mod tests {
                 1000000,
                 br#"USDT"#.to_vec()
             ));
-            let id = <Test as Trait>::Hashing::hash(&0u32.to_ne_bytes());
+            // let id = <Test as Trait>::Hashing::hash(&0u32.to_ne_bytes());
+            let id = 0u32;
             assert_eq!(Token::can_reserve(&id, &1, 1000000), true);
             assert_ok!(Token::reserve(&id, &1, 500000));
             assert_eq!(Token::can_reserve(&id, &1, 1000000), false);
@@ -446,7 +430,7 @@ mod tests {
                 }
             );
             assert_noop!(
-                Token::transfer(Origin::signed(1), id.clone(), 2, 1000000),
+                Token::transfer(Origin::signed(1), id, 2, 1000000),
                 Error::<Test>::InsufficientBalance
             );
             assert_eq!(
