@@ -86,7 +86,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
         // Telemetry
         None,
         // Protocol ID
-        Some("fusotao"),
+        Some("fusotao_alpha"),
         // Properties
         Some(prop),
         // Extensions
