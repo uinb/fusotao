@@ -3,16 +3,20 @@
 [![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/uinb/fusotao/Rust%20CI/master)](https://github.com/uinb/fusotao/actions?query=branch%3Amaster)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-blue.svg)](CONTRIBUTING.md)
 
-[FUSOTAO](https://wiki.fusotao.org/en_US)|[扶桑道](https://wiki.fusotao.org/zh_CN)|[ふそうタオ](https://wiki.fusotao.org/ja_JP)
+[Fusotao](https://wiki.fusotao.org/en_US)|[扶桑道](https://wiki.fusotao.org/zh_CN)|[ふそうタオ](https://wiki.fusotao.org/ja_JP)
 
 <p align="center">
   <img src="/fusotao.png">
 </p>
 
-[FUSOTAO](https://fusotao.org) is a permissionless blockchain aims to make the digital assets circulate trustlessly. 
-We don't intend to make the exchange decentralized, instead, we build FUSOTAO as infrastructures to help the centralized exchanges trustlessly. If you are interested in building a crypto currency exchange service, refer to the [Galois](https://github.com/uinb/galois) project, which is a high performance matching engine written in rust.
+[Fusotao](https://fusotao.org) is a permissionless blockchain aims to make the digital assets circulate trustlessly. 
+We don't intend to make the exchange decentralized, instead, we build FUSOTAO as infrastructures to help the centralized exchanges trustlessly. 
+Fusotao is based on [Substrate](https://substrate.dev) and still under development. Here we salute to the substrate dev team! Thanks for the awesome works.
 
-FUSOTAO is based on [Substrate](https://substrate.dev) and still under development. Here we salute to the substrate dev team! Thanks for the awesome works.
+## Related projects
+- [Galois](https://github.com/uinb/galois) is a high performance matching engine written in rust. It can be used stand alone.
+- [Zkmatcher](https://github.com/uinb/zkmatcher) is the layer2 zero-knowledge prover who accepts the inputs and outputs of Galois to generate proofs and submit to Fusotao.
+- [Tungus](https://github.com/uinb/tungus) is the explore of Fusotao.
 
 ## Green Paper
 [Draft](#)
