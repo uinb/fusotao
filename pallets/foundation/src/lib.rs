@@ -74,7 +74,9 @@ pub mod pallet {
 	#[pallet::genesis_build]
 	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
 		fn build(&self) {
-
+			for (account, balance) in &self.fund {
+				Foundation::<T>::insert(account, balance);
+			}
 		}
 	}
 
