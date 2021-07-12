@@ -19,7 +19,7 @@ Fusotao is based on [Substrate](https://substrate.dev) and still under developme
 - [Tungus](https://github.com/uinb/tungus) is the explorer of Fusotao.
 
 ## Green Paper
-[Draft](#)
+[Draft](https://github.com/uinb/papers)
 
 ## Contributing
 Please follow the [CONTRIBUTING GUIDE](CONTRIBUTING.md)
