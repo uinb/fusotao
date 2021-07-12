@@ -11,52 +11,53 @@ version = '0.1.0'
 targets = ['x86_64-unknown-linux-gnu']
 
 [build-dependencies]
-substrate-wasm-builder = '3.0.0'
+substrate-wasm-builder = '4.0.0'
 
-[dependencies.codec]
-default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '1.3.4'
+
 
 [dependencies]
-hex-literal = { optional = true, version = '0.3.1' }
-serde = { features = ['derive'], optional = true, version = '1.0.119' }
+codec = { default-features = false, features = ['derive'], package = 'parity-scale-codec', version = '2.0.0' }
+hex-literal = { optional = true, version = '0.3.1' ,default-features=false }
+serde = { features = ['derive'], default-features=false, optional = true, version = '1.0.119' }
+
+frame-benchmarking = { default-features = false, optional = true, version = '3.0.0' }
+frame-executive = { default-features = false, version = '3.0.0' }
+frame-support = { default-features = false, version = '3.0.0' }
+frame-system = { default-features = false, version = '3.0.0' }
+frame-system-benchmarking = { default-features = false, optional = true, version = '3.0.0' }
+frame-system-rpc-runtime-api = { default-features = false, version = '3.0.0' }
+
 fuso-support = { default-features = false, version = '0.1.0', path = '../fuso-support' }
-frame-benchmarking = { default-features = false, optional = true, version = '2.0.1' }
-frame-executive = { default-features = false, version = '2.0.1' }
-frame-support = { default-features = false, version = '2.0.1' }
-frame-system = { default-features = false, version = '2.0.1' }
-frame-system-benchmarking = { default-features = false, optional = true, version = '2.0.1' }
-frame-system-rpc-runtime-api = { default-features = false, version = '2.0.1' }
 fuso-pallet-elections = { path = '../pallets/elections', default-features = false, version = '0.1.0' }
-fuso-pallet-receipts = { path = '../pallets/receipts', default-features = false, version = '0.1.0' }
+#fuso-pallet-receipts = { path = '../pallets/receipts', default-features = false, version = '0.1.0' }
 fuso-pallet-token = { path = '../pallets/token', default-features = false, version = '0.1.0' }
 fuso-pallet-council = { path = '../pallets/council', default-features = false, version = '0.1.0' }
 fuso-pallet-foundation = { path = '../pallets/foundation', default-features = false, version = '0.1.0' }
 fuso-pallet-reward = { path = '../pallets/reward', default-features = false, version = '0.1.0' }
 fuso-pallet-samsara = { path = '../pallets/samsara', default-features = false, version = '0.1.0' }
-pallet-aura = { default-features = false, version = '2.0.1' }
-pallet-session = { version = "2.0.1", default-features = false }
-pallet-balances = { default-features = false, version = '2.0.1' }
-pallet-grandpa = { default-features = false, version = '2.0.1' }
-pallet-randomness-collective-flip = { default-features = false, version = '2.0.1' }
-pallet-sudo = { default-features = false, version = '2.0.1' }
-pallet-timestamp = { default-features = false, version = '2.0.1' }
-pallet-authorship = { default-features = false, version = '2.0.1' }
-pallet-transaction-payment = { default-features = false, version = '2.0.1' }
-pallet-transaction-payment-rpc-runtime-api = { default-features = false, version = '2.0.1' }
-sp-api = { default-features = false, version = '2.0.1' }
-sp-block-builder = { default-features = false, version = '2.0.1' }
-sp-consensus-aura = { default-features = false, version = '0.8.1' }
-sp-core = { default-features = false, version = '2.0.1' }
-sp-inherents = { default-features = false, version = '2.0.1' }
-sp-offchain = { default-features = false, version = '2.0.1' }
-sp-runtime = { default-features = false, version = '2.0.1' }
-sp-session = { default-features = false, version = '2.0.1' }
-sp-std = { default-features = false, version = '2.0.1' }
-sp-transaction-pool = { default-features = false, version = '2.0.1' }
-sp-version = { default-features = false, version = '2.0.1' }
+pallet-aura = { default-features = false, version = '3.0.0' }
+pallet-session = { version = "3.0.0", default-features = false }
+pallet-balances = { default-features = false, version = '3.0.0' }
+pallet-grandpa = { default-features = false, version = '3.0.0' }
+pallet-randomness-collective-flip = { default-features = false, version = '3.0.0' }
+pallet-sudo = { default-features = false, version = '3.0.0' }
+pallet-timestamp = { default-features = false, version = '3.0.0' }
+pallet-authorship = { default-features = false, version = '3.0.0' }
+pallet-transaction-payment = { default-features = false, version = '3.0.0' }
+pallet-transaction-payment-rpc-runtime-api = { default-features = false, version = '3.0.0' }
+sp-api = { default-features = false, version = '3.0.0' }
+sp-block-builder = { default-features = false, version = '3.0.0' }
+sp-consensus-aura = { default-features = false, version = '0.9.0' }
+sp-core = { default-features = false, version = '3.0.0' }
+sp-inherents = { default-features = false, version = '3.0.0' }
+sp-offchain = { default-features = false, version = '3.0.0' }
+sp-runtime = { default-features = false, version = '3.0.0' }
+sp-session = { default-features = false, version = '3.0.0' }
+sp-std = { default-features = false, version = '3.0.0' }
+sp-transaction-pool = { default-features = false, version = '3.0.0' }
+sp-version = { default-features = false, version = '3.0.0' }
+#pallet-session = { default-features = false, version = '3.0.0' }
+#pallet-octopus-appchain = { default-features = false, git = 'https://github.com/octopus-network/pallet-octopus-appchain.git' }
 
 [features]
 default = ['std']
@@ -78,7 +79,7 @@ std = [
     'frame-system/std',
     'frame-system-rpc-runtime-api/std',
     'fuso-pallet-elections/std',
-    'fuso-pallet-receipts/std',
+    #'fuso-pallet-receipts/std',
     'fuso-pallet-token/std',
     'fuso-pallet-foundation/std',
     'fuso-pallet-council/std',
@@ -104,4 +105,7 @@ std = [
     'sp-std/std',
     'sp-transaction-pool/std',
     'sp-version/std',
+    'pallet-session/std',
+    #'pallet-octopus-appchain/std',
+
 ]

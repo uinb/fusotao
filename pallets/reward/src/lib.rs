@@ -12,110 +12,140 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 #![cfg_attr(not(feature = "std"), no_std)]
-use codec::Decode;
-use frame_support::{
-    debug, decl_error, decl_event, decl_module, decl_storage, ensure,
-    traits::{BalanceStatus, Currency, Get, ReservableCurrency},
-    weights::{DispatchClass, Weight},
-    Parameter,
-};
-use frame_system::{ensure_root, ensure_signed};
-use fuso_support::traits::ProofOfSecurity;
-use sp_runtime::traits::{
-    AtLeast32BitUnsigned, CheckEqual, CheckedAdd, CheckedSub, Hash, MaybeDisplay,
-    MaybeMallocSizeOf, MaybeSerializeDeserialize, Member,
-};
-use sp_std::{
-    collections::btree_set::BTreeSet,
-    convert::{From, TryInto},
-    fmt::Debug,
-    prelude::*,
-};
 
 pub mod curve;
 
-pub type BalanceOf<T> =
-    <<T as Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
+#[frame_support::pallet]
+pub mod pallet {
 
-pub type PositiveImbalanceOf<T> =
-    <<T as Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::PositiveImbalance;
 
-pub trait Trait: frame_system::Trait {
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+	use frame_support::{ pallet_prelude::*};
+	use frame_system::pallet_prelude::*;
+	use sp_runtime::traits::{MaybeSerializeDeserialize, Member,  MaybeDisplay};
+	use sp_std::{fmt::Debug};
 
-    // TODO
-    type Currency: ReservableCurrency<Self::AccountId>;
+	use frame_support::traits::{ReservableCurrency, Get, Currency};
+	use fuso_support::traits::ProofOfSecurity;
 
-    type Era: Get<u32>;
+	use crate::curve;
+	use sp_std::convert::TryInto;
 
-    type ExternalChainAddress: Parameter
-        + Member
-        + MaybeSerializeDeserialize
-        + Debug
-        + MaybeDisplay
-        + Ord
-        + Default;
 
-    type ProofOfSecurity: ProofOfSecurity<Self::AccountId>;
-}
 
-decl_storage! {
-    trait Store for Module<T: Trait> as Rewards {
+	pub type BalanceOf<T> =
+	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-        Bonus get(fn bonus): BalanceOf<T> = curve::CURVE[0].try_into().ok().unwrap();
+	pub type PositiveImbalanceOf<T> =
+	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::PositiveImbalance;
 
-        Vitality get(fn vitality): Weight = 0;
 
-        LockedReward get(fn locked_reward): map hasher(blake2_128_concat)
-            T::AccountId => BalanceOf<T>;
-    }
-}
 
-decl_event! {
-    pub enum Event<T>
-    where
-        BlockNumber = <T as frame_system::Trait>::BlockNumber,
-        Balance = BalanceOf<T>
-    {
-        RewardIssued(BlockNumber, Balance),
-    }
-}
+	#[pallet::type_value]
+	pub(super) fn DefaultBonus<T: Config>() -> Weight { curve::CURVE[0].try_into().ok().unwrap() }
 
-decl_error! {
-    pub enum Error for Module<T: Trait> {
-    }
-}
+	#[pallet::storage]
+	#[pallet::getter(fn bonus)]
+	pub type Bonus<T: Config> = StorageValue<_, Weight, ValueQuery>; //TODO default value
 
-decl_module! {
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        fn on_finalize(now: T::BlockNumber) {
-            let weights = <frame_system::Module<T>>::block_weight().get(DispatchClass::Normal);
-            Vitality::put(Self::vitality() + weights);
-        }
 
-        fn on_initialize(now: T::BlockNumber) -> Weight {
-            if TryInto::<u32>::try_into(now).ok().unwrap() % T::Era::get() == 0 {
-                if T::ProofOfSecurity::pos_enabled() {
-                    Self::reward_to_pos();
-                    Self::reward_to_council();
-                } else {
-                    Self::reward_to_council();
-                }
-                Self::release();
-                Vitality::put(0);
-                T::MaximumBlockWeight::get()
-            } else {
-                0
-            }
-        }
-    }
-}
 
-impl<T: Trait> Module<T> {
-    fn release() {}
+	#[pallet::type_value]
+	pub(super) fn DefaultVitality<T: Config>() -> Weight { 0 }
 
-    fn reward_to_pos() {}
+	#[pallet::storage]
+	#[pallet::getter(fn vitality)]
+	pub type Vitality<T: Config> = StorageValue<_, Weight, ValueQuery>; //TODO default value
 
-    fn reward_to_council() {}
+
+
+	#[pallet::storage]
+	#[pallet::getter(fn locked_reward)]
+	pub type LockedReward<T: Config> =
+	StorageMap<_, Blake2_128Concat, T::AccountId, BalanceOf<T>>;
+
+
+	#[pallet::config]
+	pub trait Config: frame_system::Config {
+
+		/// Because this pallet emits events, it depends on the runtime's definition of an event.
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+		// TODO
+		type Currency: ReservableCurrency<Self::AccountId>;
+
+		type Era: Get<u32>;
+
+		type MaximumBlockWeight: Get<Weight>;
+
+		type ExternalChainAddress: Parameter
+		+ Member
+		+ MaybeSerializeDeserialize
+		+ Debug
+		+ MaybeDisplay
+		+ Ord
+		+ Default;
+
+		type ProofOfSecurity: ProofOfSecurity<Self::AccountId>;
+	}
+
+
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+
+		RewardIssued(<T as frame_system::Config>::BlockNumber, BalanceOf<T>),
+	}
+
+
+	#[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
+	pub struct Pallet<T>(_);
+
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+
+		fn on_finalize(now: T::BlockNumber) {
+			let block_weight = <frame_system::Module<T>>::block_weight();
+			let weights = block_weight.get(DispatchClass::Normal);
+			Vitality::<T>::put(Self::vitality() + weights);
+		}
+
+		fn on_initialize(now: T::BlockNumber) -> Weight {
+			if TryInto::<u32>::try_into(now).ok().unwrap() % T::Era::get() == 0 {
+				if T::ProofOfSecurity::pos_enabled() {
+					Self::reward_to_pos();
+					Self::reward_to_council();
+				} else {
+					Self::reward_to_council();
+				}
+				Self::release();
+				Vitality::<T>::put(0);
+				T::MaximumBlockWeight::get()
+			} else {
+				0
+			}
+		}
+
+
+	}
+
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
+
+
+	}
+
+
+	impl<T: Config> Module<T> {
+		fn release() {}
+
+		fn reward_to_pos() {}
+
+		fn reward_to_council() {}
+	}
+
+
 }

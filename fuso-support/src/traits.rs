@@ -73,7 +73,7 @@ pub trait Referendum<BlockNumber, Index, Members> {
 
 pub type ExternalTransactionId = u64;
 
-pub trait Inspector<T: frame_system::Trait> {
+pub trait Inspector<T: frame_system::Config> {
     type ExternalChainBalance: AtLeast32BitUnsigned
         + FullCodec
         + Parameter

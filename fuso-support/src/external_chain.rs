@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use codec::{Codec, Decode, Encode};
-use sp_core::hexdisplay::HexDisplay;
+use codec::{ Decode, Encode};
 use sp_runtime::RuntimeDebug;
 use sp_std::{
     convert::TryFrom,
-    fmt::{Debug, Display, Formatter},
+    fmt::{Debug},
     vec::Vec,
 };
 
@@ -72,7 +71,7 @@ impl TryFrom<(ExternalChain, Vec<u8>)> for ExternalChainAddress {
     type Error = AddressError;
 
     // TODO
-    fn try_from((chain, encoded_addr): (ExternalChain, Vec<u8>)) -> Result<Self, AddressError> {
+    fn try_from((chain, _encoded_addr): (ExternalChain, Vec<u8>)) -> Result<Self, AddressError> {
         match chain {
             ExternalChain::BTC => Err(AddressError::IllegalSs58),
             ExternalChain::ETH | ExternalChain::ERC20(_) => Err(AddressError::IllegalKeccak256),
