@@ -67,23 +67,6 @@ pub mod pallet {
 	}
 
 
-	/*
-	decl_storage! {
-		trait Store for Module<T: Trait> as Council {
-
-			pub Members get(fn members): Vec<VoterOf<T>>;
-
-			pub Validators get(fn validators): BTreeSet<T::AccountId>;
-
-		}
-		add_extra_genesis {
-			config(validators): Vec<T::AccountId>;
-			build(|config: &GenesisConfig<T>| {
-				<Module<T>>::initialize_validators(&config.validators)
-			})
-		}
-	}*/
-
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
@@ -114,14 +97,18 @@ pub mod pallet {
 	{
 		MemberAdd(T::AccountId),
 		MemberRemoved(T::AccountId),
-		CC,
+		NewSession(u32),
+		CC
 	}
 
 
 
 	impl<T: Config> From<pallet_session::Event> for Event<T> {
 		fn from(e: pallet_session::Event) ->Self {
-			CC //TODO 如何实现
+			match e {
+				pallet_session::Event::NewSession(c) => Event::NewSession(c),
+
+			}
 		}
 	}
 

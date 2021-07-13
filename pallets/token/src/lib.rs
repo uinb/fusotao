@@ -49,8 +49,6 @@ pub mod pallet {
 	use fuso_support::traits::ReservableToken;
 
 
-
-
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {

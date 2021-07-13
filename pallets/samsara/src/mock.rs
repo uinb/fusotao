@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::{Module, Trait};
+use crate::{Module, Config};
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::{
     impl_outer_origin, parameter_types,
@@ -27,8 +27,8 @@ use sp_runtime::{
     Perbill,
 };
 
-pub const ALICE: <Test as system::Trait>::AccountId = 1;
-pub const BOB: <Test as system::Trait>::AccountId = 2;
+pub const ALICE: <Test as system::Config>::AccountId = 1;
+pub const BOB: <Test as system::Config>::AccountId = 2;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -55,7 +55,7 @@ parameter_types! {
     pub VoteBalancePerbill: Perbill = Perbill::from_rational_approximation(2u32, 3u32); // 2/3
 }
 
-impl system::Trait for Test {
+impl system::Config for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -83,7 +83,7 @@ impl system::Trait for Test {
     type SystemWeightInfo = ();
 }
 
-impl balances::Trait for Test {
+impl balances::Config for Test {
     type Balance = u64;
     type MaxLocks = ();
     type Event = ();
@@ -93,7 +93,7 @@ impl balances::Trait for Test {
     type WeightInfo = ();
 }
 
-impl Trait for Test {
+impl Config for Test {
     type Event = ();
     type VitalityBlock = VitalityBlock;
     type TermDuration = TermDuration;
