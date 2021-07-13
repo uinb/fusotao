@@ -379,9 +379,11 @@ construct_runtime!(
 		System: frame_system::{Module, Call, Config, Storage, Event<T>},
 		RandomnessCollectiveFlip: pallet_randomness_collective_flip::{Module, Call, Storage},
 		Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
+		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
+        Council: fuso_pallet_council::{Module, Call, Storage, Event<T>, Config<T>},
+		Session: pallet_session::{Module, Call, Storage, Event, Config<T>},
 		Aura: pallet_aura::{Module, Config<T>},
 		Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event},
-		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
 		TransactionPayment: pallet_transaction_payment::{Module, Storage},
 		Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
 		Elections: fuso_pallet_elections::{Module, Event<T>},
@@ -389,7 +391,6 @@ construct_runtime!(
 		Samsara: fuso_pallet_samsara::{Module, Call, Storage, Event<T>},
 		Token: fuso_pallet_token::{Module, Call, Storage, Event<T>},
 
-        Council: fuso_pallet_council::{Module, Call, Storage, Event<T>, Config<T>},
 	}
 );
 

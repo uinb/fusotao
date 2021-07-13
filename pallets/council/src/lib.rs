@@ -107,7 +107,7 @@ pub mod pallet {
 		fn from(e: pallet_session::Event) ->Self {
 			match e {
 				pallet_session::Event::NewSession(c) => Event::NewSession(c),
-
+				_ => CC
 			}
 		}
 	}

@@ -1,6 +1,6 @@
 use fuso_runtime::{
     opaque::SessionKeys, AccountId, AuraConfig, BalancesConfig, CouncilConfig, FoundationConfig,
-    GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig, WASM_BINARY,
+    GenesisConfig, GrandpaConfig, SessionConfig, Signature, SudoConfig, SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -61,13 +61,13 @@ pub fn development_config() -> Result<ChainSpec, String> {
                 // Initial PoA authorities
                 vec![
                     authority_keys_from_seed("Alice"),
-                    authority_keys_from_seed("Bob"),
-                    authority_keys_from_seed("Charlie"),
-                    authority_keys_from_seed("Dave"),
-                    authority_keys_from_seed("Eve"),
-                    authority_keys_from_seed("Ferdie"),
-                    authority_keys_from_seed("Alice//stash"),
-                    authority_keys_from_seed("Bob//stash"),
+                    // authority_keys_from_seed("Bob"),
+                    // authority_keys_from_seed("Charlie"),
+                    // authority_keys_from_seed("Dave"),
+                    // authority_keys_from_seed("Eve"),
+                    // authority_keys_from_seed("Ferdie"),
+                    // authority_keys_from_seed("Alice//stash"),
+                    // authority_keys_from_seed("Bob//stash"),
                 ],
                 // Sudo account
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -120,7 +120,7 @@ fn testnet_genesis(
                 .map(|k| (k, 1 << 90))
                 .collect(),
         }),
-/*        pallet_session: Some(SessionConfig {
+       pallet_session: Some(SessionConfig {
             keys: initial_authorities
                 .iter()
                 .map(|x| {
@@ -131,7 +131,7 @@ fn testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
-        }),*/
+        }),
         fuso_pallet_council: Some(CouncilConfig {
             validators: initial_authorities
                 .iter()
@@ -143,11 +143,11 @@ fn testnet_genesis(
             authorities: vec![],
         }),
         pallet_grandpa: Some(GrandpaConfig {
-            // authorities: initial_authorities
-            // .iter()
-            // .map(|x| (x.1.clone(), 1))
-            // .collect(),
-            authorities: vec![],
+             /*authorities: initial_authorities
+             .iter()
+             .map(|x| (x.2.clone(), 1))
+             .collect::<Vec<_>>(),*/
+             authorities: vec![],
         }),
         pallet_sudo: Some(SudoConfig {
             // Assign network admin rights.

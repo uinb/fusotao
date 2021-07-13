@@ -23,7 +23,7 @@ use fuso_runtime::Block;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Substrate Node".into()
+		"Fuso Node".into()
 	}
 
 	fn impl_version() -> String {
