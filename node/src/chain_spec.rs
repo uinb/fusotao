@@ -1,6 +1,6 @@
 use fuso_runtime::{
     opaque::SessionKeys, AccountId, AuraConfig, BalancesConfig, CouncilConfig, FoundationConfig,
-    GenesisConfig, GrandpaConfig, SessionConfig, Signature, SudoConfig, SystemConfig, WASM_BINARY,
+    GenesisConfig, GrandpaConfig, Signature, SudoConfig, SystemConfig, WASM_BINARY,
 };
 use sc_service::ChainType;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -120,7 +120,7 @@ fn testnet_genesis(
                 .map(|k| (k, 1 << 90))
                 .collect(),
         }),
-        pallet_session: Some(SessionConfig {
+/*        pallet_session: Some(SessionConfig {
             keys: initial_authorities
                 .iter()
                 .map(|x| {
@@ -131,7 +131,7 @@ fn testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
-        }),
+        }),*/
         fuso_pallet_council: Some(CouncilConfig {
             validators: initial_authorities
                 .iter()
