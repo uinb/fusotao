@@ -1,4 +1,4 @@
-# Octopus Appchain Template
+# fusotao block chain
 
 # TODO
 ```
