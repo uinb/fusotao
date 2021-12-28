@@ -1,14 +1,12 @@
 [package]
 name = 'fuso'
 version = '0.1.0'
-description = 'A minimal template for octopus appchain.'
-authors = ['Octopus Network <hi@oct.network>']
-homepage = 'https://oct.network/'
-edition = '2018'
-license = 'Apache-2.0'
-publish = false
-repository = 'https://github.com/octopus-network/barnacle/'
+homepage = 'https://www.fusotao.org/'
+authors = ['UINB Tech']
 build = 'build.rs'
+edition = '2018'
+license = 'Unlicense'
+repository = 'https://github.com/uinb/fusotao'
 
 [[bin]]
 name = 'fuso'

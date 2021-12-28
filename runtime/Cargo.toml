@@ -1,13 +1,11 @@
 [package]
-name = 'fuso-runtime'
-version = '3.0.0-monthly-2021-10'
-description = 'A fresh FRAME-based Substrate runtime, ready for hacking.'
-authors = ['Octopus Network <hi@oct.network>']
-homepage = 'https://oct.network'
+authors = ['UINB Tech']
 edition = '2018'
-license = 'Apache-2.0'
-publish = false
-repository = 'https://github.com/octopus-network/barnacle/'
+homepage = 'https://www.fusotao.org'
+license = "Apache-2.0"
+name = 'fuso-runtime'
+repository = 'https://github.com/uinb/fusotao'
+version = '0.1.0'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']

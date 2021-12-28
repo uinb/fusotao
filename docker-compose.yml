@@ -2,16 +2,16 @@ version: "3.2"
 
 services:
   dev:
-    container_name: appchain-barnacle
+    container_name: fusotao
     image: paritytech/ci-linux:974ba3ac-20201006
-    working_dir: /var/www/appchain-barnacle
+    working_dir: /var/www/fusotao
     ports:
       - "9944:9944"
     environment:
-      - CARGO_HOME=/var/www/appchain-barnacle/.cargo
+      - CARGO_HOME=/var/www/fusotao/.cargo
     volumes:
-      - .:/var/www/appchain-barnacle
+      - .:/var/www/fusotao
       - type: bind
         source: ./.local
         target: /root/.local
-    command: bash -c "cargo build --release && ./target/release/appchain-barnacle --dev --ws-external"
+    command: bash -c "cargo build --release && ./target/release/fusotao --dev --ws-external"
