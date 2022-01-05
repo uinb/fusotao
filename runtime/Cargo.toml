@@ -32,10 +32,21 @@ pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 
-fuso-support = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-octopus' }
-pallet-fuso-receipts = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-octopus' }
-pallet-fuso-token = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-octopus' }
-pallet-fuso-foundation = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-octopus'}
+fuso-support = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-named-reservable-token' }
+pallet-fuso-receipts = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-named-reservable-token' }
+pallet-fuso-token = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-named-reservable-token' }
+pallet-fuso-foundation = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-named-reservable-token'}
+pallet-octopus-appchain = { git = "https://github.com/uinb/octopus-pallets.git", branch = "release-v0.9.12", default-features = false }
+pallet-octopus-lpos = { git = "https://github.com/uinb/octopus-pallets.git", branch = "release-v0.9.12", default-features = false }
+pallet-octopus-upward-messages = { git = "https://github.com/uinb/octopus-pallets.git", branch = "release-v0.9.12", default-features = false }
+
+#fuso-support = { path = "../../fusotao-protocol/fuso-support", default-features = false}
+#pallet-fuso-receipts = { path = "../../fusotao-protocol/pallet-fuso-receipts", default-features = false }
+#pallet-fuso-token = {  path = "../../fusotao-protocol/pallet-fuso-token", default-features = false }
+#pallet-fuso-foundation = {  path = "../../fusotao-protocol/pallet-fuso-foundation", default-features = false}
+#pallet-octopus-appchain = { path = '../../octopus-pallets/appchain', default-features = false }
+#pallet-octopus-lpos = { path = '../../octopus-pallets/lpos', default-features = false }
+#pallet-octopus-upward-messages = { path = '../../octopus-pallets/upward-messages', default-features = false }
 
 sp-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 sp-block-builder = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
@@ -48,7 +59,6 @@ sp-session = { git = "https://github.com/paritytech/substrate.git", branch = "po
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 sp-transaction-pool = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 sp-version = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
-
 static_assertions = "1.1.0"
 log = { version = "0.4.14", default-features = false }
 pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
@@ -57,15 +67,10 @@ pallet-im-online = { git = "https://github.com/paritytech/substrate.git", branch
 pallet-mmr = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 pallet-session = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false, features = ["historical"] }
 sp-staking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
-
 beefy-primitives = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 pallet-beefy = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 pallet-beefy-mmr = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 pallet-mmr-primitives = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
-
-pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.12", default-features = false }
-pallet-octopus-lpos = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.12", default-features = false }
-pallet-octopus-upward-messages = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.12", default-features = false }
 
 [features]
 default = ['std']
@@ -121,5 +126,5 @@ std = [
     'pallet-octopus-upward-messages/std',
 	'pallet-fuso-foundation/std',
 	'pallet-fuso-token/std',
-	'pallet-fuso-receipts/std',
+	#'pallet-fuso-receipts/std',
 ]

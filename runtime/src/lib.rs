@@ -34,7 +34,7 @@ pub use frame_support::{
 };
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_timestamp::Call as TimestampCall;
-pub use pallet_fuso_foundation;
+//pub use pallet_fuso_foundation;
 use pallet_transaction_payment::CurrencyAdapter;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -568,6 +568,10 @@ impl pallet_octopus_appchain::Config for Runtime {
 	type UpwardMessagesInterface = OctopusUpwardMessages;
 	type Currency = Balances;
 	type Assets = Assets;
+	type AssetId = u32;
+	type AssetBalance = u128;
+ //	type AssetIdByName = Token;
+
 	type GracePeriod = GracePeriod;
 	type UnsignedPriority = UnsignedPriority;
 	type RequestEventLimit = RequestEventLimit;
@@ -608,11 +612,12 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
-
 impl pallet_fuso_token::Config for Runtime {
 	type Event = Event;
 	type TokenId = u32;
 	type Balance = Balance;
+	type MaxReserves = MaxReserves;
+	type ReserveIdentifier = [u8;32];
 }
 
 impl pallet_fuso_receipts::Config for Runtime {
