@@ -625,14 +625,14 @@ impl pallet_fuso_receipts::Config for Runtime {
 }
 
 parameter_types! {
-    pub const UnlockDelay: BlockNumber = MINUTES * 1;
-    pub const UnlockPeriod: BlockNumber = MINUTES * 1;
+    pub const MaxBlock: BlockNumber = MINUTES * 100;
+    pub const MinBlock: BlockNumber = MINUTES * 1;
 }
 
 impl pallet_fuso_foundation::Config for Runtime {
 	type Event = Event;
-	type UnlockDelay = UnlockDelay;
-	type UnlockPeriod = UnlockPeriod;
+	type MaxBlock = MaxBlock;
+	type MinBlock = MinBlock;
 }
 
 

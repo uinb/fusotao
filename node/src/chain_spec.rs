@@ -236,11 +236,11 @@ fn testnet_genesis(
 			fund: vec![
 				(
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					(5, 300000000000000000000),
+					(1000, 3, 5, 300000000000000000000),
 				),
 				(
 					get_account_id_from_seed::<sr25519::Public>("Charlie"),
-					(5, 200000000000000000000),
+					(1000, 3, 5, 200000000000000000000),
 				),
 			],
 			fund_total: vec![
