@@ -618,10 +618,12 @@ impl pallet_fuso_token::Config for Runtime {
 	type Balance = Balance;
 	type MaxReserves = MaxReserves;
 	type ReserveIdentifier = [u8;32];
+	type WeightInfo = pallet_fuso_token::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_fuso_receipts::Config for Runtime {
 	type Event = Event;
+	type SelfWeightInfo = pallet_fuso_receipts::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
