@@ -8,7 +8,7 @@ use beefy_primitives::crypto::AuthorityId as BeefyId;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_octopus_appchain::AuthorityId as OctopusId;
 use sc_chain_spec::ChainSpecExtension;
-use sc_service::ChainType;
+use sc_service::{ChainType, Properties};
 use serde::{Deserialize, Serialize};
 use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{sr25519, Pair, Public};
@@ -81,6 +81,14 @@ pub fn authority_keys_from_seed(
 	)
 }
 
+fn get_system_properties() -> Properties {
+
+	let mut prop = Properties::new();
+	prop.insert("tokenSymbol".into(), "TAO".into());
+	prop.insert("tokenDecimals".into(), 18u32.into());
+	prop
+}
+
 pub fn development_config() -> Result<ChainSpec, String> {
 	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
@@ -112,16 +120,14 @@ pub fn development_config() -> Result<ChainSpec, String> {
 		// Protocol ID
 		None,
 		// Properties
-		None,
+		Some(get_system_properties()),
 		// Extensions
 		Default::default(),
 	))
 }
 
+
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
-	let mut prop = sc_service::Properties::new();
-	prop.insert("tokenDecimals".to_string(), 18.into());
-	prop.insert("tokenSymbol".to_string(), "TAO".into());
 	let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
 
 	Ok(ChainSpec::from_genesis(
@@ -153,7 +159,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		// Protocol ID
 		Some("fusotao_beta"),
 		// Properties
-		Some(prop),
+		Some(get_system_properties()),
 		// Extensions
 		Default::default(),
 	))
