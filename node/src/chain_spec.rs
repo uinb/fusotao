@@ -82,7 +82,6 @@ pub fn authority_keys_from_seed(
 }
 
 fn get_system_properties() -> Properties {
-
 	let mut prop = Properties::new();
 	prop.insert("tokenSymbol".into(), "TAO".into());
 	prop.insert("tokenDecimals".into(), 18u32.into());

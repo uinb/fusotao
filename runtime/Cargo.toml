@@ -32,18 +32,18 @@ pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch
 pallet-transaction-payment = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 
-fuso-support = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-named-reservable-token' }
-pallet-fuso-receipts = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-named-reservable-token' }
-pallet-fuso-token = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-named-reservable-token' }
-pallet-fuso-foundation = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-named-reservable-token'}
-pallet-octopus-appchain = { git = "https://github.com/uinb/octopus-pallets.git", branch = "release-v0.9.12", default-features = false }
-pallet-octopus-lpos = { git = "https://github.com/uinb/octopus-pallets.git", branch = "release-v0.9.12", default-features = false }
-pallet-octopus-upward-messages = { git = "https://github.com/uinb/octopus-pallets.git", branch = "release-v0.9.12", default-features = false }
+#fuso-support = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-named-reservable-token' }
+#pallet-fuso-receipts = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-named-reservable-token' }
+#pallet-fuso-token = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-named-reservable-token' }
+#pallet-fuso-foundation = { git = 'https://github.com/uinb/fusotao-protocol.git', default-features = false, branch = 'feature-named-reservable-token'}
+pallet-octopus-appchain = { git = "https://github.com/uinb/octopus-pallets.git", branch = "main", default-features = false }
+pallet-octopus-lpos = { git = "https://github.com/uinb/octopus-pallets.git", branch = "main", default-features = false }
+pallet-octopus-upward-messages = { git = "https://github.com/uinb/octopus-pallets.git", branch = "main", default-features = false }
 
-#fuso-support = { path = "../../fusotao-protocol/fuso-support", default-features = false}
-#pallet-fuso-receipts = { path = "../../fusotao-protocol/pallet-fuso-receipts", default-features = false }
-#pallet-fuso-token = {  path = "../../fusotao-protocol/pallet-fuso-token", default-features = false }
-#pallet-fuso-foundation = {  path = "../../fusotao-protocol/pallet-fuso-foundation", default-features = false}
+fuso-support = { path = "../../fusotao-protocol/fuso-support", default-features = false}
+pallet-fuso-receipts = { path = "../../fusotao-protocol/pallet-fuso-receipts", default-features = false }
+pallet-fuso-token = {  path = "../../fusotao-protocol/pallet-fuso-token", default-features = false }
+pallet-fuso-foundation = {  path = "../../fusotao-protocol/pallet-fuso-foundation", default-features = false}
 #pallet-octopus-appchain = { path = '../../octopus-pallets/appchain', default-features = false }
 #pallet-octopus-lpos = { path = '../../octopus-pallets/lpos', default-features = false }
 #pallet-octopus-upward-messages = { path = '../../octopus-pallets/upward-messages', default-features = false }

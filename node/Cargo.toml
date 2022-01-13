@@ -75,8 +75,8 @@ beefy-primitives = { git = "https://github.com/paritytech/substrate.git", branch
 #pallet-octopus-appchain = { path = '../../octopus-pallets/appchain' }
 #pallet-octopus-lpos = { path = '../../octopus-pallets/lpos' }
 
-pallet-octopus-appchain = { git = "https://github.com/uinb/octopus-pallets.git", branch = "release-v0.9.12" }
-pallet-octopus-lpos = { git = "https://github.com/uinb/octopus-pallets.git", branch = "release-v0.9.12" }
+pallet-octopus-appchain = { git = "https://github.com/uinb/octopus-pallets.git", branch = "main" }
+pallet-octopus-lpos = { git = "https://github.com/uinb/octopus-pallets.git", branch = "main" }
 
 [features]
 default = []

@@ -570,7 +570,7 @@ impl pallet_octopus_appchain::Config for Runtime {
 	type Assets = Assets;
 	type AssetId = u32;
 	type AssetBalance = u128;
- //	type AssetIdByName = Token;
+ 	type AssetIdByName = Token;
 
 	type GracePeriod = GracePeriod;
 	type UnsignedPriority = UnsignedPriority;
