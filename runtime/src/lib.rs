@@ -38,7 +38,7 @@ pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::CurrencyAdapter;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-pub use sp_runtime::{Perbill, Permill};
+pub use sp_runtime::{PerThing, Perbill, Percent, Permill};
 
 use beefy_primitives::{crypto::AuthorityId as BeefyId, mmr::MmrLeafVersion};
 use codec::Encode;
@@ -352,7 +352,7 @@ parameter_types! {
 impl pallet_balances::Config for Runtime {
 	type MaxLocks = MaxLocks;
 	type MaxReserves = MaxReserves;
-	type ReserveIdentifier = [u8; 8];
+	type ReserveIdentifier = (u8, [u8; 32]);
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.
@@ -570,7 +570,7 @@ impl pallet_octopus_appchain::Config for Runtime {
 	type Assets = Assets;
 	type AssetId = u32;
 	type AssetBalance = u128;
- 	type AssetIdByName = Token;
+	type AssetIdByName = Token;
 
 	type GracePeriod = GracePeriod;
 	type UnsignedPriority = UnsignedPriority;
@@ -617,18 +617,33 @@ impl pallet_fuso_token::Config for Runtime {
 	type TokenId = u32;
 	type Balance = Balance;
 	type MaxReserves = MaxReserves;
-	type ReserveIdentifier = [u8;32];
+	type ReserveIdentifier = (u8, [u8; 32]);
 	type WeightInfo = pallet_fuso_token::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+	pub const DominatorOnlineThreshold: u128 = 10u128;
+	pub const SeasonDuration: BlockNumber = 10000;
+	pub const MinimalStakingAmount: u128 = 1000000000000000000;
+	pub const SymbolLimit: usize = 10;
+	pub const DominatorStablecoinLimit: usize = 3;
+	pub const BonusesVecLimit: u32 = 3;
 }
 
 impl pallet_fuso_receipts::Config for Runtime {
 	type Event = Event;
 	type SelfWeightInfo = pallet_fuso_receipts::weights::SubstrateWeight<Runtime>;
+	type DominatorOnlineThreshold = DominatorOnlineThreshold;
+	type SeasonDuration = SeasonDuration;
+	type MinimalStakingAmount = MinimalStakingAmount;
+	type SymbolLimit = SymbolLimit;
+	type DominatorStablecoinLimit = DominatorStablecoinLimit;
+	type BonusesVecLimit = BonusesVecLimit;
 }
 
 parameter_types! {
-    pub const MaxBlock: BlockNumber = MINUTES * 100;
-    pub const MinBlock: BlockNumber = MINUTES * 1;
+	pub const MaxBlock: BlockNumber = MINUTES * 100;
+	pub const MinBlock: BlockNumber = MINUTES * 1;
 }
 
 impl pallet_fuso_foundation::Config for Runtime {
@@ -636,7 +651,6 @@ impl pallet_fuso_foundation::Config for Runtime {
 	type MaxBlock = MaxBlock;
 	type MinBlock = MinBlock;
 }
-
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -652,7 +666,7 @@ construct_runtime!(
 		Babe: pallet_babe::{Pallet, Call, Storage, Config, ValidateUnsigned},
 		Grandpa: pallet_grandpa::{Pallet, Call, Storage, Config, Event, ValidateUnsigned},
 		Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-        Foundation: pallet_fuso_foundation::{Pallet, Storage, Config<T>, Event<T>},
+		Foundation: pallet_fuso_foundation::{Pallet, Storage, Config<T>, Event<T>},
 		TransactionPayment: pallet_transaction_payment::{Pallet, Storage},
 		OctopusAppchain: pallet_octopus_appchain::{Pallet, Call, Storage, Config<T>, Event<T>, ValidateUnsigned}, // must before session
 		OctopusLpos: pallet_octopus_lpos::{Pallet, Call, Config, Storage, Event<T>},
@@ -665,8 +679,8 @@ construct_runtime!(
 		Beefy: pallet_beefy::{Pallet, Config<T>, Storage},
 		MmrLeaf: pallet_beefy_mmr::{Pallet, Storage},
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
-        Token: pallet_fuso_token::{Pallet, Call, Storage, Event<T>},
-        Receipts: pallet_fuso_receipts::{Pallet, Call, Storage, Event<T>},
+		Token: pallet_fuso_token::{Pallet, Call, Storage, Event<T>},
+		Receipts: pallet_fuso_receipts::{Pallet, Call, Storage, Event<T>},
 	}
 );
 

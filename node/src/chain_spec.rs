@@ -1,10 +1,10 @@
-use fuso_runtime::{
-	opaque::Block, opaque::SessionKeys, AccountId, BabeConfig, Balance, BalancesConfig,
-	GenesisConfig, GrandpaConfig, ImOnlineConfig, OctopusAppchainConfig, OctopusLposConfig,
-	FoundationConfig,
-	SessionConfig, Signature, SudoConfig, SystemConfig, DOLLARS, WASM_BINARY,
-};
 use beefy_primitives::crypto::AuthorityId as BeefyId;
+use fuso_runtime::{
+	opaque::{Block, SessionKeys},
+	AccountId, BabeConfig, Balance, BalancesConfig, FoundationConfig, GenesisConfig, GrandpaConfig,
+	ImOnlineConfig, OctopusAppchainConfig, OctopusLposConfig, SessionConfig, Signature, SudoConfig,
+	SystemConfig, DOLLARS, WASM_BINARY,
+};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_octopus_appchain::AuthorityId as OctopusId;
 use sc_chain_spec::ChainSpecExtension;
@@ -125,7 +125,6 @@ pub fn development_config() -> Result<ChainSpec, String> {
 	))
 }
 
-
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
 	let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
 
@@ -146,7 +145,6 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 				Some(vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Charlie"),
-
 				]),
 				true,
 			)
@@ -249,14 +247,8 @@ fn testnet_genesis(
 				),
 			],
 			fund_total: vec![
-				(
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					1500000000000000000000,
-				),
-				(
-					get_account_id_from_seed::<sr25519::Public>("Charlie"),
-					1000000000000000000000,
-				),
+				(get_account_id_from_seed::<sr25519::Public>("Alice"), 1500000000000000000000),
+				(get_account_id_from_seed::<sr25519::Public>("Charlie"), 1000000000000000000000),
 			],
 		},
 	}
