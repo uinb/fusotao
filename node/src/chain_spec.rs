@@ -1,10 +1,10 @@
-use fuso_runtime::{
-	opaque::Block, opaque::SessionKeys, AccountId, BabeConfig, Balance, BalancesConfig,
-	GenesisConfig, GrandpaConfig, ImOnlineConfig, OctopusAppchainConfig, OctopusLposConfig,
-	FoundationConfig,
-	SessionConfig, Signature, SudoConfig, SystemConfig, DOLLARS, WASM_BINARY,
-};
 use beefy_primitives::crypto::AuthorityId as BeefyId;
+use fuso_runtime::{
+	opaque::{Block, SessionKeys},
+	AccountId, BabeConfig, Balance, BalancesConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig,
+	OctopusAppchainConfig, OctopusLposConfig, SessionConfig, Signature, SudoConfig, SystemConfig,
+	DOLLARS, WASM_BINARY,
+};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_octopus_appchain::AuthorityId as OctopusId;
 use sc_chain_spec::ChainSpecExtension;
@@ -33,9 +33,9 @@ pub struct Extensions {
 	pub light_sync_state: sc_sync_state_rpc::LightSyncStateExtension,
 }
 
-/// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
+/// Specialized `ChainSpec`.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig, Extensions>;
-
+/// Octopus testnet generator
 pub fn octopus_testnet_config() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../../resources/testnet.json")[..])
 }
@@ -67,17 +67,17 @@ where
 	AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-/// Generate an Aura authority key.
+/// Helper function to generate stash, controller and session key from seed
 pub fn authority_keys_from_seed(
-	s: &str,
+	seed: &str,
 ) -> (AccountId, BabeId, GrandpaId, ImOnlineId, BeefyId, OctopusId) {
 	(
-		get_account_id_from_seed::<sr25519::Public>(s),
-		get_from_seed::<BabeId>(s),
-		get_from_seed::<GrandpaId>(s),
-		get_from_seed::<ImOnlineId>(s),
-		get_from_seed::<BeefyId>(s),
-		get_from_seed::<OctopusId>(s),
+		get_account_id_from_seed::<sr25519::Public>(seed),
+		get_from_seed::<BabeId>(seed),
+		get_from_seed::<GrandpaId>(seed),
+		get_from_seed::<ImOnlineId>(seed),
+		get_from_seed::<BeefyId>(seed),
+		get_from_seed::<OctopusId>(seed),
 	)
 }
 
@@ -100,7 +100,7 @@ pub fn development_config() -> Result<ChainSpec, String> {
 				// Pre-funded accounts
 				Some(vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie"),
+					get_account_id_from_seed::<sr25519::Public>("Bob"),
 				]),
 				true,
 			)
@@ -119,29 +119,29 @@ pub fn development_config() -> Result<ChainSpec, String> {
 }
 
 pub fn local_testnet_config() -> Result<ChainSpec, String> {
-	let mut prop = sc_service::Properties::new();
-	prop.insert("tokenDecimals".to_string(), 18.into());
-	prop.insert("tokenSymbol".to_string(), "TAO".into());
-	let wasm_binary = WASM_BINARY.ok_or("Development wasm binary not available".to_string())?;
+	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
 	Ok(ChainSpec::from_genesis(
 		// Name
 		"Local Testnet",
 		// ID
 		"local_testnet",
-		ChainType::Development,
+		ChainType::Local,
 		move || {
 			testnet_genesis(
 				wasm_binary,
 				// Initial PoA authorities
-				vec![authority_keys_from_seed("Alice")],
+				vec![authority_keys_from_seed("Alice"), authority_keys_from_seed("Bob")],
 				// Sudo account
 				get_account_id_from_seed::<sr25519::Public>("Alice"),
 				// Pre-funded accounts
 				Some(vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
+					get_account_id_from_seed::<sr25519::Public>("Bob"),
 					get_account_id_from_seed::<sr25519::Public>("Charlie"),
-
+					get_account_id_from_seed::<sr25519::Public>("Dave"),
+					get_account_id_from_seed::<sr25519::Public>("Eve"),
+					get_account_id_from_seed::<sr25519::Public>("Ferdie"),
 				]),
 				true,
 			)
@@ -151,9 +151,9 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 		// Telemetry
 		None,
 		// Protocol ID
-		Some("fusotao_beta"),
+		None,
 		// Properties
-		Some(prop),
+		None,
 		// Extensions
 		Default::default(),
 	))
@@ -193,10 +193,9 @@ fn testnet_genesis(
 		system: SystemConfig {
 			// Add Wasm runtime to storage.
 			code: wasm_binary.to_vec(),
-			changes_trie_config: Default::default(),
 		},
 		balances: BalancesConfig {
-			balances: endowed_accounts.iter().cloned().map(|x| (x, 1 << 90)).collect(),
+			balances: endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect(),
 		},
 		session: SessionConfig {
 			keys: initial_authorities
@@ -216,14 +215,13 @@ fn testnet_genesis(
 				})
 				.collect::<Vec<_>>(),
 		},
-		sudo: SudoConfig { key: root_key },
 		babe: BabeConfig {
 			authorities: vec![],
 			epoch_config: Some(fuso_runtime::BABE_GENESIS_EPOCH_CONFIG),
 		},
 		im_online: ImOnlineConfig { keys: vec![] },
 		grandpa: GrandpaConfig { authorities: vec![] },
-		assets: Default::default(),
+		transaction_payment: Default::default(),
 		beefy: Default::default(),
 		octopus_appchain: OctopusAppchainConfig {
 			anchor_contract: "".to_string(),
@@ -232,27 +230,10 @@ fn testnet_genesis(
 			premined_amount: 1024 * DOLLARS,
 		},
 		octopus_lpos: OctopusLposConfig { era_payout: 2 * DOLLARS, ..Default::default() },
-		foundation: FoundationConfig {
-			fund: vec![
-				(
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					(5, 300000000000000000000),
-				),
-				(
-					get_account_id_from_seed::<sr25519::Public>("Charlie"),
-					(5, 200000000000000000000),
-				),
-			],
-			fund_total: vec![
-				(
-					get_account_id_from_seed::<sr25519::Public>("Alice"),
-					1500000000000000000000,
-				),
-				(
-					get_account_id_from_seed::<sr25519::Public>("Charlie"),
-					1000000000000000000000,
-				),
-			],
+		octopus_assets: Default::default(),
+		sudo: SudoConfig {
+			// Assign network admin rights.
+			key: root_key,
 		},
 	}
 }
