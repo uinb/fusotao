@@ -15,24 +15,33 @@ jobs:
           draft: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   update-release:
     name: Publish binaries
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2021-12-22
-          override: true
-          target: wasm32-unknown-unknown
-      - name: Build release
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
+
+      - name: Set-Up
+        run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+
+      - name: Install Rustup
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          source ~/.cargo/env
+          rustup default stable
+          rustup update nightly
+          rustup update stable
+          rustup target add wasm32-unknown-unknown --toolchain nightly
+
+      - name: Build
+        run: |
+          cargo build --release
+
       - uses: montudor/action-zip@v1
         with:
           args: zip -j -r fusotao.zip target/release/fuso *.spec README.md LICENSE
+
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
