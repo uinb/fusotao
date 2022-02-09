@@ -1,3 +1,7 @@
+# vodka-0.2.0
+
+launch vodka testnet
+
 # v0.1.15
 
 fix bug: bid IOC
