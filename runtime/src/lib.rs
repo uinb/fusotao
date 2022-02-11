@@ -573,7 +573,7 @@ impl pallet_octopus_appchain::Config for Runtime {
 	type Assets = OctopusAssets;
 	type AssetBalance = AssetBalance;
 	type AssetId = AssetId;
-	type AssetIdByName = OctopusAppchain;
+	type AssetIdByName = Token;
 	type GracePeriod = GracePeriod;
 	type UnsignedPriority = UnsignedPriority;
 	type RequestEventLimit = RequestEventLimit;
@@ -653,24 +653,20 @@ impl pallet_fuso_token::Config for Runtime {
 }
 
 parameter_types! {
-	pub const DominatorOnlineThreshold: Balance = 10_000;
+	pub const DominatorOnlineThreshold: Balance = 80_000 * DOLLARS;
 	pub const SeasonDuration: BlockNumber = 1440;
-	pub const MinimalStakingAmount: Balance = 100;
-	pub const DominatorRegisterPoint: BlockNumber = 10;
-	pub const MaxDominators: u32 = 5;
-	pub const DominatorStablecoinLimit: u32 = 5;
+	pub const MinimalStakingAmount: Balance = 100 * DOLLARS;
+	pub const DominatorRegisterPoint: BlockNumber = 100;
 }
 
 impl pallet_fuso_verifier::Config for Runtime {
 	type Event = Event;
 	type Asset = Token;
-	type MaxDominators = MaxDominators;
 	type SelfWeightInfo = ();
 	type DominatorOnlineThreshold = DominatorOnlineThreshold;
 	type SeasonDuration = SeasonDuration;
 	type DominatorRegisterPoint = DominatorRegisterPoint;
 	type MinimalStakingAmount = MinimalStakingAmount;
-	type DominatorStablecoinLimit = DominatorStablecoinLimit;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
