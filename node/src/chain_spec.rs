@@ -225,12 +225,11 @@ fn testnet_genesis(
 		beefy: Default::default(),
 		octopus_appchain: OctopusAppchainConfig {
 			anchor_contract: "".to_string(),
-			asset_id_by_name: vec![("usdc.testnet".to_string(), 0)],
+			asset_id_by_name: vec![],
 			validators,
 			premined_amount: 1024 * DOLLARS,
 		},
 		octopus_lpos: OctopusLposConfig { era_payout: 2 * DOLLARS, ..Default::default() },
-		octopus_assets: Default::default(),
 		sudo: SudoConfig {
 			// Assign network admin rights.
 			key: root_key,
