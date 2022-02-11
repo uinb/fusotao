@@ -341,7 +341,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 parameter_types! {
-	pub const ExistentialDeposit: Balance = 1 * DOLLARS;
+	pub const ExistentialDeposit: Balance = 1;
 	// For weight estimation, we assume that the most locks on an individual account will be 50.
 	// This number may need to be adjusted in the future if this assumption no longer holds true.
 	pub const MaxLocks: u32 = 50;
@@ -363,7 +363,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-	pub const TransactionByteFee: Balance = 10 * MILLICENTS;
+	pub const TransactionByteFee: Balance = 100_000_000;
 	pub const OperationalFeeMultiplier: u8 = 5;
 	pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
 	pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
@@ -570,7 +570,7 @@ impl pallet_octopus_appchain::Config for Runtime {
 	type LposInterface = OctopusLpos;
 	type UpwardMessagesInterface = OctopusUpwardMessages;
 	type Currency = Balances;
-	type Assets = OctopusAssets;
+	type Assets = Token;
 	type AssetBalance = AssetBalance;
 	type AssetId = AssetId;
 	type AssetIdByName = Token;
@@ -610,8 +610,6 @@ impl pallet_octopus_upward_messages::Config for Runtime {
 }
 
 parameter_types! {
-	pub const AssetDeposit: Balance = 100 * DOLLARS;
-	pub const ApprovalDeposit: Balance = 1 * DOLLARS;
 	pub const StringLimit: u32 = 50;
 	pub const MetadataDepositBase: Balance = 10 * DOLLARS;
 	pub const MetadataDepositPerByte: Balance = 1 * DOLLARS;
@@ -619,22 +617,6 @@ parameter_types! {
 
 pub type AssetBalance = u128;
 pub type AssetId = u32;
-
-impl pallet_assets::Config<pallet_assets::Instance1> for Runtime {
-	type Event = Event;
-	type Balance = AssetBalance;
-	type AssetId = AssetId;
-	type Currency = Balances;
-	type ForceOrigin = EnsureRoot<AccountId>;
-	type AssetDeposit = AssetDeposit;
-	type MetadataDepositBase = MetadataDepositBase;
-	type MetadataDepositPerByte = MetadataDepositPerByte;
-	type ApprovalDeposit = ApprovalDeposit;
-	type StringLimit = StringLimit;
-	type Freezer = ();
-	type Extra = ();
-	type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
-}
 
 impl pallet_sudo::Config for Runtime {
 	type Event = Event;
@@ -654,7 +636,7 @@ impl pallet_fuso_token::Config for Runtime {
 
 parameter_types! {
 	pub const DominatorOnlineThreshold: Balance = 80_000 * DOLLARS;
-	pub const SeasonDuration: BlockNumber = 1440;
+	pub const SeasonDuration: BlockNumber = 3 * DAYS;
 	pub const MinimalStakingAmount: Balance = 100 * DOLLARS;
 	pub const DominatorRegisterPoint: BlockNumber = 100;
 }
@@ -685,7 +667,6 @@ construct_runtime!(
 		OctopusAppchain: pallet_octopus_appchain, // must before session
 		OctopusLpos: pallet_octopus_lpos,
 		OctopusUpwardMessages: pallet_octopus_upward_messages,
-		OctopusAssets: pallet_assets::<Instance1>,
 		Session: pallet_session,
 		Grandpa: pallet_grandpa,
 		ImOnline: pallet_im_online,
