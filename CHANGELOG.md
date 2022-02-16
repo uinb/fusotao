@@ -1,3 +1,10 @@
+# v0.3.0-rc
+
+- publish vodka testnet runtime
+- add pallet foundation
+- add pallet reward
+- optimize proving
+
 # v0.1.15
 
 fix bug: bid IOC
