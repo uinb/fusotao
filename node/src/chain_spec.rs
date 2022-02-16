@@ -1,9 +1,9 @@
 use beefy_primitives::crypto::AuthorityId as BeefyId;
 use fuso_runtime::{
 	opaque::{Block, SessionKeys},
-	AccountId, BabeConfig, Balance, BalancesConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig,
-	OctopusAppchainConfig, OctopusLposConfig, SessionConfig, Signature, SudoConfig, SystemConfig,
-	DOLLARS, WASM_BINARY,
+	AccountId, BabeConfig, Balance, BalancesConfig, FoundationConfig, GenesisConfig, GrandpaConfig,
+	ImOnlineConfig, OctopusAppchainConfig, OctopusLposConfig, SessionConfig, Signature, SudoConfig,
+	SystemConfig, DOLLARS, WASM_BINARY,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_octopus_appchain::AuthorityId as OctopusId;
@@ -138,9 +138,7 @@ pub fn local_testnet_config() -> Result<ChainSpec, String> {
 				Some(vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Bob"),
-					get_account_id_from_seed::<sr25519::Public>("Charlie"),
 					get_account_id_from_seed::<sr25519::Public>("Dave"),
-					get_account_id_from_seed::<sr25519::Public>("Eve"),
 					get_account_id_from_seed::<sr25519::Public>("Ferdie"),
 				]),
 				true,
@@ -171,9 +169,7 @@ fn testnet_genesis(
 		vec![
 			get_account_id_from_seed::<sr25519::Public>("Alice"),
 			get_account_id_from_seed::<sr25519::Public>("Bob"),
-			get_account_id_from_seed::<sr25519::Public>("Charlie"),
 			get_account_id_from_seed::<sr25519::Public>("Dave"),
-			get_account_id_from_seed::<sr25519::Public>("Eve"),
 			get_account_id_from_seed::<sr25519::Public>("Ferdie"),
 		]
 	});
@@ -233,6 +229,26 @@ fn testnet_genesis(
 		sudo: SudoConfig {
 			// Assign network admin rights.
 			key: root_key,
+		},
+		foundation: FoundationConfig {
+			fund: vec![
+				(
+					get_account_id_from_seed::<sr25519::Public>("Charile"),
+					1,
+					1,
+					100,
+					1000 * DOLLARS,
+					100000 * DOLLARS,
+				),
+				(
+					get_account_id_from_seed::<sr25519::Public>("Eva"),
+					1,
+					2,
+					99,
+					100 * DOLLARS,
+					9900 * DOLLARS,
+				),
+			],
 		},
 	}
 }

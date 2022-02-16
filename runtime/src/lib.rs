@@ -555,6 +555,19 @@ impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
 }
 
 parameter_types! {
+	pub const NativeTokenId: u32 = 0;
+}
+
+pub type TokenId = u32;
+
+impl pallet_fuso_token::Config for Runtime {
+	type Event = Event;
+	type TokenId = TokenId;
+	type NativeTokenId = NativeTokenId;
+	type Weight = pallet_fuso_token::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
 	pub const OctopusAppchainPalletId: PalletId = PalletId(*b"py/octps");
 	pub const GracePeriod: u32 = 10;
 	pub const UnsignedPriority: u64 = 1 << 21;
@@ -571,8 +584,8 @@ impl pallet_octopus_appchain::Config for Runtime {
 	type UpwardMessagesInterface = OctopusUpwardMessages;
 	type Currency = Balances;
 	type Assets = Token;
-	type AssetBalance = AssetBalance;
-	type AssetId = AssetId;
+	type AssetBalance = Balance;
+	type AssetId = TokenId;
 	type AssetIdByName = Token;
 	type GracePeriod = GracePeriod;
 	type UnsignedPriority = UnsignedPriority;
@@ -615,23 +628,30 @@ parameter_types! {
 	pub const MetadataDepositPerByte: Balance = 1 * DOLLARS;
 }
 
-pub type AssetBalance = u128;
-pub type AssetId = u32;
-
 impl pallet_sudo::Config for Runtime {
 	type Event = Event;
 	type Call = Call;
 }
 
 parameter_types! {
-	pub const NativeTokenId: u32 = 0;
+	pub const Duration: BlockNumber = 100;
 }
 
-impl pallet_fuso_token::Config for Runtime {
+impl pallet_fuso_foundation::Config for Runtime {
 	type Event = Event;
-	type TokenId = u32;
-	type NativeTokenId = NativeTokenId;
-	type Weight = pallet_fuso_token::weights::SubstrateWeight<Runtime>;
+	type Duration = Duration;
+}
+
+parameter_types! {
+	pub const EraDuration: BlockNumber = DAYS;
+	pub const RewardsPerEra: Balance = 26300 * DOLLARS;
+}
+
+impl pallet_fuso_reward::Config for Runtime {
+	type Event = Event;
+	type Asset = Token;
+	type EraDuration = EraDuration;
+	type RewardsPerEra = RewardsPerEra;
 }
 
 parameter_types! {
@@ -644,6 +664,7 @@ parameter_types! {
 impl pallet_fuso_verifier::Config for Runtime {
 	type Event = Event;
 	type Asset = Token;
+	type Rewarding = Reward;
 	type SelfWeightInfo = ();
 	type DominatorOnlineThreshold = DominatorOnlineThreshold;
 	type SeasonDuration = SeasonDuration;
@@ -676,7 +697,9 @@ construct_runtime!(
 		MmrLeaf: pallet_beefy_mmr,
 		Uniques: pallet_uniques,
 		Sudo: pallet_sudo,
+		Foundation: pallet_fuso_foundation,
 		Token: pallet_fuso_token,
+		Reward: pallet_fuso_reward,
 		Verifier: pallet_fuso_verifier,
 	}
 );
