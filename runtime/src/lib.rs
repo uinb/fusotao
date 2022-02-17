@@ -42,10 +42,7 @@ pub use sp_runtime::{Perbill, Permill};
 use beefy_primitives::{crypto::AuthorityId as BeefyId, mmr::MmrLeafVersion};
 use codec::Encode;
 use frame_support::{weights::DispatchClass, PalletId};
-use frame_system::{
-	limits::{BlockLength, BlockWeights},
-	EnsureRoot,
-};
+use frame_system::limits::{BlockLength, BlockWeights};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_mmr_primitives as mmr;
 use pallet_session::historical as pallet_session_historical;
@@ -119,10 +116,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 100,
-	impl_version: 1,
+	spec_version: 101,
+	impl_version: 2,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 1,
+	transaction_version: 2,
 };
 
 pub const MILLICENTS: Balance = 10_000_000_000_000;
@@ -772,6 +769,16 @@ impl_runtime_apis! {
 			data: sp_inherents::InherentData,
 		) -> sp_inherents::CheckInherentsResult {
 			data.check_extrinsics(&block)
+		}
+	}
+
+	impl fuso_verifier_runtime_api::FusoVerifierRuntimeApi<Block, AccountId, Balance> for Runtime {
+		fn current_season_of_dominator(dominator: AccountId) -> u32 {
+			Verifier::current_season_of_dominator(dominator)
+		}
+
+		fn pending_shares_of_dominator(dominator: AccountId, who: AccountId) -> Balance {
+			Verifier::pending_shares_of_dominator(dominator, who)
 		}
 	}
 
