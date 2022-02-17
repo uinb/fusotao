@@ -1,3 +1,8 @@
+# v0.3.1-rc
+
+- add dominator name
+- add verifier rpc
+
 # v0.1.15
 
 fix bug: bid IOC
