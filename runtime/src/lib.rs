@@ -653,10 +653,12 @@ impl pallet_fuso_reward::Config for Runtime {
 
 parameter_types! {
 	pub const DominatorOnlineThreshold: Balance = 80_000 * DOLLARS;
-	pub const SeasonDuration: BlockNumber = 3 * DAYS;
+	pub const SeasonDuration: BlockNumber = DAYS;
 	pub const MinimalStakingAmount: Balance = 100 * DOLLARS;
-	pub const DominatorRegisterPoint: BlockNumber = 100;
+	pub const DominatorCheckGracePeriod: BlockNumber = 20;
 }
+
+const_assert!(DAYS % 20 == 0);
 
 impl pallet_fuso_verifier::Config for Runtime {
 	type Event = Event;
@@ -665,7 +667,7 @@ impl pallet_fuso_verifier::Config for Runtime {
 	type SelfWeightInfo = ();
 	type DominatorOnlineThreshold = DominatorOnlineThreshold;
 	type SeasonDuration = SeasonDuration;
-	type DominatorRegisterPoint = DominatorRegisterPoint;
+	type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
 	type MinimalStakingAmount = MinimalStakingAmount;
 }
 
