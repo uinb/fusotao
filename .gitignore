@@ -15,4 +15,3 @@
 # direnv cache
 .direnv
 .idea
-cargo.lock
