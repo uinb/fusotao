@@ -1,3 +1,7 @@
+# v0.3.2
+
+bump v0.3.2 [vodka] testnet on octopus network
+
 # v0.1.15
 
 fix bug: bid IOC
