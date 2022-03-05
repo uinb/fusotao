@@ -32,10 +32,21 @@
       },
       "balances": {
         "balances": [
+          // oct node
           [
             "sr25519key",
-            10000000000000000000000000
-          ]
+            1000000000000000000000
+          ],
+          // sudo account(testnet only)
+          [
+            "5CqbnEBSNvMFyQcCWoPw9vMjRR4M8YaxryBF5JPhovnxjaQ7",
+            2000000000000000000000000
+          ],
+          // facut(testnet only)
+          [
+            "5GzjHy26hfgKR6DVXLwCAPgrrNf9GWkjvmRgGbDvP7EwEmFy",
+            2000000000000000000000000
+          ],
         ]
       },
       "transactionPayment": null,
@@ -47,12 +58,12 @@
             100000000000000000000
           ]
         ],
-        "preminedAmount": 1024000000000000000000,
+        "preminedAmount": 5000000000000000000000000,
         "assetIdByName": []
       },
       "octopusLpos": {
         "historyDepth": 84,
-        "eraPayout": 2000000000000000000
+        "eraPayout": 4109000000000000000000
       },
       "session": {
         "keys": [
@@ -79,7 +90,7 @@
         "authorities": []
       },
       "sudo": {
-        "key": "sr25519key"
+        "key": "5CqbnEBSNvMFyQcCWoPw9vMjRR4M8YaxryBF5JPhovnxjaQ7"
       },
       "foundation": {
         "fund": [
