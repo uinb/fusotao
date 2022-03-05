@@ -81,6 +81,10 @@ pub fn authority_keys_from_seed(
 	)
 }
 
+pub fn octopus_testnet_config() -> Result<ChainSpec, String> {
+	ChainSpec::from_json_bytes(&include_bytes!("../../resources/octopus-testnet.json")[..])
+}
+
 pub fn development_config() -> Result<ChainSpec, String> {
 	let wasm_binary = WASM_BINARY.ok_or_else(|| "Development wasm not available".to_string())?;
 
