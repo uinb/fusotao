@@ -2,7 +2,12 @@
   "name": "Fusotao Testnet",
   "id": "vodka",
   "chainType": "Live",
-  "bootNodes": [],
+  "bootNodes": [
+    "/dns/bootnode-v1-0.fusotao.testnet.octopus.network/tcp/30333/ws/p2p/12D3KooWFN8GbWFeX9AXf4saYrnLFVWVi81ujJU4TGGrDWV4Ng24",
+    "/dns/bootnode-v1-1.fusotao.testnet.octopus.network/tcp/30333/ws/p2p/12D3KooWCCEBa8EdjM1XbutVyxgN9YDfXvoQtJ9UbTAb2dkXUQpp",
+    "/dns/bootnode-v1-2.fusotao.testnet.octopus.network/tcp/30333/ws/p2p/12D3KooWPAETXEnCowXED1RCEgnLwUwdaH72VdUEtvjJpJs6V5Xv",
+    "/dns/bootnode-v1-3.fusotao.testnet.octopus.network/tcp/30333/ws/p2p/12D3KooWEVXKdWqgmHXDgr1S5YcanswX3544cGGWEnER67rMwnE8"
+  ],
   "telemetryEndpoints": null,
   "protocolId": null,
   "properties": {
@@ -32,30 +37,51 @@
       },
       "balances": {
         "balances": [
-          // oct node
           [
-            "sr25519key",
-            1000000000000000000000
+            "5DPMVEQweRogoadUDA6AkUuSQwieg6YCKB4GzT5JAkDvn9Tw",
+            510000000000000000000
           ],
-          // sudo account(testnet only)
+          [
+            "5FWhA4BYbEAP6cg1Umd8UV3LbenLHCaBBG8ZFz5tw8233HEF",
+            10000000000000000000
+          ],
+          [
+            "5Eq44YpsntGs1Qfh8oKNCCJh82YBT4LgcjB5ec9zesSFzvMK",
+            10000000000000000000
+          ],
+          [
+            "5DAAoF39LuvcF7nUyxv8pz2zP4DLeBoYkuYeryU7cS4fohAw",
+            10000000000000000000
+          ],
           [
             "5CqbnEBSNvMFyQcCWoPw9vMjRR4M8YaxryBF5JPhovnxjaQ7",
             2000000000000000000000000
           ],
-          // facut(testnet only)
           [
             "5GzjHy26hfgKR6DVXLwCAPgrrNf9GWkjvmRgGbDvP7EwEmFy",
             2000000000000000000000000
-          ],
+          ]
         ]
       },
       "transactionPayment": null,
       "octopusAppchain": {
-        "anchorContract": "",
+        "anchorContract": "fusotao.registry.test_oct.testnet",
         "validators": [
           [
-            "sr25519key",
-            100000000000000000000
+            "5DPMVEQweRogoadUDA6AkUuSQwieg6YCKB4GzT5JAkDvn9Tw",
+            10000000000000000000000
+          ],
+          [
+            "5FWhA4BYbEAP6cg1Umd8UV3LbenLHCaBBG8ZFz5tw8233HEF",
+            10000000000000000000000
+          ],
+          [
+            "5Eq44YpsntGs1Qfh8oKNCCJh82YBT4LgcjB5ec9zesSFzvMK",
+            10000000000000000000000
+          ],
+          [
+            "5DAAoF39LuvcF7nUyxv8pz2zP4DLeBoYkuYeryU7cS4fohAw",
+            10000000000000000000000
           ]
         ],
         "preminedAmount": 5000000000000000000000000,
@@ -68,14 +94,47 @@
       "session": {
         "keys": [
           [
-            "sr25519key",
-            "sr25519key",
+            "5DPMVEQweRogoadUDA6AkUuSQwieg6YCKB4GzT5JAkDvn9Tw",
+            "5DPMVEQweRogoadUDA6AkUuSQwieg6YCKB4GzT5JAkDvn9Tw",
             {
-              "babe": "sr25519key",
-              "grandpa": "ed25519key",
-              "im_online": "sr25519key",
-              "beefy": "ecdsa",
-              "octopus": "sr25519key"
+              "babe": "5E2XX4aXQodycbzqD9SipgnH4DojdD1NiATgtEDyMYeCJDpj",
+              "grandpa": "5Go261izFEyyCfhizKRh9HWaDNeiDMdnNxgMALzPUdSVrJN9",
+              "im_online": "5GNGGUZbVGqGnYNyQ74FVk974JQYnsRuKkjRwii1gubWpJTT",
+              "beefy": "KW8ryvmAFRiXoY8rxW1ZRJPB6MVGxHKWtXhwVa4TowdTJPJzP",
+              "octopus": "5DqE8DnxpsaxocRVZKx5bPet2b99VBDdoXHScv9uyB8wwsER"
+            }
+          ],
+          [
+            "5FWhA4BYbEAP6cg1Umd8UV3LbenLHCaBBG8ZFz5tw8233HEF",
+            "5FWhA4BYbEAP6cg1Umd8UV3LbenLHCaBBG8ZFz5tw8233HEF",
+            {
+              "babe": "5Gxot5e3j6Lv6o9AyFZRi1UJhAAoXR6mWW9Ce5Za19skqxvK",
+              "grandpa": "5GySHnbAw2XwFeYGTk3uKzRXCsFDyA4osCHpHvkfuu8pdWyL",
+              "im_online": "5FebA7wVWSauFdHFTSR7RZQSpDvVMUd7BBvLhn4MWdzeRjfV",
+              "beefy": "KW6YYGCfyMqkRkAc66fgyHsWDw7u7YLyh2zrwrNy8wNfBjDRr",
+              "octopus": "5GjVEiuqTojhgUBMotzbSjrNHoft9ytDz8fE99iFCAM6TYhz"
+            }
+          ],
+          [
+            "5Eq44YpsntGs1Qfh8oKNCCJh82YBT4LgcjB5ec9zesSFzvMK",
+            "5Eq44YpsntGs1Qfh8oKNCCJh82YBT4LgcjB5ec9zesSFzvMK",
+            {
+              "babe": "5Hbc6CNPuGwsVB7aKsr31iok9MkWkAmMWcBm8brotm6tsxof",
+              "grandpa": "5Ffwk2K5PJdggH1Bp54SGAx7mmBzGeXmUJGpupp2mBdK1CXS",
+              "im_online": "5CUpLNQGKgG98zpJ6HfekTco1pMdWte9u5DpRT1CihmTKBJ1",
+              "beefy": "KW5mDMkaHsNqYbVuBYLcDSw2MQM87kYzd7qRdSHWGQJsuKMRP",
+              "octopus": "5FeTph3Yjk5Gizx7eSARV7SkCE9oyzdYyws4XBJZTkbTuJKG"
+            }
+          ],
+          [
+            "5DAAoF39LuvcF7nUyxv8pz2zP4DLeBoYkuYeryU7cS4fohAw",
+            "5DAAoF39LuvcF7nUyxv8pz2zP4DLeBoYkuYeryU7cS4fohAw",
+            {
+              "babe": "5FF3Es6q8NPcWwoFh1CVVjFPBsAYHU679hLF95Pvtj6iJP7g",
+              "grandpa": "5FjmxUdh72uukdbg6JZeuCPT5YbjcBgJkdM5mhTuyfKt2six",
+              "im_online": "5EvDTpyomEHoAXsSN2EAgpiDXW4FSmAZkYAPzFdMJZ4zcaxR",
+              "beefy": "KWCkY6wutnpMpK4PATYWMynuvyq9q1GK8zeNTzL47Xpe8knyT",
+              "octopus": "5CV6rjKpTVvhurqrXSARGKNkUxJ1XkjSXFk7q95bCFcEGrQj"
             }
           ]
         ]
