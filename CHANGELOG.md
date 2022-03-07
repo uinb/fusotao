@@ -1,3 +1,7 @@
+# v0.3.3
+
+rebuild octopus-appchain-pallet
+
 # v0.1.15
 
 fix bug: bid IOC
