@@ -1874,7 +1874,7 @@ dependencies = [
 [[package]]
 name = "fuso-support"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#0f2bf33fd854f19dba992adc75bb74f75262acda"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#6ccd1a3c15f3262af9b8f98714bf58c64aa509fa"
 dependencies = [
  "bit-vec",
  "byteorder",
@@ -1890,7 +1890,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-rpc"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#0f2bf33fd854f19dba992adc75bb74f75262acda"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#6ccd1a3c15f3262af9b8f98714bf58c64aa509fa"
 dependencies = [
  "fuso-verifier-runtime-api",
  "jsonrpc-core",
@@ -1907,7 +1907,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-runtime-api"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#0f2bf33fd854f19dba992adc75bb74f75262acda"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#6ccd1a3c15f3262af9b8f98714bf58c64aa509fa"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -4138,7 +4138,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-foundation"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#0f2bf33fd854f19dba992adc75bb74f75262acda"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#6ccd1a3c15f3262af9b8f98714bf58c64aa509fa"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4157,7 +4157,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-reward"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#0f2bf33fd854f19dba992adc75bb74f75262acda"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#6ccd1a3c15f3262af9b8f98714bf58c64aa509fa"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4175,7 +4175,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-token"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#0f2bf33fd854f19dba992adc75bb74f75262acda"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#6ccd1a3c15f3262af9b8f98714bf58c64aa509fa"
 dependencies = [
  "ascii",
  "frame-support",
@@ -4195,7 +4195,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-verifier"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#0f2bf33fd854f19dba992adc75bb74f75262acda"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#6ccd1a3c15f3262af9b8f98714bf58c64aa509fa"
 dependencies = [
  "ascii",
  "frame-support",
@@ -4307,7 +4307,7 @@ dependencies = [
 [[package]]
 name = "pallet-octopus-appchain"
 version = "4.0.0-pre.0"
-source = "git+https://github.com/octopus-network/octopus-pallets.git?branch=release-v0.9.13#a9bda5f3645d611140df682f604303f93d2bdafd"
+source = "git+https://github.com/octopus-network/octopus-pallets.git?branch=release-v0.9.13#831d3dc328aee1a4aea42597b6d018e1d5e2ad0c"
 dependencies = [
  "base64",
  "borsh",
@@ -4331,7 +4331,7 @@ dependencies = [
 [[package]]
 name = "pallet-octopus-lpos"
 version = "4.0.0-pre.0"
-source = "git+https://github.com/octopus-network/octopus-pallets.git?branch=release-v0.9.13#a9bda5f3645d611140df682f604303f93d2bdafd"
+source = "git+https://github.com/octopus-network/octopus-pallets.git?branch=release-v0.9.13#831d3dc328aee1a4aea42597b6d018e1d5e2ad0c"
 dependencies = [
  "borsh",
  "frame-benchmarking",
@@ -4353,7 +4353,7 @@ dependencies = [
 [[package]]
 name = "pallet-octopus-support"
 version = "4.0.0-pre.0"
-source = "git+https://github.com/octopus-network/octopus-pallets.git?branch=release-v0.9.13#a9bda5f3645d611140df682f604303f93d2bdafd"
+source = "git+https://github.com/octopus-network/octopus-pallets.git?branch=release-v0.9.13#831d3dc328aee1a4aea42597b6d018e1d5e2ad0c"
 dependencies = [
  "borsh",
  "frame-support",
@@ -4366,7 +4366,7 @@ dependencies = [
 [[package]]
 name = "pallet-octopus-upward-messages"
 version = "4.0.0-pre.0"
-source = "git+https://github.com/octopus-network/octopus-pallets.git?branch=release-v0.9.13#a9bda5f3645d611140df682f604303f93d2bdafd"
+source = "git+https://github.com/octopus-network/octopus-pallets.git?branch=release-v0.9.13#831d3dc328aee1a4aea42597b6d018e1d5e2ad0c"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
