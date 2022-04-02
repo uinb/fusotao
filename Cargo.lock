@@ -1826,7 +1826,7 @@ dependencies = [
  "frame-system",
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
- "fuso-support",
+ "fuso-support 4.0.0-rc (git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13)",
  "fuso-verifier-runtime-api",
  "hex-literal",
  "log",
@@ -1874,6 +1874,21 @@ dependencies = [
 [[package]]
 name = "fuso-support"
 version = "4.0.0-rc"
+dependencies = [
+ "bit-vec",
+ "byteorder",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "fuso-support"
+version = "4.0.0-rc"
 source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#22781d7d6294cfdd41d0a8b1b64d6c88eb4030d3"
 dependencies = [
  "bit-vec",
@@ -1890,7 +1905,6 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-rpc"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#22781d7d6294cfdd41d0a8b1b64d6c88eb4030d3"
 dependencies = [
  "fuso-verifier-runtime-api",
  "jsonrpc-core",
@@ -1907,7 +1921,6 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-runtime-api"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#22781d7d6294cfdd41d0a8b1b64d6c88eb4030d3"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -4138,12 +4151,11 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-foundation"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#22781d7d6294cfdd41d0a8b1b64d6c88eb4030d3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
- "fuso-support",
+ "fuso-support 4.0.0-rc",
  "pallet-balances",
  "parity-scale-codec",
  "scale-info",
@@ -4157,11 +4169,10 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-reward"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#22781d7d6294cfdd41d0a8b1b64d6c88eb4030d3"
 dependencies = [
  "frame-support",
  "frame-system",
- "fuso-support",
+ "fuso-support 4.0.0-rc",
  "pallet-balances",
  "parity-scale-codec",
  "scale-info",
@@ -4175,12 +4186,11 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-token"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#22781d7d6294cfdd41d0a8b1b64d6c88eb4030d3"
 dependencies = [
  "ascii",
  "frame-support",
  "frame-system",
- "fuso-support",
+ "fuso-support 4.0.0-rc",
  "pallet-balances",
  "pallet-octopus-support",
  "parity-scale-codec",
@@ -4195,17 +4205,18 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-verifier"
 version = "4.0.0-rc"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.13#22781d7d6294cfdd41d0a8b1b64d6c88eb4030d3"
 dependencies = [
  "ascii",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
- "fuso-support",
+ "fuso-support 4.0.0-rc",
  "parity-scale-codec",
  "scale-info",
  "serde",
  "sp-core",
  "sp-io",
+ "sp-keyring",
  "sp-runtime",
  "sp-std",
  "sparse-merkle-tree",
@@ -7906,7 +7917,7 @@ version = "1.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ee73e6e4924fe940354b8d4d98cad5231175d615cd855b758adc658c0aac6a0"
 dependencies = [
- "cfg-if 1.0.0",
+ "cfg-if 0.1.10",
  "rand 0.8.5",
  "static_assertions",
 ]
