@@ -38,6 +38,7 @@ std = [
     'log/std',
     'beefy-primitives/std',
     'pallet-assets/std',
+    'pallet-multisig/std',
     'pallet-authorship/std',
     'pallet-beefy/std',
     'pallet-beefy-mmr/std',
@@ -112,6 +113,7 @@ pallet-mmr = { git = 'https://github.com/paritytech/substrate.git', branch = 'po
 pallet-mmr-primitives = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.13', default-features = false }
 pallet-session = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.13', default-features = false }
 pallet-uniques = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.13', default-features = false }
+pallet-multisig = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.13', default-features = false }
 sp-staking = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.13', default-features = false }
 
 pallet-octopus-appchain = { git = 'https://github.com/octopus-network/octopus-pallets.git', branch = 'release-v0.9.13', default-features = false }
