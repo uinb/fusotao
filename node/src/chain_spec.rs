@@ -1,4 +1,5 @@
 use beefy_primitives::crypto::AuthorityId as BeefyId;
+use frame_benchmarking::account;
 use fuso_runtime::{
 	opaque::{Block, SessionKeys},
 	AccountId, BabeConfig, Balance, BalancesConfig, FoundationConfig, GenesisConfig, GrandpaConfig,
@@ -105,6 +106,8 @@ pub fn development_config() -> Result<ChainSpec, String> {
 				Some(vec![
 					get_account_id_from_seed::<sr25519::Public>("Alice"),
 					get_account_id_from_seed::<sr25519::Public>("Bob"),
+					account("Ben", 0, 0),
+					account("Lance", 0, 0),
 				]),
 				true,
 			)
@@ -236,8 +239,22 @@ fn testnet_genesis(
 		},
 		foundation: FoundationConfig {
 			fund: vec![
-				(get_account_id_from_seed::<sr25519::Public>("Charile"), 1, 1, 100, 1000 * DOLLARS, 2000 * DOLLARS),
-				(get_account_id_from_seed::<sr25519::Public>("Eva"), 1, 2, 99, 100 * DOLLARS, 2000 * DOLLARS),
+				(
+					get_account_id_from_seed::<sr25519::Public>("Charile"),
+					1,
+					1,
+					100,
+					1000 * DOLLARS,
+					2000 * DOLLARS,
+				),
+				(
+					get_account_id_from_seed::<sr25519::Public>("Eva"),
+					1,
+					2,
+					99,
+					100 * DOLLARS,
+					2000 * DOLLARS,
+				),
 			],
 		},
 	}
