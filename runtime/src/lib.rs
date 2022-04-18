@@ -680,7 +680,7 @@ impl pallet_fuso_verifier::Config for Runtime {
 	type Event = Event;
 	type Asset = Token;
 	type Rewarding = Reward;
-	type SelfWeightInfo = ();
+	type WeightInfo = ();
 	type DominatorOnlineThreshold = DominatorOnlineThreshold;
 	type SeasonDuration = SeasonDuration;
 	type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
@@ -995,6 +995,7 @@ impl_runtime_apis! {
 			list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
 			list_benchmark!(list, extra, pallet_balances, Balances);
 			list_benchmark!(list, extra, pallet_timestamp, Timestamp);
+			list_benchmark!(list, extra, pallet_fuso_verifier, Verifier);
 
 			let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -1032,6 +1033,7 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
 			add_benchmark!(params, batches, pallet_balances, Balances);
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
+			add_benchmark!(params, batches, pallet_fuso_verifier, Verifier);
 
 			Ok(batches)
 		}
