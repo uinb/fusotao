@@ -672,6 +672,8 @@ parameter_types! {
 	pub const SeasonDuration: BlockNumber = DAYS;
 	pub const MinimalStakingAmount: Balance = 100 * DOLLARS;
 	pub const DominatorCheckGracePeriod: BlockNumber = 20;
+	pub const MaxTakerFee: u32 = 10000;
+	pub const MaxMakerFee: u32 = 10000;
 }
 
 const_assert!(DAYS % 20 == 0);
@@ -685,6 +687,8 @@ impl pallet_fuso_verifier::Config for Runtime {
 	type SeasonDuration = SeasonDuration;
 	type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
 	type MinimalStakingAmount = MinimalStakingAmount;
+	type MaxMakerFee = MaxMakerFee;
+	type MaxTakerFee = MaxTakerFee;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
