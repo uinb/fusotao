@@ -658,6 +658,7 @@ impl pallet_fuso_foundation::Config for Runtime {
 parameter_types! {
 	pub const EraDuration: BlockNumber = DAYS;
 	pub const RewardsPerEra: Balance = 26300 * DOLLARS;
+	pub const RewardTerminateAt: BlockNumber = 1825 * DAYS;
 }
 
 impl pallet_fuso_reward::Config for Runtime {
@@ -665,6 +666,7 @@ impl pallet_fuso_reward::Config for Runtime {
 	type Asset = Token;
 	type EraDuration = EraDuration;
 	type RewardsPerEra = RewardsPerEra;
+	type RewardTerminateAt = RewardTerminateAt;
 }
 
 parameter_types! {
