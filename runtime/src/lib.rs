@@ -116,7 +116,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 114,
+	spec_version: 115,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 1,
@@ -672,6 +672,8 @@ parameter_types! {
 	pub const SeasonDuration: BlockNumber = DAYS;
 	pub const MinimalStakingAmount: Balance = 100 * DOLLARS;
 	pub const DominatorCheckGracePeriod: BlockNumber = 20;
+	pub const MaxTakerFee: u32 = 10000;
+	pub const MaxMakerFee: u32 = 10000;
 }
 
 const_assert!(DAYS % 20 == 0);
@@ -685,6 +687,8 @@ impl pallet_fuso_verifier::Config for Runtime {
 	type SeasonDuration = SeasonDuration;
 	type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
 	type MinimalStakingAmount = MinimalStakingAmount;
+	type MaxMakerFee = MaxMakerFee;
+	type MaxTakerFee = MaxTakerFee;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
