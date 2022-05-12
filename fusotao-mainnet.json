@@ -1,6 +1,6 @@
 {
   "name": "Fusotao",
-  "id": "mainnet",
+  "id": "fusotao",
   "chainType": "Live",
   "bootNodes": [
     "/dns/bootnode-v1-0.fusotao.mainnet.octopus.network/tcp/30333/ws/p2p/12D3KooWJyQ2SwYF9to5uNxuC3vj4AYW76fGnRYgURwn6Z89qWwo",
@@ -9,7 +9,7 @@
     "/dns/bootnode-v1-3.fusotao.mainnet.octopus.network/tcp/30333/ws/p2p/12D3KooWC3b5n69g2kJqRWE5oFee3PhpTwAmfPPRyTYp2x6z8qHM"
   ],
   "telemetryEndpoints": null,
-  "protocolId": null,
+  "protocolId": "tao",
   "properties": {
     "ss58Format": 42,
     "tokenDecimals": 18,
@@ -61,19 +61,19 @@
         "validators": [
           [
             "5FCo8Sn7ouZG7p1qYdz22oLFzEiMasoAd6uDWeyZMEGNBPed",
-            10000000000000000000000
+            50000000000000000000000
           ],
           [
             "5CV15nRP5tpb6BDCPheuwFg3RNPoDNJYTcMwkZKk69dgUSSH",
-            10000000000000000000000
+            50000000000000000000000
           ],
           [
             "5G6k8VuygMXaX8QrLavWDbhNW2M4JAwF5rQr34CWgDQYWkPq",
-            10000000000000000000000
+            50000000000000000000000
           ],
           [
             "5DfTUkmgaifzd6HYnkjZeMcyZ1sM8nkvKmLFFJ5DpokunNRd",
-            10000000000000000000000
+            50000000000000000000000
           ]
         ],
         "preminedAmount": 10500000000000000000000000,
