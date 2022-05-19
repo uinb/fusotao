@@ -1,7 +1,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use std::sync::Arc;
 use beefy_gadget::notification::{BeefyBestBlockSender, BeefySignedCommitmentSender};
+use std::sync::Arc;
 
 use fuso_runtime::{opaque::Block, RuntimeApi};
 use sc_client_api::{BlockBackend, ExecutorProvider};
@@ -12,7 +12,6 @@ use sc_network::NetworkService;
 use sc_service::{config::Configuration, error::Error as ServiceError, RpcHandlers, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_runtime::traits::Block as BlockT;
-
 
 // Our native executor instance.
 pub struct ExecutorDispatch;
@@ -270,8 +269,14 @@ pub fn new_full_base(
 		&client.block_hash(0).ok().flatten().expect("Genesis block exists; qed"),
 		&config.chain_spec,
 	);
-	config.network.extra_sets.push(grandpa::grandpa_peers_set_config(grandpa_protocol_name.clone()));
-	config.network.extra_sets.push(beefy_gadget::beefy_peers_set_config(beefy_protocol_name.clone()));
+	config
+		.network
+		.extra_sets
+		.push(grandpa::grandpa_peers_set_config(grandpa_protocol_name.clone()));
+	config
+		.network
+		.extra_sets
+		.push(beefy_gadget::beefy_peers_set_config(beefy_protocol_name.clone()));
 	let warp_sync = Arc::new(grandpa::warp_proof::NetworkProvider::new(
 		backend.clone(),
 		import_setup.1.shared_authority_set().clone(),
@@ -319,7 +324,7 @@ pub fn new_full_base(
 		telemetry: telemetry.as_mut(),
 	})?;
 
-	let (block_import, grandpa_link, babe_link, beefy_links) = import_setup ;
+	let (block_import, grandpa_link, babe_link, beefy_links) = import_setup;
 
 	(with_startup_data)(&block_import, &babe_link);
 
