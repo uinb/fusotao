@@ -586,11 +586,11 @@ impl pallet_fuso_token::Config for Runtime {
 }
 
 parameter_types! {
-	   pub const OctopusAppchainPalletId: PalletId = PalletId(*b"py/octps");
-	   pub const GracePeriod: u32 = 10;
-	   pub const UnsignedPriority: u64 = 1 << 21;
-	   pub const RequestEventLimit: u32 = 10;
-	   pub const UpwardMessagesLimit: u32 = 10;
+	pub const OctopusAppchainPalletId: PalletId = PalletId(*b"py/octps");
+	pub const GracePeriod: u32 = 10;
+	pub const UnsignedPriority: u64 = 1 << 21;
+	pub const RequestEventLimit: u32 = 10;
+	pub const UpwardMessagesLimit: u32 = 10;
 }
 
 impl pallet_octopus_appchain::Config for Runtime {
