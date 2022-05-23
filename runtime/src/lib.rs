@@ -730,7 +730,6 @@ construct_runtime!(
 		Mmr: pallet_mmr,
 		Beefy: pallet_beefy,
 		MmrLeaf: pallet_beefy_mmr,
-
 		Sudo: pallet_sudo,
 		Foundation: pallet_fuso_foundation,
 		Token: pallet_fuso_token,
@@ -897,7 +896,6 @@ impl_runtime_apis! {
 			key_owner_proof: sp_consensus_babe::OpaqueKeyOwnershipProof,
 		) -> Option<()> {
 			let key_owner_proof = key_owner_proof.decode()?;
-
 			Babe::submit_unsigned_equivocation_report(
 				equivocation_proof,
 				key_owner_proof,
@@ -934,7 +932,6 @@ impl_runtime_apis! {
 			key_owner_proof: fg_primitives::OpaqueKeyOwnershipProof,
 		) -> Option<()> {
 			let key_owner_proof = key_owner_proof.decode()?;
-
 			Grandpa::submit_unsigned_equivocation_report(
 				equivocation_proof,
 				key_owner_proof,
@@ -1038,13 +1035,10 @@ impl_runtime_apis! {
 			config: frame_benchmarking::BenchmarkConfig
 		) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
 			use frame_benchmarking::{baseline, Benchmarking, BenchmarkBatch, TrackedStorageKey};
-
 			use frame_system_benchmarking::Pallet as SystemBench;
 			use baseline::Pallet as BaselineBench;
-
 			impl frame_system_benchmarking::Config for Runtime {}
 			impl baseline::Config for Runtime {}
-
 			let whitelist: Vec<TrackedStorageKey> = vec![
 				// Block Number
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac").to_vec().into(),
@@ -1057,7 +1051,6 @@ impl_runtime_apis! {
 				// System Events
 				hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7").to_vec().into(),
 			];
-
 			let mut batches = Vec::<BenchmarkBatch>::new();
 			let params = (&config, &whitelist);
 			add_benchmark!(params, batches, frame_benchmarking, BaselineBench::<Runtime>);
@@ -1066,7 +1059,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_timestamp, Timestamp);
 			add_benchmark!(params, batches, pallet_fuso_verifier, Verifier);
 			add_benchmarks!(params, batches);
-
 			Ok(batches)
 		}
 	}
