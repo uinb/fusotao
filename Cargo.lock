@@ -2059,7 +2059,7 @@ dependencies = [
 
 [[package]]
 name = "fusotao"
-version = "0.9.13"
+version = "0.9.18"
 dependencies = [
  "beefy-gadget",
  "beefy-gadget-rpc",
