@@ -1,3 +1,7 @@
+
+# brandy-0.4.1
+update substrate to v0.9.18
+
 # v0.1.15
 
 fix bug: bid IOC
