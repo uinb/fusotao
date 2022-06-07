@@ -1,6 +1,6 @@
-# v0.9.18-brandy.1
+# v0.9.18-gin.1
 
-test upgrading v0.9.13 to v0.9.18 on brandy testnet
+bump v0.9.18 for testing upgrading from v0.9.13 to v0.9.18 on gin devnet
 
 # v0.1.15
 
