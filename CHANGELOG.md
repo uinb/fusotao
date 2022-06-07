@@ -1,3 +1,7 @@
+# v0.9.18-brandy.1
+
+test upgrading v0.9.13 to v0.9.18 on brandy testnet
+
 # v0.1.15
 
 fix bug: bid IOC
