@@ -38,14 +38,6 @@ jobs:
         run: |
           cargo build --release
 
-      - name: Build Chain Spec
-        run: |
-          code=$(target/release/fuso build-spec --chain local | jq .genesis.runtime.system.code)
-          sed -i -f - fusotao-*.json << EOF
-          s/{{code}}/$code/g
-          EOF
-          target/release/fuso build-spec --raw --chain fusotao-brandy.json > resources/octopus-testnet.json
-
       - uses: montudor/action-zip@v1
         with:
           args: zip -j -r fusotao.zip target/release/fuso target/release/wbuild/fuso-runtime/fuso_runtime.compact.compressed.wasm resources/ README.md LICENSE
