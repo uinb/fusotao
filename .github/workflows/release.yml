@@ -41,7 +41,7 @@ jobs:
       - name: Build Chain Spec
         run: |
           code=$(target/release/fuso build-spec --chain local | jq .genesis.runtime.system.code)
-          sed -i ".bak" -f - fusotao-*.json << EOF
+          sed -i -f - fusotao-*.json << EOF
           s/{{code}}/$code/g
           EOF
           target/release/fuso build-spec --raw --chain fusotao-brandy.json > resources/octopus-testnet.json
