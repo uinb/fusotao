@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Set-Up
-        run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl jq
+        run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
 
       - name: Install Rustup
         run: |
@@ -37,15 +37,6 @@ jobs:
       - name: Build
         run: |
           cargo build --release
-
-      - name: Build Chain Spec
-        run: |
-          code=$(target/release/fuso build-spec --chain local | jq .genesis.runtime.system.code)
-          sed -i -f - fusotao-*.json << EOF
-          s/{{code}}/$code/g
-          EOF
-          target/release/fuso build-spec --raw --chain fusotao-brandy.json > resources/octopus-testnet.json
-          target/release/fuso build-spec --raw --chain fusotao-mainnet.json > resources/octopus-mainnet.json
 
       - uses: montudor/action-zip@v1
         with:
