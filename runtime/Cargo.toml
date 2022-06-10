@@ -125,7 +125,6 @@ std = [
 	"pallet-octopus-upward-messages/std",
 	'pallet-fuso-foundation/std',
 	'pallet-fuso-verifier/std',
-	'pallet-fuso-verifier/runtime-benchmarks',
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
@@ -136,5 +135,6 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	'pallet-fuso-verifier/runtime-benchmarks',
 ]
 
