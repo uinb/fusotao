@@ -1,3 +1,7 @@
+# v0.9.18-brandy.5
+
+include pallet_fuso_verifier benchmarking
+
 # v0.9.18-brandy.4
 
 update ci to package wasm and chainspec together
