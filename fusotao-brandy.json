@@ -54,10 +54,6 @@
             10000000000000000000
           ],
           [
-            "5GTQMM2DeAxvbghk4GhfHMn7vRbXa4koBCyjJAozA5Y5AdH3",
-            2000000000000000000000000
-          ],
-          [
             "5CqbnEBSNvMFyQcCWoPw9vMjRR4M8YaxryBF5JPhovnxjaQ7",
             10000000000000000000000000
           ],
@@ -153,7 +149,7 @@
         "authorities": []
       },
       "sudo": {
-        "key": "5CqbnEBSNvMFyQcCWoPw9vMjRR4M8YaxryBF5JPhovnxjaQ7"
+        "key": "5DPMVEQweRogoadUDA6AkUuSQwieg6YCKB4GzT5JAkDvn9Tw"
       },
       "foundation": {
         "fund": [
