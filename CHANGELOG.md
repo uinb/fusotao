@@ -1,3 +1,8 @@
+# v0.9.13-brandy.6
+
+- restore chainspec to commit(8531b97) (chain spec md5: 1f01956368f036fe6d279ac19d78fa30)
+- [NOTICE] don't use any other chainspec after upgrading to substrate 0.9.18
+
 # v0.9.13-brandy.3
 
 include wasm and chainspec in package
