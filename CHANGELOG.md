@@ -1,3 +1,7 @@
+# v0.9.18-brandy.6
+
+restore chainspec(md5: 1f01956368f036fe6d279ac19d78fa30)
+
 # v0.9.18-brandy.5
 
 include pallet_fuso_verifier benchmarking
