@@ -7,7 +7,7 @@ use fuso_runtime::{
 	SystemConfig, DOLLARS, WASM_BINARY,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
-use pallet_octopus_appchain::AuthorityId as OctopusId;
+use pallet_octopus_appchain::sr25519::AuthorityId as OctopusId;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
@@ -231,7 +231,7 @@ fn testnet_genesis(
 		beefy: Default::default(),
 		octopus_appchain: OctopusAppchainConfig {
 			anchor_contract: "".to_string(),
-			asset_id_by_name: vec![],
+			asset_id_by_token_id: vec![],
 			validators,
 			premined_amount: 1024 * DOLLARS,
 		},
