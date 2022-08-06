@@ -4,7 +4,7 @@ edition = '2021'
 license = 'Apache-2.0'
 name = 'fusotao'
 publish = false
-version = '0.9.18'
+version = '4.0.1-release'
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
@@ -24,7 +24,7 @@ jsonrpc-core = '18.0.0'
 structopt = '0.3.25'
 
 fuso-runtime = { path = '../runtime' }
-fuso-verifier-rpc = { git = "https://github.com/uinb/fusotao-protocol.git", branch ='polkadot-v0.9.18-dev', default-features = false, package = "fuso-verifier-rpc" }
+fuso-verifier-rpc = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v4.0.1", default-features = false, package = "fuso-verifier-rpc" }
 
 clap = { version = "3.0", features = ["derive"] }
 sc-cli = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18", features = ["wasmtime"] }
@@ -73,4 +73,4 @@ sp-authorship = { version = "4.0.0-dev", git = "https://github.com/paritytech/su
 sp-consensus-babe = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
 sp-keystore = { version = "0.12.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
 sp-transaction-storage-proof = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
-pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.18" }
+pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets.git", tag = "v0.9.18" }

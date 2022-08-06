@@ -7,7 +7,7 @@ use fuso_runtime::{
 	SystemConfig, DOLLARS, WASM_BINARY,
 };
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
-use pallet_octopus_appchain::AuthorityId as OctopusId;
+use pallet_octopus_appchain::sr25519::AuthorityId as OctopusId;
 use sc_chain_spec::ChainSpecExtension;
 use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
@@ -84,6 +84,10 @@ pub fn authority_keys_from_seed(
 
 pub fn octopus_testnet_config() -> Result<ChainSpec, String> {
 	ChainSpec::from_json_bytes(&include_bytes!("../../resources/octopus-testnet.json")[..])
+}
+
+pub fn octopus_mainnet_config() -> Result<ChainSpec, String> {
+	ChainSpec::from_json_bytes(&include_bytes!("../../resources/octopus-mainnet.json")[..])
 }
 
 pub fn development_config() -> Result<ChainSpec, String> {
@@ -231,7 +235,7 @@ fn testnet_genesis(
 		beefy: Default::default(),
 		octopus_appchain: OctopusAppchainConfig {
 			anchor_contract: "".to_string(),
-			asset_id_by_name: vec![],
+			asset_id_by_token_id: vec![],
 			validators,
 			premined_amount: 1024 * DOLLARS,
 		},
