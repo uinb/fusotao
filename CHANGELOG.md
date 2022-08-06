@@ -1,3 +1,9 @@
+# v0.9.18-rum
+
+- Genesis config final check
+- bump 4.0.1
+- update oct dependencies to 0.9.18
+
 # v0.9.18-brandy.6
 
 restore chainspec(md5: 1f01956368f036fe6d279ac19d78fa30)
