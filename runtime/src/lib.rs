@@ -114,7 +114,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 118,
+	spec_version: 120,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -165,6 +165,7 @@ pub const EPOCH_DURATION_IN_SLOTS: u64 = {
 pub const MINUTES: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
+pub const MONTHS: BlockNumber = DAYS * 30;
 
 /// The BABE epoch configuration at genesis.
 pub const BABE_GENESIS_EPOCH_CONFIG: sp_consensus_babe::BabeEpochConfiguration =
@@ -659,7 +660,7 @@ impl pallet_sudo::Config for Runtime {
 }
 
 parameter_types! {
-	pub const Duration: BlockNumber = DAYS;
+	pub const Duration: BlockNumber = MONTHS;
 }
 
 impl pallet_fuso_foundation::Config for Runtime {
@@ -683,7 +684,7 @@ impl pallet_fuso_reward::Config for Runtime {
 
 parameter_types! {
 	pub const DominatorOnlineThreshold: Balance = 80_000 * DOLLARS;
-	pub const SeasonDuration: BlockNumber = DAYS;
+	pub const SeasonDuration: BlockNumber = 3 * DAYS;
 	pub const MinimalStakingAmount: Balance = 100 * DOLLARS;
 	pub const DominatorCheckGracePeriod: BlockNumber = 20;
 	pub const MaxTakerFee: u32 = 10000;

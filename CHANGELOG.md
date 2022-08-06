@@ -1,3 +1,8 @@
+# v0.9.18-rum.1
+
+- adjust the unit of unlocking duration
+- update protocol implementation to maintain total issuance of tao token
+
 # v0.9.18-rum
 
 - Genesis config final check
