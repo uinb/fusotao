@@ -1,3 +1,8 @@
+# v0.9.18-rum.2
+
+- update octopus pallets to v0.9.18-2
+- update runtime spec version to 121
+
 # v0.9.18-rum.1
 
 - adjust the unit of unlocking duration
