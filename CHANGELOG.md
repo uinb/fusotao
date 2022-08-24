@@ -1,7 +1,11 @@
 # v0.9.18-rum.3
 
-- change staking strategy: works instantly
-- update oct dependencies
+- change staking strategy: `stake_since` works instantly
+
+# v0.9.18-rum.2
+
+- update octopus pallets to v0.9.18-2
+- update runtime spec version to 121
 
 # v0.9.18-rum.1
 
