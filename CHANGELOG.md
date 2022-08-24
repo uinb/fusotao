@@ -1,6 +1,7 @@
 # v0.9.18-rum.3
 
 - change staking strategy: `stake_since` works instantly
+- update yamux version
 
 # v0.9.18-rum.2
 
