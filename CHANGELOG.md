@@ -1,3 +1,8 @@
+# v0.9.18-rum.3
+
+- change staking strategy: works instantly
+- update oct dependencies
+
 # v0.9.18-rum.1
 
 - adjust the unit of unlocking duration
