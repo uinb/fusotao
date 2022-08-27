@@ -18,7 +18,7 @@
 - [Octopus Network](https://github.com/octopus-network) powers us.
 
 ## Papers
-[Draft](https://github.com/uinb/papers)
+[Greenbook](https://github.com/uinb/papers)
 
 ## License
 

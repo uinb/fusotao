@@ -1,3 +1,7 @@
+# v0.9.18-rum.4
+
+- add minimal bridging limit
+
 # v0.9.18-rum.3
 
 - change staking strategy: `stake_since` works instantly
