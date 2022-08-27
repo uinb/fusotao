@@ -1,3 +1,7 @@
+# v0.9.18-rum.5
+
+- delay unstaking for 1 season
+
 # v0.9.18-rum.4
 
 - add minimal bridging limit
