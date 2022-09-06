@@ -1,3 +1,7 @@
+# v0.9.18-rum.6
+
+- update octopus dependencies
+
 # v0.9.18-rum.5
 
 - delay unstaking for 1 season
