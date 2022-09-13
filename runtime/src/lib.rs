@@ -114,7 +114,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 125,
+	spec_version: 126,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -683,7 +683,8 @@ impl pallet_fuso_foundation::Config for Runtime {
 
 parameter_types! {
 	pub const EraDuration: BlockNumber = DAYS;
-	pub const RewardsPerEra: Balance = 26300 * DOLLARS;
+	// TODO move this to storage and automatically calculate by the $tao price
+	pub const RewardsPerEra: Balance = 6575 * DOLLARS;
 	pub const RewardTerminateAt: BlockNumber = 1825 * DAYS;
 }
 
