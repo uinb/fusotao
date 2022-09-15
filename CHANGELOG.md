@@ -1,3 +1,7 @@
+# v0.9.18-rum.8
+
+- update unstake strategy
+
 # v0.9.18-rum.7
 
 - adjust trading rewards by difficulties
