@@ -37,6 +37,7 @@ pub use frame_support::{
 use frame_support::{weights::DispatchClass, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
 pub use pallet_balances::Call as BalancesCall;
+use pallet_chainbridge::EthAddress;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_mmr_primitives as mmr;
 use pallet_session::historical as pallet_session_historical;
@@ -385,6 +386,52 @@ impl pallet_transaction_payment::Config for Runtime {
 }
 
 parameter_types! {
+	pub const ChainId: u8 = 1;
+	pub const ProposalLifetime: BlockNumber = 1000;
+}
+
+impl pallet_chainbridge::Config for Runtime {
+	type Event = Event;
+	type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
+	type Proposal = Call;
+	type ChainId = ChainId;
+	type ProposalLifetime = ProposalLifetime;
+}
+
+parameter_types! {
+	// Note: Chain ID is 0 indicating this is native to another chain
+	pub TAONativeTokenId: pallet_chainbridge::ResourceId = pallet_chainbridge::derive_resource_id(0, &sp_io::hashing::blake2_128(b"TAO"));
+	pub HashId: pallet_chainbridge::ResourceId = pallet_chainbridge::derive_resource_id(0, &sp_io::hashing::blake2_128(b"hash"));
+	pub Erc721Id: pallet_chainbridge::ResourceId = pallet_chainbridge::derive_resource_id(0, &sp_io::hashing::blake2_128(b"NFT"));
+	pub NativeTokenMaxValue: Balance = 100_000_000_000_000 * OCT; // need corrent set
+}
+
+impl pallet_chainbridge_erc721::Config for Runtime {
+	type Event = Event;
+	type Identifier = Erc721Id;
+}
+
+pub type AssetBalance = u128;
+pub type AssetId = u32;
+pub const OCT: Balance = 1_000_000_000_000_000_000;
+
+impl pallet_chainbridge_transfer::Config for Runtime {
+	type Event = Event;
+	type BridgeOrigin = pallet_chainbridge::EnsureBridge<Runtime>;
+	type Currency = Balances;
+	type NativeTokenId = TAONativeTokenId;
+	type Call = Call;
+	type AssetId = AssetId;
+	type AssetBalance = AssetBalance;
+	type Fungibles = Token;
+	type AssetIdByName = ChainBridgeTransfer;
+	type NativeTokenMaxValue = NativeTokenMaxValue;
+	type HashId = HashId;
+	type Agent = Agent;
+	type Erc721Id = Erc721Id;
+}
+
+parameter_types! {
 	pub const MultisigDepositBase: Balance = DOLLARS;
 	pub const MultisigDepositFactor: Balance = MILLICENTS;
 	pub const MaxSignatories: u16 = 5;
@@ -720,6 +767,14 @@ impl pallet_fuso_verifier::Config for Runtime {
 	type MaxTakerFee = MaxTakerFee;
 }
 
+pub type Controller = (Vec<u8>, Vec<u8>);
+
+impl pallet_fuso_agent::Config for Runtime {
+	type Event = Event;
+	type Controller = Controller;
+	type Function = Call;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -752,6 +807,10 @@ construct_runtime!(
 		Token: pallet_fuso_token,
 		Reward: pallet_fuso_reward,
 		Verifier: pallet_fuso_verifier,
+		ChainBridge: pallet_chainbridge,
+		ChainBridgeTransfer: pallet_chainbridge_transfer,
+		Erc721: pallet_chainbridge_erc721,
+		Agent: pallet_fuso_agent,
 	}
 );
 

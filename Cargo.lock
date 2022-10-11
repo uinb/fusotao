@@ -1965,6 +1965,10 @@ dependencies = [
  "pallet-balances",
  "pallet-beefy",
  "pallet-beefy-mmr",
+ "pallet-chainbridge",
+ "pallet-chainbridge-erc721",
+ "pallet-chainbridge-transfer",
+ "pallet-fuso-agent",
  "pallet-fuso-foundation",
  "pallet-fuso-reward",
  "pallet-fuso-token",
@@ -1992,6 +1996,7 @@ dependencies = [
  "sp-consensus-babe",
  "sp-core",
  "sp-inherents",
+ "sp-io",
  "sp-offchain",
  "sp-runtime",
  "sp-session",
@@ -2005,8 +2010,8 @@ dependencies = [
 
 [[package]]
 name = "fuso-support"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-chainbridge-test.7#a2f4580df27502fdb432cda9cc5f5e21f82f00d9"
 dependencies = [
  "bit-vec",
  "byteorder",
@@ -2021,8 +2026,8 @@ dependencies = [
 
 [[package]]
 name = "fuso-verifier-rpc"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-chainbridge-test.7#a2f4580df27502fdb432cda9cc5f5e21f82f00d9"
 dependencies = [
  "fuso-verifier-runtime-api",
  "jsonrpc-core",
@@ -2038,8 +2043,8 @@ dependencies = [
 
 [[package]]
 name = "fuso-verifier-runtime-api"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-chainbridge-test.7#a2f4580df27502fdb432cda9cc5f5e21f82f00d9"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -4286,9 +4291,83 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-chainbridge"
+version = "0.1.0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-chainbridge-test.7#a2f4580df27502fdb432cda9cc5f5e21f82f00d9"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-chainbridge-erc721"
+version = "0.1.0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-chainbridge-test.7#a2f4580df27502fdb432cda9cc5f5e21f82f00d9"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "hex",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-chainbridge-transfer"
+version = "0.1.0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-chainbridge-test.7#a2f4580df27502fdb432cda9cc5f5e21f82f00d9"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "fuso-support",
+ "hex",
+ "log",
+ "pallet-chainbridge",
+ "pallet-chainbridge-erc721",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-fuso-agent"
+version = "4.0.2-dev"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-chainbridge-test.7#a2f4580df27502fdb432cda9cc5f5e21f82f00d9"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "fuso-support",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-fuso-foundation"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-chainbridge-test.7#a2f4580df27502fdb432cda9cc5f5e21f82f00d9"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4306,8 +4385,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-fuso-reward"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-chainbridge-test.7#a2f4580df27502fdb432cda9cc5f5e21f82f00d9"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4324,8 +4403,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-fuso-token"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-chainbridge-test.7#a2f4580df27502fdb432cda9cc5f5e21f82f00d9"
 dependencies = [
  "ascii",
  "frame-benchmarking",
@@ -4345,8 +4424,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-fuso-verifier"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-chainbridge-test.7#a2f4580df27502fdb432cda9cc5f5e21f82f00d9"
 dependencies = [
  "ascii",
  "frame-benchmarking",
@@ -8259,7 +8338,7 @@ version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
- "cfg-if 1.0.0",
+ "cfg-if 0.1.10",
  "digest 0.10.3",
  "rand 0.8.5",
  "static_assertions",
