@@ -76,9 +76,9 @@ pallet-fuso-foundation = { git = "https://github.com/uinb/fusotao-protocol.git",
 pallet-fuso-reward = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18-chainbridge-test.8", default-features = false, package = "pallet-fuso-reward" }
 fuso-verifier-runtime-api = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18-chainbridge-test.8", default-features = false, package = "fuso-verifier-runtime-api" }
 
-pallet-chainbridge = {default-features = false, git = "https://github.com/uinb/fusotao-chainbridge.git", branch = "main", package = "pallet-chainbridge"}
-pallet-chainbridge-transfer = {default-features = false, git = "https://github.com/uinb/fusotao-chainbridge.git", branch = "main", package = "pallet-chainbridge-transfer"}
-pallet-chainbridge-erc721 = {default-features = false,  git = "https://github.com/uinb/fusotao-chainbridge.git", branch = "main", package = "pallet-chainbridge-erc721"}
+pallet-chainbridge = {default-features = false, git = "https://github.com/uinb/fusotao-chainbridge.git", branch = "master", package = "pallet-chainbridge"}
+pallet-chainbridge-transfer = {default-features = false, git = "https://github.com/uinb/fusotao-chainbridge.git", branch = "master", package = "pallet-chainbridge-transfer"}
+pallet-chainbridge-erc721 = {default-features = false,  git = "https://github.com/uinb/fusotao-chainbridge.git", branch = "master", package = "pallet-chainbridge-erc721"}
 sp-io = {default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
 
 

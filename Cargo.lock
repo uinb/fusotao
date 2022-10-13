@@ -4293,13 +4293,13 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-chainbridge.git?branch=main#028194686045647eacdd0dcb40e5c82cc2593641"
+source = "git+https://github.com/uinb/fusotao-chainbridge.git?branch=master#bd1ca3bb4bc646eba5d1bef1c8c4e390cc88b52a"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",
- "pallet-chainbridge-support",
+ "pallet-chainbridge-support 0.1.0 (git+https://github.com/uinb/fusotao-chainbridge.git?branch=master)",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
@@ -4311,7 +4311,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge-erc721"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-chainbridge.git?branch=main#028194686045647eacdd0dcb40e5c82cc2593641"
+source = "git+https://github.com/uinb/fusotao-chainbridge.git?branch=master#bd1ca3bb4bc646eba5d1bef1c8c4e390cc88b52a"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4339,9 +4339,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-chainbridge-support"
+version = "0.1.0"
+source = "git+https://github.com/uinb/fusotao-chainbridge.git?branch=master#bd1ca3bb4bc646eba5d1bef1c8c4e390cc88b52a"
+dependencies = [
+ "borsh",
+ "frame-support",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-chainbridge-transfer"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-chainbridge.git?branch=main#028194686045647eacdd0dcb40e5c82cc2593641"
+source = "git+https://github.com/uinb/fusotao-chainbridge.git?branch=master#bd1ca3bb4bc646eba5d1bef1c8c4e390cc88b52a"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4349,7 +4362,7 @@ dependencies = [
  "log",
  "pallet-chainbridge",
  "pallet-chainbridge-erc721",
- "pallet-chainbridge-support",
+ "pallet-chainbridge-support 0.1.0 (git+https://github.com/uinb/fusotao-chainbridge.git?branch=master)",
  "parity-scale-codec",
  "scale-info",
  "sp-arithmetic",
@@ -4407,7 +4420,7 @@ dependencies = [
  "frame-system",
  "fuso-support",
  "pallet-balances",
- "pallet-chainbridge-support",
+ "pallet-chainbridge-support 0.1.0 (git+https://github.com/uinb/fusotao-chainbridge.git?branch=main)",
  "pallet-octopus-support",
  "parity-scale-codec",
  "scale-info",
