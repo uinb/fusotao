@@ -139,5 +139,6 @@ runtime-benchmarks = [
 	"pallet-timestamp/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	'pallet-fuso-verifier/runtime-benchmarks',
+	'pallet-chainbridge/runtime-benchmarks'
 ]
 

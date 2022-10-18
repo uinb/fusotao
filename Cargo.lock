@@ -4293,6 +4293,7 @@ name = "pallet-chainbridge"
 version = "0.1.0"
 source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.1#659e42305c7d35aa3de60236639a10f02e5b7eb6"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "fuso-support",
