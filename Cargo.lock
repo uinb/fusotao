@@ -1965,6 +1965,8 @@ dependencies = [
  "pallet-balances",
  "pallet-beefy",
  "pallet-beefy-mmr",
+ "pallet-chainbridge",
+ "pallet-chainbridge-handler",
  "pallet-fuso-foundation",
  "pallet-fuso-reward",
  "pallet-fuso-token",
@@ -2005,14 +2007,15 @@ dependencies = [
 
 [[package]]
 name = "fuso-support"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.1#659e42305c7d35aa3de60236639a10f02e5b7eb6"
 dependencies = [
  "bit-vec",
  "byteorder",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
+ "scale-info",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -2021,8 +2024,8 @@ dependencies = [
 
 [[package]]
 name = "fuso-verifier-rpc"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.1#659e42305c7d35aa3de60236639a10f02e5b7eb6"
 dependencies = [
  "fuso-verifier-runtime-api",
  "jsonrpc-core",
@@ -2038,8 +2041,8 @@ dependencies = [
 
 [[package]]
 name = "fuso-verifier-runtime-api"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.1#659e42305c7d35aa3de60236639a10f02e5b7eb6"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -4286,9 +4289,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-chainbridge"
+version = "0.1.0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.1#659e42305c7d35aa3de60236639a10f02e5b7eb6"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "fuso-support",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-chainbridge-handler"
+version = "0.1.0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.1#659e42305c7d35aa3de60236639a10f02e5b7eb6"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "fuso-support",
+ "hex",
+ "log",
+ "pallet-chainbridge",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-fuso-foundation"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.1#659e42305c7d35aa3de60236639a10f02e5b7eb6"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4306,8 +4346,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-fuso-reward"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.1#659e42305c7d35aa3de60236639a10f02e5b7eb6"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4324,8 +4364,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-fuso-token"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.1#659e42305c7d35aa3de60236639a10f02e5b7eb6"
 dependencies = [
  "ascii",
  "frame-benchmarking",
@@ -4345,8 +4385,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-fuso-verifier"
-version = "4.0.1-release"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18-rum.7#951e8381bdeff53f299595a503f6f6078842536c"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.1#659e42305c7d35aa3de60236639a10f02e5b7eb6"
 dependencies = [
  "ascii",
  "frame-benchmarking",

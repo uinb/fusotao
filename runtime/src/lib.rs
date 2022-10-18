@@ -114,7 +114,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 127,
+	spec_version: 128,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -600,6 +600,41 @@ impl pallet_fuso_token::Config for Runtime {
 }
 
 parameter_types! {
+	pub const FusotaoChainId: u8 = 42;
+	pub const ProposalLifetime: BlockNumber = HOURS;
+}
+
+impl pallet_chainbridge::Config for Runtime {
+	type Event = Event;
+	type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
+	type ChainId = FusotaoChainId;
+	type Proposal = Call;
+	type ProposalLifetime = ProposalLifetime;
+}
+
+parameter_types! {
+	pub NativeResourceId: fuso_support::chainbridge::ResourceId = pallet_chainbridge::derive_resource_id(FusotaoChainId::get(), b"TAO".as_ref());
+	pub NativeTokenMaxValue: Balance = 0;
+	pub DonorAccount: AccountId = AccountId::new([0u8; 32]);
+	pub DonationForAgent: Balance = 100 * CENTS;
+}
+
+impl pallet_chainbridge_handler::Config for Runtime {
+	type Event = Event;
+	type Call = Call;
+	type Currency = Balances;
+	type Fungibles = Token;
+	type AssetBalance = Balance;
+	type AssetId = TokenId;
+	type AssetIdByName = Token;
+	type BridgeOrigin = pallet_chainbridge::EnsureBridge<Runtime>;
+	type DonationForAgent = DonationForAgent;
+	type DonorAccount = DonorAccount;
+	type NativeResourceId = NativeResourceId;
+	type NativeTokenMaxValue = NativeTokenMaxValue;
+}
+
+parameter_types! {
 	pub const OctopusAppchainPalletId: PalletId = PalletId(*b"py/octps");
 	pub const GracePeriod: u32 = 10;
 	pub const UnsignedPriority: u64 = 1 << 21;
@@ -750,6 +785,8 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		Foundation: pallet_fuso_foundation,
 		Token: pallet_fuso_token,
+		ChainBridge: pallet_chainbridge,
+		ChainBridgeHandler: pallet_chainbridge_handler,
 		Reward: pallet_fuso_reward,
 		Verifier: pallet_fuso_verifier,
 	}
