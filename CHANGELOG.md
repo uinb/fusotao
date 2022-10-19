@@ -1,3 +1,7 @@
+# v0.9.18-chainbridge.10
+
+- integrate with chainbridge
+
 # v0.9.18-chainbridge.9
 
 - integrate with chainbridge
