@@ -50,6 +50,7 @@ use sp_runtime::{
 	transaction_validity::TransactionPriority,
 	FixedPointNumber, Perquintill,
 };
+pub use fuso_support::derive_resource_id;
 pub use sp_runtime::{Perbill, Permill};
 use static_assertions::const_assert;
 
@@ -613,7 +614,7 @@ impl pallet_chainbridge::Config for Runtime {
 }
 
 parameter_types! {
-	pub NativeResourceId: fuso_support::chainbridge::ResourceId = pallet_chainbridge::derive_resource_id(FusotaoChainId::get(), b"TAO".as_ref());
+	pub NativeResourceId: fuso_support::chainbridge::ResourceId = fuso_support::derive_resource_id(FusotaoChainId::get(), b"TAO".as_ref()).unwrap();
 	pub NativeTokenMaxValue: Balance = 0;
 	pub DonorAccount: AccountId = AccountId::new([0u8; 32]);
 	pub DonationForAgent: Balance = 100 * CENTS;
