@@ -2008,7 +2008,7 @@ dependencies = [
 [[package]]
 name = "fuso-support"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.2#ce258183be9993ee5283e1dd6c5f3856273ed2b0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.3#5924048cb1d8d2f5bf4c7316d47b619dc02b4706"
 dependencies = [
  "bit-vec",
  "byteorder",
@@ -2025,7 +2025,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-rpc"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.2#ce258183be9993ee5283e1dd6c5f3856273ed2b0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.3#5924048cb1d8d2f5bf4c7316d47b619dc02b4706"
 dependencies = [
  "fuso-verifier-runtime-api",
  "jsonrpc-core",
@@ -2042,7 +2042,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-runtime-api"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.2#ce258183be9993ee5283e1dd6c5f3856273ed2b0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.3#5924048cb1d8d2f5bf4c7316d47b619dc02b4706"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -4291,7 +4291,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.2#ce258183be9993ee5283e1dd6c5f3856273ed2b0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.3#5924048cb1d8d2f5bf4c7316d47b619dc02b4706"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4309,7 +4309,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge-handler"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.2#ce258183be9993ee5283e1dd6c5f3856273ed2b0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.3#5924048cb1d8d2f5bf4c7316d47b619dc02b4706"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4329,7 +4329,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-foundation"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.2#ce258183be9993ee5283e1dd6c5f3856273ed2b0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.3#5924048cb1d8d2f5bf4c7316d47b619dc02b4706"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4348,7 +4348,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-reward"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.2#ce258183be9993ee5283e1dd6c5f3856273ed2b0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.3#5924048cb1d8d2f5bf4c7316d47b619dc02b4706"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4366,7 +4366,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-token"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.2#ce258183be9993ee5283e1dd6c5f3856273ed2b0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.3#5924048cb1d8d2f5bf4c7316d47b619dc02b4706"
 dependencies = [
  "ascii",
  "frame-benchmarking",
@@ -4387,7 +4387,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-verifier"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.2#ce258183be9993ee5283e1dd6c5f3856273ed2b0"
+source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.final.3#5924048cb1d8d2f5bf4c7316d47b619dc02b4706"
 dependencies = [
  "ascii",
  "frame-benchmarking",

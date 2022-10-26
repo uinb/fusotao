@@ -24,7 +24,7 @@ jsonrpc-core = '18.0.0'
 structopt = '0.3.25'
 
 fuso-runtime = { path = '../runtime' }
-fuso-verifier-rpc = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.final.2", default-features = false, package = "fuso-verifier-rpc" }
+fuso-verifier-rpc = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.final.3", default-features = false, package = "fuso-verifier-rpc" }
 
 clap = { version = "3.0", features = ["derive"] }
 sc-cli = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18", features = ["wasmtime"] }

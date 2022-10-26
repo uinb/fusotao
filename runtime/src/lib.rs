@@ -36,6 +36,7 @@ pub use frame_support::{
 };
 use frame_support::{weights::DispatchClass, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
+pub use fuso_support::derive_resource_id;
 pub use pallet_balances::Call as BalancesCall;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_mmr_primitives as mmr;
@@ -50,7 +51,6 @@ use sp_runtime::{
 	transaction_validity::TransactionPriority,
 	FixedPointNumber, Perquintill,
 };
-pub use fuso_support::derive_resource_id;
 pub use sp_runtime::{Perbill, Permill};
 use static_assertions::const_assert;
 
@@ -115,7 +115,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 129,
+	spec_version: 130,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,

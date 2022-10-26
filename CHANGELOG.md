@@ -1,3 +1,7 @@
+# v0.9.18-chainbridge.11
+
+- update chainbridge agents, add storage of ethereum nonce
+
 # v0.9.18-chainbridge.10
 
 - integrate with chainbridge
