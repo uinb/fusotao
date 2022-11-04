@@ -36,7 +36,7 @@ pub use frame_support::{
 };
 use frame_support::{weights::DispatchClass, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
-pub use fuso_support::derive_resource_id;
+pub use fuso_support::chainbridge::derive_resource_id;
 pub use pallet_balances::Call as BalancesCall;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_mmr_primitives as mmr;
@@ -115,7 +115,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 130,
+	spec_version: 131,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -614,7 +614,7 @@ impl pallet_chainbridge::Config for Runtime {
 }
 
 parameter_types! {
-	pub NativeResourceId: fuso_support::chainbridge::ResourceId = fuso_support::derive_resource_id(FusotaoChainId::get(), b"TAO".as_ref()).unwrap();
+	pub NativeResourceId: fuso_support::chainbridge::ResourceId = derive_resource_id(FusotaoChainId::get(), 0, b"TAO".as_ref()).unwrap();
 	pub NativeTokenMaxValue: Balance = 0;
 	pub DonorAccount: AccountId = AccountId::new([0u8; 32]);
 	pub DonationForAgent: Balance = 100 * CENTS;
@@ -622,7 +622,8 @@ parameter_types! {
 
 impl pallet_chainbridge_handler::Config for Runtime {
 	type Event = Event;
-	type Call = Call;
+	type Redirect = Call;
+	type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
 	type Currency = Balances;
 	type Fungibles = Token;
 	type AssetBalance = Balance;
@@ -746,6 +747,7 @@ const_assert!(DAYS % 20 == 0);
 impl pallet_fuso_verifier::Config for Runtime {
 	type Event = Event;
 	type Asset = Token;
+	type Callback = Call;
 	type Rewarding = Reward;
 	type WeightInfo = ();
 	type DominatorOnlineThreshold = DominatorOnlineThreshold;
