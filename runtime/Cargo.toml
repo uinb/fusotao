@@ -67,15 +67,15 @@ frame-system-benchmarking = { version = "4.0.0-dev", default-features = false, g
 hex-literal = { version = "0.3.4", optional = true }
 pallet-multisig = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.18', default-features = false }
 # fusotao dependencies
-fuso-support = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.1", default-features = false, package = "fuso-support" }
-pallet-fuso-verifier = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.1", default-features = false, package = "pallet-fuso-verifier" }
-pallet-fuso-token = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.1", default-features = false, package = "pallet-fuso-token" }
-pallet-fuso-foundation = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.1", default-features = false, package = "pallet-fuso-foundation" }
-pallet-fuso-reward = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.1", default-features = false, package = "pallet-fuso-reward" }
-fuso-verifier-runtime-api = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.1", default-features = false, package = "fuso-verifier-runtime-api" }
+fuso-support = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.3", default-features = false, package = "fuso-support" }
+pallet-fuso-verifier = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.3", default-features = false, package = "pallet-fuso-verifier" }
+pallet-fuso-token = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.3", default-features = false, package = "pallet-fuso-token" }
+pallet-fuso-foundation = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.3", default-features = false, package = "pallet-fuso-foundation" }
+pallet-fuso-reward = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.3", default-features = false, package = "pallet-fuso-reward" }
+fuso-verifier-runtime-api = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.3", default-features = false, package = "fuso-verifier-runtime-api" }
 # chainbridge dependencies
-pallet-chainbridge = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.1", default-features = false, package = "pallet-chainbridge" }
-pallet-chainbridge-handler = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.1", default-features = false, package = "pallet-chainbridge-handler" }
+pallet-chainbridge = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.3", default-features = false, package = "pallet-chainbridge" }
+pallet-chainbridge-handler = { git = "https://github.com/uinb/fusotao-protocol.git", tag = "v0.9.18.chainbridge.3", default-features = false, package = "pallet-chainbridge-handler" }
 
 [build-dependencies]
 substrate-wasm-builder = { version = "5.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
