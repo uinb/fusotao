@@ -6,6 +6,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use pallet_fuso_agent::EthInstance;
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -804,6 +805,7 @@ construct_runtime!(
 		ChainBridgeHandler: pallet_chainbridge_handler,
 		Reward: pallet_fuso_reward,
 		Verifier: pallet_fuso_verifier,
+		Agent: pallet_fuso_agent::<EthInstance>,
 	}
 );
 
