@@ -601,7 +601,7 @@ impl pallet_fuso_token::Config for Runtime {
 }
 
 parameter_types! {
-	pub const FusotaoChainId: u8 = 42;
+	pub const FusotaoChainId: u16 = 42;
 	pub const ProposalLifetime: BlockNumber = HOURS;
 }
 

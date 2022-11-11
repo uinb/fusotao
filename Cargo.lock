@@ -1967,6 +1967,7 @@ dependencies = [
  "pallet-beefy-mmr",
  "pallet-chainbridge",
  "pallet-chainbridge-handler",
+ "pallet-fuso-agent",
  "pallet-fuso-foundation",
  "pallet-fuso-reward",
  "pallet-fuso-token",
@@ -2008,7 +2009,7 @@ dependencies = [
 [[package]]
 name = "fuso-support"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.chainbridge.3#bd2f6751c3bc4b4eae118b98e268f2a2896e6fcb"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/pallet-agent#6a38b4819610af5fda3fa42985873181b5eac9da"
 dependencies = [
  "bit-vec",
  "byteorder",
@@ -2025,7 +2026,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-rpc"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.chainbridge.3#bd2f6751c3bc4b4eae118b98e268f2a2896e6fcb"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/pallet-agent#6a38b4819610af5fda3fa42985873181b5eac9da"
 dependencies = [
  "fuso-verifier-runtime-api",
  "jsonrpc-core",
@@ -2042,7 +2043,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-runtime-api"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.chainbridge.3#bd2f6751c3bc4b4eae118b98e268f2a2896e6fcb"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/pallet-agent#6a38b4819610af5fda3fa42985873181b5eac9da"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -4291,7 +4292,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.chainbridge.3#bd2f6751c3bc4b4eae118b98e268f2a2896e6fcb"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/pallet-agent#6a38b4819610af5fda3fa42985873181b5eac9da"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4309,7 +4310,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge-handler"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.chainbridge.3#bd2f6751c3bc4b4eae118b98e268f2a2896e6fcb"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/pallet-agent#6a38b4819610af5fda3fa42985873181b5eac9da"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4328,9 +4329,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-fuso-agent"
+version = "4.0.2"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/pallet-agent#6a38b4819610af5fda3fa42985873181b5eac9da"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "fuso-support",
+ "pallet-balances",
+ "pallet-transaction-payment",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-fuso-foundation"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.chainbridge.3#bd2f6751c3bc4b4eae118b98e268f2a2896e6fcb"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/pallet-agent#6a38b4819610af5fda3fa42985873181b5eac9da"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4349,7 +4369,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-reward"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.chainbridge.3#bd2f6751c3bc4b4eae118b98e268f2a2896e6fcb"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/pallet-agent#6a38b4819610af5fda3fa42985873181b5eac9da"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4367,7 +4387,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-token"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.chainbridge.3#bd2f6751c3bc4b4eae118b98e268f2a2896e6fcb"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/pallet-agent#6a38b4819610af5fda3fa42985873181b5eac9da"
 dependencies = [
  "ascii",
  "frame-benchmarking",
@@ -4388,14 +4408,13 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-verifier"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?tag=v0.9.18.chainbridge.3#bd2f6751c3bc4b4eae118b98e268f2a2896e6fcb"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/pallet-agent#6a38b4819610af5fda3fa42985873181b5eac9da"
 dependencies = [
  "ascii",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "fuso-support",
- "hex",
  "log",
  "pallet-balances",
  "pallet-fuso-token",
