@@ -1,3 +1,7 @@
+# v0.9.18-chainbridge.14
+
+- use agent to verify ecdsa signature directly
+
 # v0.9.18-chainbridge.13
 
 - update chainbridge

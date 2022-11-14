@@ -36,7 +36,7 @@ pub use frame_support::{
 };
 use frame_support::{weights::DispatchClass, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
-pub use fuso_support::chainbridge::derive_resource_id;
+use fuso_support::{chainbridge::derive_resource_id, ChainId};
 pub use pallet_balances::Call as BalancesCall;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_mmr_primitives as mmr;
@@ -589,12 +589,21 @@ impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
 
 parameter_types! {
 	pub const NativeTokenId: u32 = 0;
+	pub const NearChainId: ChainId = 255;
+	pub const EthChainId: ChainId = 5;
+	pub const BnbChainId: ChainId = 10;
+	pub const NativeChainId: ChainId = 42;
+
 }
 
 pub type TokenId = u32;
 
 impl pallet_fuso_token::Config for Runtime {
 	type Event = Event;
+	type BnbChainId = BnbChainId;
+	type EthChainId = EthChainId;
+	type NativeChainId = NativeChainId;
+	type NearChainId = NearChainId;
 	type TokenId = TokenId;
 	type NativeTokenId = NativeTokenId;
 	type Weight = pallet_fuso_token::weights::SubstrateWeight<Runtime>;
