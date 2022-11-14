@@ -805,7 +805,6 @@ construct_runtime!(
 		Reward: pallet_fuso_reward,
 		Agent: pallet_fuso_agent::<EthInstance>,
 		Verifier: pallet_fuso_verifier,
-		Agent: pallet_fuso_agent::<EthInstance>,
 	}
 );
 
