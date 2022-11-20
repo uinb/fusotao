@@ -1,3 +1,7 @@
+# v0.9.18-chainbridge.15
+
+- update derive substrate address from evm address
+
 # v0.9.18-chainbridge.14
 
 - use agent to verify ecdsa signature directly
