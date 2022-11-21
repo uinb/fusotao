@@ -115,7 +115,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 135,
+	spec_version: 136,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -643,14 +643,15 @@ impl pallet_chainbridge_handler::Config for Runtime {
 	type NativeTokenMaxValue = NativeTokenMaxValue;
 }
 
-parameter_types! {
+//use EthChainId to replace
+/*parameter_types! {
 	pub const ETHChainId: u16 = 1;
-}
+}*/
 
 impl pallet_fuso_agent::Config<pallet_fuso_agent::EthInstance> for Runtime {
 	type Currency = Balances;
 	type Event = Event;
-	type ExternalChainId = ETHChainId;
+	type ExternalChainId = EthChainId;
 	type ExternalSignWrapper = pallet_fuso_agent::EthPersonalSignWrapper;
 	type Transaction = Call;
 	type TransactionByteFee = TransactionByteFee;
