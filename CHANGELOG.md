@@ -1,3 +1,35 @@
+# v0.9.18-rum.9
+
+- integrate with chainbridge
+
+# v0.9.18-chainbridge.15
+
+- update derive substrate address from evm address
+
+# v0.9.18-chainbridge.14
+
+- use agent to verify ecdsa signature directly
+
+# v0.9.18-chainbridge.13
+
+- update chainbridge
+
+# v0.9.18-chainbridge.12
+
+- update chainbridge
+
+# v0.9.18-chainbridge.11
+
+- update chainbridge agents, add storage of ethereum nonce
+
+# v0.9.18-chainbridge.10
+
+- integrate with chainbridge
+
+# v0.9.18-chainbridge.9
+
+- integrate with chainbridge
+
 # v0.9.18-rum.8
 
 - update unstake strategy

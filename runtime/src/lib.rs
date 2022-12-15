@@ -36,6 +36,7 @@ pub use frame_support::{
 };
 use frame_support::{weights::DispatchClass, PalletId};
 use frame_system::limits::{BlockLength, BlockWeights};
+use fuso_support::{chainbridge::derive_resource_id, ChainId};
 pub use pallet_balances::Call as BalancesCall;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_mmr_primitives as mmr;
@@ -114,7 +115,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 127,
+	spec_version: 128,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -588,15 +589,68 @@ impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
 
 parameter_types! {
 	pub const NativeTokenId: u32 = 0;
+	pub const NearChainId: ChainId = 255;
+	pub const EthChainId: ChainId = 1;
+	pub const BnbChainId: ChainId = 10;
+	pub const NativeChainId: ChainId = 42;
+
 }
 
 pub type TokenId = u32;
 
 impl pallet_fuso_token::Config for Runtime {
 	type Event = Event;
+	type BnbChainId = BnbChainId;
+	type EthChainId = EthChainId;
+	type NativeChainId = NativeChainId;
+	type NearChainId = NearChainId;
 	type TokenId = TokenId;
 	type NativeTokenId = NativeTokenId;
 	type Weight = pallet_fuso_token::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+	pub const FusotaoChainId: u16 = 42;
+	pub const ProposalLifetime: BlockNumber = HOURS;
+}
+
+impl pallet_chainbridge::Config for Runtime {
+	type Event = Event;
+	type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
+	type ChainId = FusotaoChainId;
+	type Proposal = Call;
+	type ProposalLifetime = ProposalLifetime;
+}
+
+parameter_types! {
+	pub NativeResourceId: fuso_support::chainbridge::ResourceId = derive_resource_id(FusotaoChainId::get(), 0, b"TAO".as_ref()).unwrap();
+	pub NativeTokenMaxValue: Balance = 0;
+	pub DonorAccount: AccountId = AccountId::new([0u8; 32]);
+	pub DonationForAgent: Balance = 100 * CENTS;
+}
+
+impl pallet_chainbridge_handler::Config for Runtime {
+	type Event = Event;
+	type Redirect = Call;
+	type BalanceConversion = Token;
+	type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
+	type Fungibles = Token;
+	type AssetIdByName = Token;
+	type BridgeOrigin = pallet_chainbridge::EnsureBridge<Runtime>;
+	type DonationForAgent = DonationForAgent;
+	type DonorAccount = DonorAccount;
+	type NativeResourceId = NativeResourceId;
+	type NativeTokenMaxValue = NativeTokenMaxValue;
+}
+
+impl pallet_fuso_agent::Config<pallet_fuso_agent::EthInstance> for Runtime {
+	type Currency = Balances;
+	type Event = Event;
+	type ExternalChainId = EthChainId;
+	type ExternalSignWrapper = pallet_fuso_agent::EthPersonalSignWrapper;
+	type Transaction = Call;
+	type TransactionByteFee = TransactionByteFee;
+	type WeightToFee = IdentityFee<Balance>;
 }
 
 parameter_types! {
@@ -710,6 +764,7 @@ const_assert!(DAYS % 20 == 0);
 impl pallet_fuso_verifier::Config for Runtime {
 	type Event = Event;
 	type Asset = Token;
+	type Callback = Call;
 	type Rewarding = Reward;
 	type WeightInfo = ();
 	type DominatorOnlineThreshold = DominatorOnlineThreshold;
@@ -750,7 +805,10 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		Foundation: pallet_fuso_foundation,
 		Token: pallet_fuso_token,
+		ChainBridge: pallet_chainbridge,
+		ChainBridgeHandler: pallet_chainbridge_handler,
 		Reward: pallet_fuso_reward,
+		Agent: pallet_fuso_agent::<EthInstance>,
 		Verifier: pallet_fuso_verifier,
 	}
 );
