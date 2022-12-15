@@ -1,3 +1,7 @@
+# v0.9.18-rum.9
+
+- integrate with chainbridge
+
 # v0.9.18-chainbridge.15
 
 - update derive substrate address from evm address

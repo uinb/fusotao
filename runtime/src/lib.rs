@@ -115,7 +115,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 136,
+	spec_version: 128,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -590,7 +590,7 @@ impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
 parameter_types! {
 	pub const NativeTokenId: u32 = 0;
 	pub const NearChainId: ChainId = 255;
-	pub const EthChainId: ChainId = 5;
+	pub const EthChainId: ChainId = 1;
 	pub const BnbChainId: ChainId = 10;
 	pub const NativeChainId: ChainId = 42;
 
@@ -642,11 +642,6 @@ impl pallet_chainbridge_handler::Config for Runtime {
 	type NativeResourceId = NativeResourceId;
 	type NativeTokenMaxValue = NativeTokenMaxValue;
 }
-
-//use EthChainId to replace
-/*parameter_types! {
-	pub const ETHChainId: u16 = 1;
-}*/
 
 impl pallet_fuso_agent::Config<pallet_fuso_agent::EthInstance> for Runtime {
 	type Currency = Balances;
