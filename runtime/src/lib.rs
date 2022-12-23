@@ -6,6 +6,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use pallet_fuso_smuggler::EnsureAdmin;
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -115,7 +116,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 128,
+	spec_version: 138,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 2,
@@ -412,6 +413,17 @@ impl pallet_authorship::Config for Runtime {
 	type EventHandler = (OctopusLpos, ImOnline);
 }
 
+parameter_types! {
+	pub const SmugglerAdmin: AccountId = AccountId::new(hex_literal::hex!["e41324216f0037a6ec49cbc55d35911c482a91472ba26eb9a3763e77938b9d56"]);
+}
+
+impl pallet_fuso_smuggler::Config for Runtime {
+	type Event = Event;
+	type EnsureAdmin = EnsureAdmin<Runtime>;
+	type Admin = SmugglerAdmin;
+	type Currency = Balances;
+}
+
 impl pallet_session::Config for Runtime {
 	type Event = Event;
 	type ValidatorId = <Self as frame_system::Config>::AccountId;
@@ -607,6 +619,7 @@ impl pallet_fuso_token::Config for Runtime {
 	type TokenId = TokenId;
 	type NativeTokenId = NativeTokenId;
 	type Weight = pallet_fuso_token::weights::SubstrateWeight<Runtime>;
+	type Smuggler = Smuggler;
 }
 
 parameter_types! {
@@ -773,6 +786,7 @@ impl pallet_fuso_verifier::Config for Runtime {
 	type MinimalStakingAmount = MinimalStakingAmount;
 	type MaxMakerFee = MaxMakerFee;
 	type MaxTakerFee = MaxTakerFee;
+	type Smuggler = Smuggler;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -810,6 +824,7 @@ construct_runtime!(
 		Reward: pallet_fuso_reward,
 		Agent: pallet_fuso_agent::<EthInstance>,
 		Verifier: pallet_fuso_verifier,
+		Smuggler: pallet_fuso_smuggler,
 	}
 );
 
