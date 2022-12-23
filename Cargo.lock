@@ -2010,7 +2010,7 @@ dependencies = [
 [[package]]
 name = "fuso-support"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#f47d501814d73032e08067fc426a114adf687883"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#456679f659201332cbe3807d6cc3de6f5a82feff"
 dependencies = [
  "bit-vec",
  "byteorder",
@@ -2027,7 +2027,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-rpc"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#f47d501814d73032e08067fc426a114adf687883"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#456679f659201332cbe3807d6cc3de6f5a82feff"
 dependencies = [
  "fuso-verifier-runtime-api",
  "jsonrpc-core",
@@ -2044,7 +2044,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-runtime-api"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#f47d501814d73032e08067fc426a114adf687883"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#456679f659201332cbe3807d6cc3de6f5a82feff"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -4293,7 +4293,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#f47d501814d73032e08067fc426a114adf687883"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#456679f659201332cbe3807d6cc3de6f5a82feff"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4311,7 +4311,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge-handler"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#f47d501814d73032e08067fc426a114adf687883"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#456679f659201332cbe3807d6cc3de6f5a82feff"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4332,7 +4332,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-agent"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#f47d501814d73032e08067fc426a114adf687883"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#456679f659201332cbe3807d6cc3de6f5a82feff"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4353,7 +4353,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-foundation"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#f47d501814d73032e08067fc426a114adf687883"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#456679f659201332cbe3807d6cc3de6f5a82feff"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4372,7 +4372,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-reward"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#f47d501814d73032e08067fc426a114adf687883"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#456679f659201332cbe3807d6cc3de6f5a82feff"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -4390,8 +4390,9 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-smuggler"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#f47d501814d73032e08067fc426a114adf687883"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#456679f659201332cbe3807d6cc3de6f5a82feff"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "fuso-support",
@@ -4408,7 +4409,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-token"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#f47d501814d73032e08067fc426a114adf687883"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#456679f659201332cbe3807d6cc3de6f5a82feff"
 dependencies = [
  "ascii",
  "frame-benchmarking",
@@ -4429,7 +4430,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-verifier"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#f47d501814d73032e08067fc426a114adf687883"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.18#456679f659201332cbe3807d6cc3de6f5a82feff"
 dependencies = [
  "ascii",
  "frame-benchmarking",
