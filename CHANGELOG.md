@@ -1,3 +1,7 @@
+# v0.9.18-rum.10
+
+- integrate with smuggler
+
 # v0.9.18-rum.9
 
 - integrate with chainbridge

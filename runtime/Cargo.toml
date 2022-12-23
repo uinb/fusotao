@@ -40,7 +40,6 @@ sp-version = { version = "5.0.0", default-features = false, git = "https://githu
 
 log = { version = "0.4.14", default-features = false }
 static_assertions = "1.1.0"
-
 beefy-primitives = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
 pallet-assets = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
 pallet-authorship = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
@@ -64,7 +63,7 @@ pallet-transaction-payment-rpc-runtime-api = { version = "4.0.0-dev", default-fe
 # Used for runtime benchmarking
 frame-benchmarking = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18", optional = true }
 frame-system-benchmarking = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18", optional = true }
-hex-literal = { version = "0.3.4", optional = true }
+hex-literal = { version = "0.3.4" }
 pallet-multisig = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.18', default-features = false }
 # fusotao dependencies
 fuso-support = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.18", default-features = false, package = "fuso-support" }
@@ -73,6 +72,7 @@ pallet-fuso-token = { git = "https://github.com/uinb/fusotao-protocol.git", bran
 pallet-fuso-foundation = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.18", default-features = false, package = "pallet-fuso-foundation" }
 pallet-fuso-reward = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.18", default-features = false, package = "pallet-fuso-reward" }
 pallet-fuso-agent = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.18", default-features = false, package = "pallet-fuso-agent" }
+pallet-fuso-smuggler = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.18", default-features = false, package = "pallet-fuso-smuggler" }
 fuso-verifier-runtime-api = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.18", default-features = false, package = "fuso-verifier-runtime-api" }
 # chainbridge dependencies
 pallet-chainbridge = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.18", default-features = false, package = "pallet-chainbridge" }
@@ -135,11 +135,11 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system-benchmarking",
 	"frame-system/runtime-benchmarks",
-	"hex-literal",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"pallet-fuso-verifier/runtime-benchmarks",
 	"pallet-chainbridge/runtime-benchmarks",
+	"pallet-fuso-smuggler/runtime-benchmarks",
 ]
 
