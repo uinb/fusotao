@@ -141,10 +141,12 @@ std = [
 	"sp-consensus-babe/std",
 	"sp-staking/std",
 	"pallet-octopus-appchain/std",
+	"pallet-octopus-bridge/std",
 	"pallet-octopus-lpos/std",
 	"pallet-octopus-upward-messages/std",
 	'pallet-fuso-foundation/std',
 	'pallet-fuso-verifier/std',
+	'fuso-verifier-runtime-api/std',
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
@@ -156,6 +158,5 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"pallet-fuso-verifier/runtime-benchmarks",
 	"pallet-chainbridge/runtime-benchmarks",
-	"pallet-fuso-smuggler/runtime-benchmarks",
 ]
 

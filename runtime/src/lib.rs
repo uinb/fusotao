@@ -9,7 +9,6 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 /// Constant values used within the runtime.
 pub mod constants;
 use constants::{currency::*, time::*};
-use pallet_fuso_smuggler::EnsureAdmin;
 use pallet_grandpa::{
 	fg_primitives, AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList,
 };
@@ -38,7 +37,7 @@ pub use frame_support::{
 	},
 	StorageValue,
 };
-use frame_support::{weights::DispatchClass, PalletId};
+use frame_support::{dispatch::DispatchClass, PalletId};
 use frame_support::traits::AsEnsureOriginWithArg;
 use frame_support::weights::ConstantMultiplier;
 use frame_system::EnsureSigned;
@@ -47,6 +46,7 @@ use fuso_support::{chainbridge::derive_resource_id, ChainId};
 pub use pallet_balances::Call as BalancesCall;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sp_mmr_primitives as mmr;
+use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
 use pallet_session::historical as pallet_session_historical;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
@@ -470,16 +470,15 @@ impl pallet_grandpa::Config for Runtime {
 
 
 parameter_types! {
-	pub const ClassDeposit: Balance = 100 * DOLLARS;
-	pub const InstanceDeposit: Balance = 1 * DOLLARS;
+	pub const CollectionDeposit: Balance = 100 * DOLLARS;
+	pub const ItemDeposit: Balance = 1 * DOLLARS;
 	pub const KeyLimit: u32 = 32;
 	pub const ValueLimit: u32 = 256;
 }
 
-type ClassId = u128;
-type InstanceId = u128;
-
-impl pallet_uniques::Config<pallet_assets::Instance1> for Runtime {
+pub type CollectionId = u128;
+pub type ItemId = u128;
+impl pallet_uniques::Config<pallet_uniques::Instance1> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type CollectionId = CollectionId;
 	type ItemId = ItemId;
@@ -498,6 +497,130 @@ impl pallet_uniques::Config<pallet_assets::Instance1> for Runtime {
 	type Helper = ();
 	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
 	type Locker = ();
+}
+
+impl pallet_beefy::Config for Runtime {
+	type BeefyId = BeefyId;
+	type MaxAuthorities = MaxAuthorities;
+	type OnNewValidatorSet = MmrLeaf;
+}
+
+
+impl pallet_mmr::Config for Runtime {
+	const INDEXING_PREFIX: &'static [u8] = b"mmr";
+	type Hashing = Keccak256;
+	type Hash = <Keccak256 as traits::Hash>::Output;
+	type OnNewRoot = pallet_beefy_mmr::DepositBeefyDigest<Runtime>;
+	type WeightInfo = ();
+	type LeafData = pallet_beefy_mmr::Pallet<Runtime>;
+}
+
+parameter_types! {
+	/// Version of the produced MMR leaf.
+	///
+	/// The version consists of two parts;
+	/// - `major` (3 bits)
+	/// - `minor` (5 bits)
+	///
+	/// `major` should be updated only if decoding the previous MMR Leaf format from the payload
+	/// is not possible (i.e. backward incompatible change).
+	/// `minor` should be updated if fields are added to the previous MMR Leaf, which given SCALE
+	/// encoding does not prevent old leafs from being decoded.
+	///
+	/// Hence we expect `major` to be changed really rarely (think never).
+	/// See [`MmrLeafVersion`] type documentation for more details.
+	pub LeafVersion: MmrLeafVersion = MmrLeafVersion::new(0, 0);
+}
+
+impl pallet_beefy_mmr::Config for Runtime {
+	type LeafVersion = LeafVersion;
+	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyEcdsaToEthereum;
+	type LeafExtra = Vec<u8>;
+	type BeefyDataProvider = ();
+}
+
+pub struct OctopusAppCrypto;
+
+impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
+for OctopusAppCrypto
+{
+	type RuntimeAppPublic = pallet_octopus_appchain::sr25519::AuthorityId;
+	type GenericPublic = sp_core::sr25519::Public;
+	type GenericSignature = sp_core::sr25519::Signature;
+}
+
+
+parameter_types! {
+	pub const OctopusAppchainPalletId: PalletId = PalletId(*b"py/octps");
+	pub const GracePeriod: u32 = 10;
+	pub const UnsignedPriority: u64 = 1 << 21;
+	pub const RequestEventLimit: u32 = 10;
+	pub const UpwardMessagesLimit: u32 = 10;
+}
+
+impl pallet_octopus_appchain::Config for Runtime {
+	type AuthorityId = pallet_octopus_appchain::sr25519::AuthorityId;
+	type AppCrypto = OctopusAppCrypto;
+	type RuntimeEvent = RuntimeEvent;
+	type RuntimeCall = RuntimeCall;
+	type BridgeInterface = OctopusBridge;
+	type LposInterface = OctopusLpos;
+	type UpwardMessagesInterface = OctopusUpwardMessages;
+	type GracePeriod = GracePeriod;
+	type UnsignedPriority = UnsignedPriority;
+	type RequestEventLimit = RequestEventLimit;
+	type MaxValidators = MaxAuthorities;
+	type WeightInfo = pallet_octopus_appchain::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_octopus_bridge::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type PalletId = OctopusAppchainPalletId;
+	type Currency = Balances;
+	type AppchainInterface = OctopusAppchain;
+	type UpwardMessagesInterface = OctopusUpwardMessages;
+	type AssetIdByTokenId = Token;
+	type AssetId = TokenId;
+	type AssetBalance = Balance;
+	type Fungibles = Token;
+	type CollectionId = CollectionId;
+	type ItemId = ItemId;
+	type Nonfungibles = OctopusUniques;
+	type Convertor = ();
+	type WeightInfo = pallet_octopus_bridge::weights::SubstrateWeight<Runtime>;
+}
+
+
+parameter_types! {
+	pub const SessionsPerEra: sp_staking::SessionIndex = 6;
+	pub const BondingDuration: pallet_octopus_lpos::EraIndex = 24 * 21;
+	pub const BlocksPerEra: u32 = EPOCH_DURATION_IN_BLOCKS * 6;
+}
+
+impl pallet_octopus_lpos::Config for Runtime {
+	type Currency = Balances;
+	type UnixTime = Timestamp;
+	type RuntimeEvent = RuntimeEvent;
+	type SessionsPerEra = SessionsPerEra;
+	type BondingDuration = BondingDuration;
+	type SessionInterface = Self;
+	type AppchainInterface = OctopusAppchain;
+	type UpwardMessagesInterface = OctopusUpwardMessages;
+	type PalletId = OctopusAppchainPalletId;
+	type WeightInfo = pallet_octopus_lpos::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+	pub const MaxMessagePayloadSize: u32 = 256;
+	pub const MaxMessagesPerCommit: u32 = 20;
+}
+
+impl pallet_octopus_upward_messages::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = pallet_octopus_upward_messages::weights::SubstrateWeight<Runtime>;
+	type Hashing = Keccak256;
+	type MaxMessagePayloadSize = MaxMessagePayloadSize;
+	type MaxMessagesPerCommit = MaxMessagesPerCommit;
 }
 
 parameter_types! {
@@ -528,54 +651,6 @@ impl pallet_fuso_smuggler::Config for Runtime {
 }
 */
 
-impl pallet_mmr::Config for Runtime {
-	const INDEXING_PREFIX: &'static [u8] = b"mmr";
-	type Hashing = Keccak256;
-	type Hash = <Keccak256 as traits::Hash>::Output;
-	type OnNewRoot = pallet_beefy_mmr::DepositBeefyDigest<Runtime>;
-	type WeightInfo = ();
-	type LeafData = pallet_beefy_mmr::Pallet<Runtime>;
-}
-
-impl pallet_beefy::Config for Runtime {
-	type BeefyId = BeefyId;
-	type MaxAuthorities = MaxAuthorities;
-	type OnNewValidatorSet = MmrLeaf;
-}
-
-parameter_types! {
-	/// Version of the produced MMR leaf.
-	///
-	/// The version consists of two parts;
-	/// - `major` (3 bits)
-	/// - `minor` (5 bits)
-	///
-	/// `major` should be updated only if decoding the previous MMR Leaf format from the payload
-	/// is not possible (i.e. backward incompatible change).
-	/// `minor` should be updated if fields are added to the previous MMR Leaf, which given SCALE
-	/// encoding does not prevent old leafs from being decoded.
-	///
-	/// Hence we expect `major` to be changed really rarely (think never).
-	/// See [`MmrLeafVersion`] type documentation for more details.
-	pub LeafVersion: MmrLeafVersion = MmrLeafVersion::new(0, 0);
-}
-
-impl pallet_beefy_mmr::Config for Runtime {
-	type LeafVersion = LeafVersion;
-	type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyEcdsaToEthereum;
-	type ParachainHeads = ();
-}
-
-pub struct OctopusAppCrypto;
-
-impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
-	for OctopusAppCrypto
-{
-	type RuntimeAppPublic = pallet_octopus_appchain::sr25519::AuthorityId;
-	type GenericSignature = sp_core::sr25519::Signature;
-	type GenericPublic = sp_core::sr25519::Public;
-}
-
 parameter_types! {
 	pub const NativeTokenId: u32 = 0;
 	pub const NearChainId: ChainId = 255;
@@ -596,7 +671,6 @@ impl pallet_fuso_token::Config for Runtime {
 	type TokenId = TokenId;
 	type NativeTokenId = NativeTokenId;
 	type Weight = pallet_fuso_token::weights::SubstrateWeight<Runtime>;
-	type Smuggler = Smuggler;
 }
 
 parameter_types! {
@@ -607,8 +681,8 @@ parameter_types! {
 impl pallet_chainbridge::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
-	type ChainId = FusotaoChainId;
 	type Proposal = RuntimeCall;
+	type ChainId = FusotaoChainId;
 	type ProposalLifetime = ProposalLifetime;
 }
 
@@ -621,85 +695,26 @@ parameter_types! {
 
 impl pallet_chainbridge_handler::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type Redirect = RuntimeCall;
-	type BalanceConversion = Token;
+	type BridgeOrigin = pallet_chainbridge::EnsureBridge<Runtime>;
 	type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
+	type BalanceConversion = Token;
+	type Redirect = RuntimeCall;
 	type Fungibles = Token;
 	type AssetIdByName = Token;
-	type BridgeOrigin = pallet_chainbridge::EnsureBridge<Runtime>;
-	type DonationForAgent = DonationForAgent;
-	type DonorAccount = DonorAccount;
-	type NativeResourceId = NativeResourceId;
 	type NativeTokenMaxValue = NativeTokenMaxValue;
+	type NativeResourceId = NativeResourceId;
+	type DonorAccount = DonorAccount;
+	type DonationForAgent = DonationForAgent;
 }
 
 impl pallet_fuso_agent::Config<pallet_fuso_agent::EthInstance> for Runtime {
-	type Currency = Balances;
 	type RuntimeEvent = RuntimeEvent;
-	type ExternalChainId = EthChainId;
-	type ExternalSignWrapper = pallet_fuso_agent::EthPersonalSignWrapper;
 	type Transaction = RuntimeCall;
-	type TransactionByteFee = TransactionByteFee;
 	type WeightToFee = IdentityFee<Balance>;
-}
-
-parameter_types! {
-	pub const OctopusAppchainPalletId: PalletId = PalletId(*b"py/octps");
-	pub const GracePeriod: u32 = 10;
-	pub const UnsignedPriority: u64 = 1 << 21;
-	pub const RequestEventLimit: u32 = 10;
-	pub const UpwardMessagesLimit: u32 = 10;
-}
-
-impl pallet_octopus_appchain::Config for Runtime {
-	type AuthorityId = pallet_octopus_appchain::sr25519::AuthorityId;
-	type AppCrypto = OctopusAppCrypto;
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	type PalletId = OctopusAppchainPalletId;
-	type LposInterface = OctopusLpos;
-	type UpwardMessagesInterface = OctopusUpwardMessages;
-	type ClassId = ClassId;
-	type InstanceId = InstanceId;
-	type Uniques = OctopusUniques;
-	type Convertor = ();
+	type TransactionByteFee = TransactionByteFee;
 	type Currency = Balances;
-	type Assets = Token;
-	type AssetBalance = Balance;
-	type AssetId = TokenId;
-	type AssetIdByTokenId = Token;
-	type GracePeriod = GracePeriod;
-	type UnsignedPriority = UnsignedPriority;
-	type RequestEventLimit = RequestEventLimit;
-	type WeightInfo = pallet_octopus_appchain::weights::SubstrateWeight<Runtime>;
-}
-
-parameter_types! {
-	pub const SessionsPerEra: sp_staking::SessionIndex = 6;
-	pub const BondingDuration: pallet_octopus_lpos::EraIndex = 24 * 28;
-	pub const BlocksPerEra: u32 = EPOCH_DURATION_IN_BLOCKS * 6;
-}
-
-impl pallet_octopus_lpos::Config for Runtime {
-	type Currency = Balances;
-	type UnixTime = Timestamp;
-	type RuntimeEvent = RuntimeEvent;
-	type SessionsPerEra = SessionsPerEra;
-	type BondingDuration = BondingDuration;
-	type BlocksPerEra = BlocksPerEra;
-	type SessionInterface = Self;
-	type AppchainInterface = OctopusAppchain;
-	type UpwardMessagesInterface = OctopusUpwardMessages;
-	type PalletId = OctopusAppchainPalletId;
-	type ValidatorsProvider = OctopusAppchain;
-	type WeightInfo = pallet_octopus_lpos::weights::SubstrateWeight<Runtime>;
-}
-
-impl pallet_octopus_upward_messages::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	type UpwardMessagesLimit = UpwardMessagesLimit;
-	type WeightInfo = pallet_octopus_upward_messages::weights::SubstrateWeight<Runtime>;
+	type ExternalSignWrapper = pallet_fuso_agent::EthPersonalSignWrapper;
+	type ExternalChainId = EthChainId;
 }
 
 parameter_types! {
@@ -757,7 +772,6 @@ impl pallet_fuso_verifier::Config for Runtime {
 	type MinimalStakingAmount = MinimalStakingAmount;
 	type MaxMakerFee = MaxMakerFee;
 	type MaxTakerFee = MaxTakerFee;
-	type Smuggler = Smuggler;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -776,6 +790,7 @@ construct_runtime!(
 		TransactionPayment: pallet_transaction_payment,
 		Multisig: pallet_multisig,
 		OctopusAppchain: pallet_octopus_appchain, // must before session
+		OctopusBridge: pallet_octopus_bridge,
 		OctopusLpos: pallet_octopus_lpos,
 		OctopusUpwardMessages: pallet_octopus_upward_messages,
 		OctopusUniques: pallet_uniques::<Instance1>,
@@ -795,7 +810,6 @@ construct_runtime!(
 		Reward: pallet_fuso_reward,
 		Agent: pallet_fuso_agent::<EthInstance>,
 		Verifier: pallet_fuso_verifier,
-		Smuggler: pallet_fuso_smuggler,
 	}
 );
 
@@ -805,6 +819,11 @@ pub type Address = sp_runtime::MultiAddress<AccountId, ()>;
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
+/// BlockId type as expected by this runtime.
+pub type BlockId = generic::BlockId<Block>;
+/// A Block signed with a Justification
+pub type SignedBlock = generic::SignedBlock<Block>;
+
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
 	frame_system::CheckNonZeroSender<Runtime>,
@@ -827,7 +846,10 @@ pub type Executive = frame_executive::Executive<
 	frame_system::ChainContext<Runtime>,
 	Runtime,
 	AllPalletsWithSystem,
+	Migrations,
 >;
+
+type Migrations = ();
 
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
@@ -843,6 +865,8 @@ mod benches {
 		[pallet_fuso_verifier, Verifier]
 	);
 }
+
+pub type MmrHashing = <Runtime as pallet_mmr::Config>::Hashing;
 
 impl_runtime_apis! {
 	impl sp_api::Core<Block> for Runtime {
@@ -886,13 +910,9 @@ impl_runtime_apis! {
 		}
 	}
 
-	impl fuso_verifier_runtime_api::FusoVerifierRuntimeApi<Block, AccountId, Balance> for Runtime {
-		fn current_season_of_dominator(dominator: AccountId) -> u32 {
-			Verifier::current_season_of_dominator(dominator)
-		}
-
-		fn pending_shares_of_dominator(dominator: AccountId, who: AccountId) -> Balance {
-			Verifier::pending_shares_of_dominator(dominator, who)
+	impl sp_offchain::OffchainWorkerApi<Block> for Runtime {
+		fn offchain_worker(header: &<Block as BlockT>::Header) {
+			Executive::offchain_worker(header)
 		}
 	}
 
@@ -903,76 +923,6 @@ impl_runtime_apis! {
 			block_hash: <Block as BlockT>::Hash,
 		) -> TransactionValidity {
 			Executive::validate_transaction(source, tx, block_hash)
-		}
-	}
-
-	impl sp_offchain::OffchainWorkerApi<Block> for Runtime {
-		fn offchain_worker(header: &<Block as BlockT>::Header) {
-			Executive::offchain_worker(header)
-		}
-	}
-
-	impl sp_consensus_babe::BabeApi<Block> for Runtime {
-		fn configuration() -> sp_consensus_babe::BabeGenesisConfiguration {
-			// The choice of `c` parameter (where `1 - c` represents the
-			// probability of a slot being empty), is done in accordance to the
-			// slot duration and expected target block time, for safely
-			// resisting network delays of maximum two seconds.
-			// <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
-			sp_consensus_babe::BabeGenesisConfiguration {
-				slot_duration: Babe::slot_duration(),
-				epoch_length: EpochDuration::get(),
-				c: BABE_GENESIS_EPOCH_CONFIG.c,
-				genesis_authorities: Babe::authorities().to_vec(),
-				randomness: Babe::randomness(),
-				allowed_slots: BABE_GENESIS_EPOCH_CONFIG.allowed_slots,
-			}
-		}
-
-		fn current_epoch_start() -> sp_consensus_babe::Slot {
-			Babe::current_epoch_start()
-		}
-
-		fn current_epoch() -> sp_consensus_babe::Epoch {
-			Babe::current_epoch()
-		}
-
-		fn next_epoch() -> sp_consensus_babe::Epoch {
-			Babe::next_epoch()
-		}
-
-		fn generate_key_ownership_proof(
-			_slot: sp_consensus_babe::Slot,
-			authority_id: sp_consensus_babe::AuthorityId,
-		) -> Option<sp_consensus_babe::OpaqueKeyOwnershipProof> {
-			use codec::Encode;
-
-			Historical::prove((sp_consensus_babe::KEY_TYPE, authority_id))
-				.map(|p| p.encode())
-				.map(sp_consensus_babe::OpaqueKeyOwnershipProof::new)
-		}
-
-		fn submit_report_equivocation_unsigned_extrinsic(
-			equivocation_proof: sp_consensus_babe::EquivocationProof<<Block as BlockT>::Header>,
-			key_owner_proof: sp_consensus_babe::OpaqueKeyOwnershipProof,
-		) -> Option<()> {
-			let key_owner_proof = key_owner_proof.decode()?;
-			Babe::submit_unsigned_equivocation_report(
-				equivocation_proof,
-				key_owner_proof,
-			)
-		}
-	}
-
-	impl sp_session::SessionKeys<Block> for Runtime {
-		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-			opaque::SessionKeys::generate(seed)
-		}
-
-		fn decode_session_keys(
-			encoded: Vec<u8>,
-		) -> Option<Vec<(Vec<u8>, KeyTypeId)>> {
-			opaque::SessionKeys::decode_into_raw_public_keys(&encoded)
 		}
 	}
 
@@ -1011,6 +961,59 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl sp_consensus_babe::BabeApi<Block> for Runtime {
+		fn configuration() -> sp_consensus_babe::BabeConfiguration {
+			// The choice of `c` parameter (where `1 - c` represents the
+			// probability of a slot being empty), is done in accordance to the
+			// slot duration and expected target block time, for safely
+			// resisting network delays of maximum two seconds.
+			// <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
+			let epoch_config = Babe::epoch_config().unwrap_or(BABE_GENESIS_EPOCH_CONFIG);
+			sp_consensus_babe::BabeConfiguration {
+				slot_duration: Babe::slot_duration(),
+				epoch_length: EpochDuration::get(),
+				c: epoch_config.c,
+				authorities: Babe::authorities().to_vec(),
+				randomness: Babe::randomness(),
+				allowed_slots: epoch_config.allowed_slots,
+			}
+		}
+
+		fn current_epoch_start() -> sp_consensus_babe::Slot {
+			Babe::current_epoch_start()
+		}
+
+		fn current_epoch() -> sp_consensus_babe::Epoch {
+			Babe::current_epoch()
+		}
+
+		fn next_epoch() -> sp_consensus_babe::Epoch {
+			Babe::next_epoch()
+		}
+
+		fn generate_key_ownership_proof(
+			_slot: sp_consensus_babe::Slot,
+			authority_id: sp_consensus_babe::AuthorityId,
+		) -> Option<sp_consensus_babe::OpaqueKeyOwnershipProof> {
+			use codec::Encode;
+
+			Historical::prove((sp_consensus_babe::KEY_TYPE, authority_id))
+				.map(|p| p.encode())
+				.map(sp_consensus_babe::OpaqueKeyOwnershipProof::new)
+		}
+
+		fn submit_report_equivocation_unsigned_extrinsic(
+			equivocation_proof: sp_consensus_babe::EquivocationProof<<Block as BlockT>::Header>,
+			key_owner_proof: sp_consensus_babe::OpaqueKeyOwnershipProof,
+		) -> Option<()> {
+			let key_owner_proof = key_owner_proof.decode()?;
+			Babe::submit_unsigned_equivocation_report(
+				equivocation_proof,
+				key_owner_proof,
+			)
+		}
+	}
+
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
 			System::account_nonce(account)
@@ -1032,32 +1035,54 @@ impl_runtime_apis! {
 		}
 	}
 
+	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentCallApi<Block, Balance, RuntimeCall>
+		for Runtime
+	{
+		fn query_call_info(call: RuntimeCall, len: u32) -> RuntimeDispatchInfo<Balance> {
+			TransactionPayment::query_call_info(call, len)
+		}
+		fn query_call_fee_details(call: RuntimeCall, len: u32) -> FeeDetails<Balance> {
+			TransactionPayment::query_call_fee_details(call, len)
+		}
+	}
+
 	impl beefy_primitives::BeefyApi<Block> for Runtime {
 		fn validator_set() -> Option<beefy_primitives::ValidatorSet<BeefyId>> {
 			Beefy::validator_set()
 		}
 	}
 
-	impl pallet_mmr_primitives::MmrApi<Block, Hash> for Runtime {
+	impl beefy_merkle_tree::BeefyMmrApi<Block, Hash> for RuntimeApi {
+		fn authority_set_proof() -> beefy_primitives::mmr::BeefyAuthoritySet<Hash> {
+			MmrLeaf::authority_set_proof()
+		}
+
+		fn next_authority_set_proof() -> beefy_primitives::mmr::BeefyNextAuthoritySet<Hash> {
+			MmrLeaf::next_authority_set_proof()
+		}
+	}
+
+
+	impl mmr::MmrApi<Block, Hash> for Runtime {
 		fn generate_proof(leaf_index: u64)
 			-> Result<(mmr::EncodableOpaqueLeaf, mmr::Proof<Hash>), mmr::Error>
 		{
-			Mmr::generate_proof(leaf_index)
-				.map(|(leaf, proof)| (mmr::EncodableOpaqueLeaf::from_leaf(&leaf), proof))
+			Mmr::generate_batch_proof(vec![leaf_index])
+				.and_then(|(leaves, proof)| Ok((
+					mmr::EncodableOpaqueLeaf::from_leaf(&leaves[0]),
+					mmr::BatchProof::into_single_leaf_proof(proof)?
+				)))
 		}
 
 		fn verify_proof(leaf: mmr::EncodableOpaqueLeaf, proof: mmr::Proof<Hash>)
 			-> Result<(), mmr::Error>
 		{
-			pub type Leaf = <
-				<Runtime as pallet_mmr::Config>::LeafData as mmr::LeafDataProvider
-			>::LeafData;
-
-			let leaf: Leaf = leaf
+			pub type MmrLeaf = <<Runtime as pallet_mmr::Config>::LeafData as mmr::LeafDataProvider>::LeafData;
+			let leaf: MmrLeaf = leaf
 				.into_opaque_leaf()
 				.try_decode()
 				.ok_or(mmr::Error::Verify)?;
-			Mmr::verify_leaf(leaf, proof)
+			Mmr::verify_leaves(vec![leaf], mmr::Proof::into_batch_proof(proof))
 		}
 
 		fn verify_proof_stateless(
@@ -1065,9 +1090,76 @@ impl_runtime_apis! {
 			leaf: mmr::EncodableOpaqueLeaf,
 			proof: mmr::Proof<Hash>
 		) -> Result<(), mmr::Error> {
-			type MmrHashing = <Runtime as pallet_mmr::Config>::Hashing;
 			let node = mmr::DataOrHash::Data(leaf.into_opaque_leaf());
-			pallet_mmr::verify_leaf_proof::<MmrHashing, _>(root, node, proof)
+			pallet_mmr::verify_leaves_proof::<MmrHashing, _>(root, vec![node], mmr::Proof::into_batch_proof(proof))
+		}
+
+		fn mmr_root() -> Result<Hash, mmr::Error> {
+			Ok(Mmr::mmr_root())
+		}
+
+		fn generate_batch_proof(leaf_indices: Vec<mmr::LeafIndex>)
+			-> Result<(Vec<mmr::EncodableOpaqueLeaf>, mmr::BatchProof<Hash>), mmr::Error>
+		{
+			Mmr::generate_batch_proof(leaf_indices)
+				.map(|(leaves, proof)| (leaves.into_iter().map(|leaf| mmr::EncodableOpaqueLeaf::from_leaf(&leaf)).collect(), proof))
+		}
+
+		fn verify_batch_proof(leaves: Vec<mmr::EncodableOpaqueLeaf>, proof: mmr::BatchProof<Hash>)
+			-> Result<(), mmr::Error>
+		{
+			pub type MmrLeaf = <<Runtime as pallet_mmr::Config>::LeafData as mmr::LeafDataProvider>::LeafData;
+			let leaves = leaves.into_iter().map(|leaf|
+				leaf.into_opaque_leaf()
+				.try_decode()
+				.ok_or(mmr::Error::Verify)).collect::<Result<Vec<MmrLeaf>, mmr::Error>>()?;
+			Mmr::verify_leaves(leaves, proof)
+		}
+
+		fn verify_batch_proof_stateless(
+			root: Hash,
+			leaves: Vec<mmr::EncodableOpaqueLeaf>,
+			proof: mmr::BatchProof<Hash>
+		) -> Result<(), mmr::Error> {
+			let nodes = leaves.into_iter().map(|leaf|mmr::DataOrHash::Data(leaf.into_opaque_leaf())).collect();
+			pallet_mmr::verify_leaves_proof::<MmrHashing, _>(root, nodes, proof)
+		}
+	}
+
+	impl sp_session::SessionKeys<Block> for Runtime {
+		fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
+			opaque::SessionKeys::generate(seed)
+		}
+
+		fn decode_session_keys(
+			encoded: Vec<u8>,
+		) -> Option<Vec<(Vec<u8>, KeyTypeId)>> {
+			opaque::SessionKeys::decode_into_raw_public_keys(&encoded)
+		}
+	}
+
+	impl fuso_verifier_runtime_api::FusoVerifierRuntimeApi<Block, AccountId, Balance> for Runtime {
+		fn current_season_of_dominator(dominator: AccountId) -> u32 {
+			Verifier::current_season_of_dominator(dominator)
+		}
+
+		fn pending_shares_of_dominator(dominator: AccountId, who: AccountId) -> Balance {
+			Verifier::pending_shares_of_dominator(dominator, who)
+		}
+	}
+
+	#[cfg(feature = "try-runtime")]
+	impl frame_try_runtime::TryRuntime<Block> for Runtime {
+		fn on_runtime_upgrade() -> (Weight, Weight) {
+			// NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
+			// have a backtrace here. If any of the pre/post migration checks fail, we shall stop
+			// right here and right now.
+			let weight = Executive::try_runtime_upgrade().unwrap();
+			(weight, RuntimeBlockWeights::get().max_block)
+		}
+
+		fn execute_block_no_check(block: Block) -> Weight {
+			Executive::execute_block_no_check(block)
 		}
 	}
 
@@ -1121,21 +1213,6 @@ impl_runtime_apis! {
 			add_benchmark!(params, batches, pallet_fuso_verifier, Verifier);
 			add_benchmarks!(params, batches);
 			Ok(batches)
-		}
-	}
-
-	#[cfg(feature = "try-runtime")]
-	impl frame_try_runtime::TryRuntime<Block> for Runtime {
-		fn on_runtime_upgrade() -> (Weight, Weight) {
-			// NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
-			// have a backtrace here. If any of the pre/post migration checks fail, we shall stop
-			// right here and right now.
-			let weight = Executive::try_runtime_upgrade().unwrap();
-			(weight, BlockWeights::get().max_block)
-		}
-
-		fn execute_block_no_check(block: Block) -> Weight {
-			Executive::execute_block_no_check(block)
 		}
 	}
 }
