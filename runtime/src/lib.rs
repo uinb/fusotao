@@ -26,6 +26,7 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
 // A few exports that help ease life for downstream crates.
+pub use appchain_primitives::{AccountId, Balance, BlockNumber, Hash, Index, Moment, Signature};
 use beefy_primitives::{crypto::AuthorityId as BeefyId, mmr::MmrLeafVersion};
 use codec::Encode;
 pub use frame_support::{
@@ -37,20 +38,22 @@ pub use frame_support::{
 	},
 	StorageValue,
 };
-use frame_support::{dispatch::DispatchClass, PalletId};
-use frame_support::traits::AsEnsureOriginWithArg;
-use frame_support::weights::ConstantMultiplier;
-use frame_system::EnsureSigned;
-use frame_system::limits::{BlockLength, BlockWeights};
+use frame_support::{
+	dispatch::DispatchClass, traits::AsEnsureOriginWithArg, weights::ConstantMultiplier, PalletId,
+};
+use frame_system::{
+	limits::{BlockLength, BlockWeights},
+	EnsureSigned,
+};
 use fuso_support::{chainbridge::derive_resource_id, ChainId};
 pub use pallet_balances::Call as BalancesCall;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
-use sp_mmr_primitives as mmr;
-use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
 use pallet_session::historical as pallet_session_historical;
 pub use pallet_timestamp::Call as TimestampCall;
-pub use appchain_primitives::{Balance, Moment, Index, Hash, BlockNumber, AccountId, Signature};
-use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
+use pallet_transaction_payment::{
+	CurrencyAdapter, FeeDetails, Multiplier, RuntimeDispatchInfo, TargetedFeeAdjustment,
+};
+use sp_mmr_primitives as mmr;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 use sp_runtime::{
@@ -98,7 +101,6 @@ pub fn wasm_binary_unwrap() -> &'static [u8] {
 		 the flag disabled.",
 	)
 }
-
 
 // To learn more about runtime versioning and what each of the following value means:
 //   https://docs.substrate.io/v3/runtime/upgrades#runtime-versioning
@@ -290,7 +292,7 @@ impl pallet_transaction_payment::Config for Runtime {
 	type WeightToFee = IdentityFee<Balance>;
 	type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
 	type FeeMultiplierUpdate =
-	TargetedFeeAdjustment<Self, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
+		TargetedFeeAdjustment<Self, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
 }
 
 parameter_types! {
@@ -318,7 +320,6 @@ impl pallet_authorship::Config for Runtime {
 	type EventHandler = (OctopusLpos, ImOnline);
 }
 
-
 impl pallet_session::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type ValidatorId = <Self as frame_system::Config>::AccountId;
@@ -341,7 +342,6 @@ impl pallet_sudo::Config for Runtime {
 	type RuntimeCall = RuntimeCall;
 }
 
-
 parameter_types! {
 	pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
 	/// We prioritize im-online heartbeats over election solution submission.
@@ -353,8 +353,8 @@ parameter_types! {
 }
 
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
-	where
-		RuntimeCall: From<LocalCall>,
+where
+	RuntimeCall: From<LocalCall>,
 {
 	fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
 		call: RuntimeCall,
@@ -400,8 +400,8 @@ impl frame_system::offchain::SigningTypes for Runtime {
 }
 
 impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
-	where
-		RuntimeCall: From<C>,
+where
+	RuntimeCall: From<C>,
 {
 	type Extrinsic = UncheckedExtrinsic;
 	type OverarchingCall = RuntimeCall;
@@ -413,7 +413,7 @@ impl pallet_im_online::Config for Runtime {
 	type NextSessionRotation = Babe;
 	type ValidatorSet = Historical;
 	type ReportUnresponsiveness =
-	pallet_octopus_lpos::FilterHistoricalOffences<OctopusLpos, Offences>;
+		pallet_octopus_lpos::FilterHistoricalOffences<OctopusLpos, Offences>;
 	type UnsignedPriority = ImOnlineUnsignedPriority;
 	type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
 	type MaxKeys = MaxKeys;
@@ -427,12 +427,11 @@ impl pallet_offences::Config for Runtime {
 	type OnOffenceHandler = ();
 }
 
-
 impl pallet_grandpa::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type KeyOwnerProofSystem = Historical;
 	type KeyOwnerProof =
-	<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
+		<Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
 	type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
 		KeyTypeId,
 		GrandpaId,
@@ -444,9 +443,7 @@ impl pallet_grandpa::Config for Runtime {
 	>;
 	type WeightInfo = ();
 	type MaxAuthorities = MaxAuthorities;
-
 }
-
 
 parameter_types! {
 	pub const CollectionDeposit: Balance = 100 * DOLLARS;
@@ -484,7 +481,6 @@ impl pallet_beefy::Config for Runtime {
 	type OnNewValidatorSet = MmrLeaf;
 }
 
-
 impl pallet_mmr::Config for Runtime {
 	const INDEXING_PREFIX: &'static [u8] = b"mmr";
 	type Hashing = Keccak256;
@@ -521,13 +517,12 @@ impl pallet_beefy_mmr::Config for Runtime {
 pub struct OctopusAppCrypto;
 
 impl frame_system::offchain::AppCrypto<<Signature as Verify>::Signer, Signature>
-for OctopusAppCrypto
+	for OctopusAppCrypto
 {
 	type RuntimeAppPublic = pallet_octopus_appchain::sr25519::AuthorityId;
 	type GenericPublic = sp_core::sr25519::Public;
 	type GenericSignature = sp_core::sr25519::Signature;
 }
-
 
 parameter_types! {
 	pub const OctopusAppchainPalletId: PalletId = PalletId(*b"py/octps");
@@ -568,7 +563,6 @@ impl pallet_octopus_bridge::Config for Runtime {
 	type Convertor = ();
 	type WeightInfo = pallet_octopus_bridge::weights::SubstrateWeight<Runtime>;
 }
-
 
 parameter_types! {
 	pub const SessionsPerEra: sp_staking::SessionIndex = 6;
@@ -815,7 +809,8 @@ pub type SignedExtra = (
 	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
+pub type UncheckedExtrinsic =
+	generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 /// The payload being signed in transactions.
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 /// Executive: handles dispatch to the various modules.

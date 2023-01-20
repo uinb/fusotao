@@ -140,6 +140,7 @@ std = [
 	"pallet-uniques/std",
 	"sp-consensus-babe/std",
 	"sp-staking/std",
+	"appchain-primitives/std",
 	"pallet-octopus-appchain/std",
 	"pallet-octopus-bridge/std",
 	"pallet-octopus-lpos/std",
