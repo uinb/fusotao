@@ -1,14 +1,13 @@
 [package]
 name = "fuso-cli"
 version = "0.9.30"
-authors = ["Octopus Network <hi@oct.network>"]
-description = "A minimal node template for octopus appchain."
+authors = ["Fusotao Team <hi@fusotao.org>"]
 build = "build.rs"
 edition = "2021"
-license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
+license = "Appche-2.0"
 default-run = "fuso"
-homepage = "https://oct.network/"
-repository = "https://github.com/octopus-network/barnacle/"
+homepage = "https://wwww.fusotao.org/"
+publish = false
 
 [package.metadata.wasm-pack.profile.release]
 # `wasm-opt` has some problems on linux, see
@@ -78,14 +77,14 @@ pallet-im-online = { version = "4.0.0-dev", default-features = false, git = "htt
 
 # node-specific dependencies
 fuso-runtime = { version = "4.0.1", path = "../runtime" }
-fuso-rpc = { version = "3.0.0-dev", path = "../rpc" }
-fuso-primitives = { version = "2.0.0", path = "../primitives" }
-fuso-executor = { version = "3.0.0-dev", path = "../executor" }
+fuso-rpc = { version = "4.0.1", path = "../rpc" }
+fuso-primitives = { version = "4.0.1", path = "../primitives" }
+fuso-executor = { version = "4.0.1", path = "../executor" }
 
 # CLI-specific dependencies
 sc-cli = { version = "0.10.0-dev", optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 frame-benchmarking-cli = { version = "4.0.0-dev", optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
-fuso-inspect = { version = "0.9.0-dev", optional = true, path = "../inspect" }
+fuso-inspect = { version = "4.0.1", optional = true, path = "../inspect" }
 try-runtime-cli = { version = "0.10.0-dev", optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 serde_json = "1.0.85"
 
@@ -97,7 +96,7 @@ beefy-gadget = { git = "https://github.com/paritytech/substrate.git", branch = "
 pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.30" }
 
 [target.'cfg(any(target_arch="x86_64", target_arch="aarch64"))'.dependencies]
-fuso-executor = { version = "3.0.0-dev", path = "../executor", features = ["wasmtime"] }
+fuso-executor = { version = "4.0.1", path = "../executor", features = ["wasmtime"] }
 sc-cli = { version = "0.10.0-dev", optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", features = ["wasmtime"] }
 sc-service = { version = "0.10.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", features = [
 	"wasmtime",
@@ -134,7 +133,7 @@ pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech
 [build-dependencies]
 clap = { version = "3.1.18", optional = true }
 clap_complete = { version = "3.0", optional = true }
-fuso-inspect = { version = "0.9.0-dev", optional = true, path = "../inspect" }
+fuso-inspect = { version = "4.0.1", optional = true, path = "../inspect" }
 frame-benchmarking-cli = { version = "4.0.0-dev", optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 substrate-build-script-utils = { version = "3.0.0", optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 substrate-frame-cli = { version = "4.0.0-dev", optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }

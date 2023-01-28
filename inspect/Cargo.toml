@@ -1,12 +1,12 @@
 [package]
 name = "fuso-inspect"
-version = "0.9.0-dev"
-authors = ["Parity Technologies <admin@parity.io>"]
-description = "Substrate node block inspection tool."
+version = "4.0.1"
+authors = ["Fusotao Team <hi@fusotao.org>"]
+description = "Fusotao node block inspection tool."
 edition = "2021"
-license = "GPL-3.0-or-later WITH Classpath-exception-2.0"
-homepage = "https://substrate.io"
-repository = "https://github.com/paritytech/substrate/"
+license = "Apache-2.0"
+homepage = "https://www.fusotao.org"
+publish = false
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

@@ -1,12 +1,12 @@
 [package]
 name = "fuso-executor"
-version = "3.0.0-dev"
-authors = ["Parity Technologies <admin@parity.io>"]
-description = "Substrate node implementation in Rust."
+version = "4.0.1"
+authors = ["Fusotao Team <hi@fusotao.org>"]
+description = "Fusotao node implementation in Rust."
 edition = "2021"
 license = "Apache-2.0"
-homepage = "https://substrate.io"
-repository = "https://github.com/paritytech/substrate/"
+homepage = "https://www.fusotao.org"
+publish = false
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -15,7 +15,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 codec = { package = "parity-scale-codec", version = "3.0.0" }
 scale-info = { version = "2.1.1", features = ["derive"] }
 frame-benchmarking = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
-fuso-primitives = { version = "2.0.0", path = "../primitives" }
+fuso-primitives = { version = "4.0.1", path = "../primitives" }
 fuso-runtime= { version = "4.0.1", path = "../runtime" }
 sc-executor = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sp-core = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }

@@ -121,10 +121,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 138,
+	spec_version: 139,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 2,
+	transaction_version: 3,
 	state_version: 1,
 };
 
@@ -830,7 +830,15 @@ pub type Executive = frame_executive::Executive<
 	Migrations,
 >;
 
-type Migrations = ();
+type Migrations = (	SetIntervalValueRuntimeUpgrade,);
+/// Please set the value of interval according to your own needs.
+const INTERVAL: u32 = 1;
+pub struct SetIntervalValueRuntimeUpgrade;
+impl frame_support::traits::OnRuntimeUpgrade for SetIntervalValueRuntimeUpgrade {
+	fn on_runtime_upgrade() -> frame_support::weights::Weight {
+		pallet_octopus_upward_messages::migrations::migration_to_v1::<Runtime>(INTERVAL)
+	}
+}
 
 #[cfg(feature = "runtime-benchmarks")]
 #[macro_use]
