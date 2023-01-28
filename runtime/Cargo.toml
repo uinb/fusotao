@@ -26,7 +26,7 @@ log = { version = "0.4.17", default-features = false }
 sp-consensus-babe = { version = "0.10.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sp-block-builder = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sp-inherents = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
-appchain-primitives = { version = "2.0.0", default-features = false, path = "../primitives" }
+fuso-primitives = { version = "2.0.0", default-features = false, path = "../primitives" }
 sp-offchain = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sp-core = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sp-std = { version = "4.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
@@ -140,7 +140,7 @@ std = [
 	"pallet-uniques/std",
 	"sp-consensus-babe/std",
 	"sp-staking/std",
-	"appchain-primitives/std",
+	"fuso-primitives/std",
 	"pallet-octopus-appchain/std",
 	"pallet-octopus-bridge/std",
 	"pallet-octopus-lpos/std",
@@ -161,3 +161,23 @@ runtime-benchmarks = [
 	"pallet-chainbridge/runtime-benchmarks",
 ]
 
+
+try-runtime = [
+	"frame-try-runtime",
+	"frame-executive/try-runtime",
+	"frame-system/try-runtime",
+	"frame-support/try-runtime",
+	"pallet-assets/try-runtime",
+	"pallet-authorship/try-runtime",
+	"pallet-babe/try-runtime",
+	"pallet-balances/try-runtime",
+	"pallet-grandpa/try-runtime",
+	"pallet-im-online/try-runtime",
+	"pallet-mmr/try-runtime",
+	"pallet-offences/try-runtime",
+	"pallet-session/try-runtime",
+	"pallet-sudo/try-runtime",
+	"pallet-timestamp/try-runtime",
+	"pallet-transaction-payment/try-runtime",
+	"pallet-uniques/try-runtime",
+]

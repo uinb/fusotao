@@ -19,7 +19,7 @@
 
 /// Money matters.
 pub mod currency {
-	use appchain_primitives::Balance;
+	use fuso_primitives::Balance;
 
 	pub const MILLICENTS: Balance = 10_000_000_000_000;
 	pub const CENTS: Balance = 1_000 * MILLICENTS; // assume this is worth about a cent.
@@ -33,7 +33,7 @@ pub mod currency {
 
 /// Time.
 pub mod time {
-	use appchain_primitives::{BlockNumber, Moment};
+	use fuso_primitives::{BlockNumber, Moment};
 
 	/// Since BABE is probabilistic this is the average expected block time that
 	/// we are targeting. Blocks will be produced at a minimum duration defined

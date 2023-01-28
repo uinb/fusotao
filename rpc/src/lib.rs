@@ -33,7 +33,7 @@
 
 use std::sync::Arc;
 
-use appchain_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
+use fuso_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 use jsonrpsee::RpcModule;
 use sc_client_api::AuxStore;
 use sc_consensus_babe::{BabeConfiguration, Epoch};
@@ -123,6 +123,7 @@ where
 	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_mmr_rpc::MmrRuntimeApi<Block, <Block as sp_runtime::traits::Block>::Hash>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
+//	C::Api: fuso_verifier_rpc::FusoVerifierRuntimeApi<Block, AccountId, Balance>,
 	C::Api: BabeApi<Block>,
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + 'static,
@@ -130,6 +131,7 @@ where
 	B: sc_client_api::Backend<Block> + Send + Sync + 'static,
 	B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashFor<Block>>,
 {
+//	use fuso_verifier_rpc::{FusoVerifier, FusoVerifierApi};
 	use beefy_gadget_rpc::{Beefy, BeefyApiServer};
 	use pallet_mmr_rpc::{Mmr, MmrApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
@@ -158,6 +160,7 @@ where
 	let properties = chain_spec.properties();
 	io.merge(ChainSpec::new(chain_name, genesis_hash, properties).into_rpc())?;
 
+//	io.merge(FusoVerifier::new(client.clone()).into_rpc())?;
 	io.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
 	// Making synchronous calls in light client freezes the browser currently,
 	// more context: https://github.com/paritytech/substrate/pull/3480

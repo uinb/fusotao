@@ -9,4 +9,5 @@ members = [
 	'primitives',
 	'rpc',
     'runtime',
+	'cli',
 ]

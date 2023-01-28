@@ -26,7 +26,7 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
 // A few exports that help ease life for downstream crates.
-pub use appchain_primitives::{AccountId, Balance, BlockNumber, Hash, Index, Moment, Signature};
+pub use fuso_primitives::{AccountId, Balance, BlockNumber, Hash, Index, Moment, Signature};
 use beefy_primitives::{crypto::AuthorityId as BeefyId, mmr::MmrLeafVersion};
 use codec::Encode;
 pub use frame_support::{
@@ -46,16 +46,23 @@ use frame_system::{
 	EnsureSigned,
 };
 use fuso_support::{chainbridge::derive_resource_id, ChainId};
-pub use pallet_balances::Call as BalancesCall;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
 pub use pallet_timestamp::Call as TimestampCall;
 use pallet_transaction_payment::{
 	CurrencyAdapter, FeeDetails, Multiplier, RuntimeDispatchInfo, TargetedFeeAdjustment,
 };
+
 use sp_mmr_primitives as mmr;
 #[cfg(any(feature = "std", test))]
+pub use frame_system::Call as SystemCall;
+#[cfg(any(feature = "std", test))]
+pub use pallet_balances::Call as BalancesCall;
+#[cfg(any(feature = "std", test))]
+pub use pallet_sudo::Call as SudoCall;
+#[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+
 use sp_runtime::{
 	generic::Era,
 	traits::{self, ConvertInto, Keccak256, OpaqueKeys, SaturatedConversion, StaticLookup},
@@ -751,7 +758,7 @@ impl pallet_fuso_verifier::Config for Runtime {
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
-		NodeBlock = appchain_primitives::Block,
+		NodeBlock = fuso_primitives::Block,
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
 		System: frame_system,
