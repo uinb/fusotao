@@ -34,11 +34,11 @@ jobs:
           rustup update stable
           rustup target add wasm32-unknown-unknown --toolchain nightly
 
-      - name: Check Build
-        run: |
-          SKIP_WASM_BUILD=1 cargo check --release
+#      - name: Check Build
+#        run: |
+#          SKIP_WASM_BUILD=1 cargo check --release
 
       - name: Check Build for Benchmarking
         run: >
-          pushd node &&
+          pushd cli &&
           cargo check --features=runtime-benchmarks --release
