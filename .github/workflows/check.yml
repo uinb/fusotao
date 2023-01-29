@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Set-Up
-        run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl pro libprotobuf-dev protobuf-compiler
+        run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl libprotobuf-dev protobuf-compiler
 
       - name: Install Rustup
         run: |
