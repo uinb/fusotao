@@ -40,7 +40,7 @@ use beefy_primitives::crypto::AuthorityId as BeefyId;
 
 // + octopus pallets
 use fuso_runtime::{
-	constants::currency::OCT, OctopusAppchainConfig, OctopusBridgeConfig, OctopusLposConfig,
+	constants::currency::TAO, OctopusAppchainConfig, OctopusBridgeConfig, OctopusLposConfig,
 	OctopusUpwardMessagesConfig,
 };
 use pallet_octopus_appchain::sr25519::AuthorityId as OctopusId;
@@ -143,7 +143,7 @@ pub fn testnet_genesis(
 	});
 
 	const ENDOWMENT: Balance = 10_000_000 * DOLLARS;
-	const STASH: Balance = 100 * OCT;
+	const STASH: Balance = 100 * TAO;
 	let validators = initial_authorities.iter().map(|x| (x.0.clone(), STASH)).collect::<Vec<_>>();
 
 	GenesisConfig {
