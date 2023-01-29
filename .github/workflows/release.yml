@@ -23,13 +23,13 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Set-Up
-        run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl
+        run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl libprotobuf-dev protobuf-compiler
 
       - name: Install Rustup
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
           source ~/.cargo/env
-          rustup default nightly
+          rustup default stable
           rustup update nightly
           rustup update stable
           rustup target add wasm32-unknown-unknown --toolchain nightly
