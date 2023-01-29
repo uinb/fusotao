@@ -22,10 +22,10 @@ use crate::{
 	service::{new_partial, FullClient},
 	Cli, Subcommand,
 };
-use fuso_runtime::{ExistentialDeposit, RuntimeApi};
+use frame_benchmarking_cli::*;
 use fuso_executor::ExecutorDispatch;
 use fuso_primitives::Block;
-use frame_benchmarking_cli::*;
+use fuso_runtime::{ExistentialDeposit, RuntimeApi};
 use sc_cli::{ChainSpec, Result, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
 use sp_keyring::Sr25519Keyring;

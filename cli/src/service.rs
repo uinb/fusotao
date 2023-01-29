@@ -20,11 +20,11 @@
 
 //! Service implementation. Specialized wrapper over substrate service.
 
-use fuso_runtime::RuntimeApi;
-use fuso_executor::ExecutorDispatch;
-use fuso_primitives::Block;
 use codec::Encode;
 use frame_system_rpc_runtime_api::AccountNonceApi;
+use fuso_executor::ExecutorDispatch;
+use fuso_primitives::Block;
+use fuso_runtime::RuntimeApi;
 use sc_client_api::BlockBackend;
 use sc_consensus_babe::{self, SlotProportion};
 use sc_executor::NativeElseWasmExecutor;
@@ -83,21 +83,19 @@ pub fn create_extrinsic(
 		.map(|c| c / 2)
 		.unwrap_or(2) as u64;
 	let tip = 0;
-	let extra: fuso_runtime::SignedExtra =
-		(
-			frame_system::CheckNonZeroSender::<fuso_runtime::Runtime>::new(),
-			frame_system::CheckSpecVersion::<fuso_runtime::Runtime>::new(),
-			frame_system::CheckTxVersion::<fuso_runtime::Runtime>::new(),
-			frame_system::CheckGenesis::<fuso_runtime::Runtime>::new(),
-			frame_system::CheckEra::<fuso_runtime::Runtime>::from(
-				generic::Era::mortal(period, best_block.saturated_into()),
-			),
-			frame_system::CheckNonce::<fuso_runtime::Runtime>::from(nonce),
-			frame_system::CheckWeight::<fuso_runtime::Runtime>::new(),
-			pallet_transaction_payment::ChargeTransactionPayment::<
-				fuso_runtime::Runtime,
-			>::from(tip),
-		);
+	let extra: fuso_runtime::SignedExtra = (
+		frame_system::CheckNonZeroSender::<fuso_runtime::Runtime>::new(),
+		frame_system::CheckSpecVersion::<fuso_runtime::Runtime>::new(),
+		frame_system::CheckTxVersion::<fuso_runtime::Runtime>::new(),
+		frame_system::CheckGenesis::<fuso_runtime::Runtime>::new(),
+		frame_system::CheckEra::<fuso_runtime::Runtime>::from(generic::Era::mortal(
+			period,
+			best_block.saturated_into(),
+		)),
+		frame_system::CheckNonce::<fuso_runtime::Runtime>::from(nonce),
+		frame_system::CheckWeight::<fuso_runtime::Runtime>::new(),
+		pallet_transaction_payment::ChargeTransactionPayment::<fuso_runtime::Runtime>::from(tip),
+	);
 
 	let raw_payload = fuso_runtime::SignedPayload::from_raw(
 		function.clone(),
@@ -566,12 +564,12 @@ pub fn new_full(
 #[cfg(test)]
 mod tests {
 	use crate::service::{new_full_base, NewFullBase};
+	use codec::Encode;
+	use fuso_primitives::{Block, DigestItem, Signature};
 	use fuso_runtime::{
 		constants::{currency::CENTS, time::SLOT_DURATION},
 		Address, BalancesCall, RuntimeCall, UncheckedExtrinsic,
 	};
-	use fuso_primitives::{Block, DigestItem, Signature};
-	use codec::Encode;
 	use sc_client_api::BlockBackend;
 	use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy};
 	use sc_consensus_babe::{BabeIntermediate, CompatibleDigestItem, INTERMEDIATE_KEY};

@@ -19,8 +19,9 @@
 //! Substrate chain configurations.
 
 use fuso_runtime::{
-	constants::currency::*, wasm_binary_unwrap, BabeConfig, BalancesConfig, Block, GrandpaConfig,
-	ImOnlineConfig, SessionConfig, SudoConfig, SystemConfig, opaque::SessionKeys, FoundationConfig,
+	constants::currency::*, opaque::SessionKeys, wasm_binary_unwrap, BabeConfig, BalancesConfig,
+	Block, FoundationConfig, GrandpaConfig, ImOnlineConfig, SessionConfig, SudoConfig,
+	SystemConfig,
 };
 use grandpa_primitives::AuthorityId as GrandpaId;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -31,16 +32,16 @@ use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
 
-pub use fuso_runtime::GenesisConfig;
 pub use fuso_primitives::{AccountId, Balance, Signature};
+pub use fuso_runtime::GenesisConfig;
 
 // + beefy
 use beefy_primitives::crypto::AuthorityId as BeefyId;
 
 // + octopus pallets
 use fuso_runtime::{
-	constants::currency::OCT, OctopusAppchainConfig, OctopusBridgeConfig,
-	OctopusLposConfig, OctopusUpwardMessagesConfig,
+	constants::currency::OCT, OctopusAppchainConfig, OctopusBridgeConfig, OctopusLposConfig,
+	OctopusUpwardMessagesConfig,
 };
 use pallet_octopus_appchain::sr25519::AuthorityId as OctopusId;
 

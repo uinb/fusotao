@@ -26,7 +26,6 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 
 // A few exports that help ease life for downstream crates.
-pub use fuso_primitives::{AccountId, Balance, BlockNumber, Hash, Index, Moment, Signature};
 use beefy_primitives::{crypto::AuthorityId as BeefyId, mmr::MmrLeafVersion};
 use codec::Encode;
 pub use frame_support::{
@@ -45,6 +44,7 @@ use frame_system::{
 	limits::{BlockLength, BlockWeights},
 	EnsureSigned,
 };
+pub use fuso_primitives::{AccountId, Balance, BlockNumber, Hash, Index, Moment, Signature};
 use fuso_support::{chainbridge::derive_resource_id, ChainId};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
@@ -53,13 +53,13 @@ use pallet_transaction_payment::{
 	CurrencyAdapter, FeeDetails, Multiplier, RuntimeDispatchInfo, TargetedFeeAdjustment,
 };
 
-use sp_mmr_primitives as mmr;
 #[cfg(any(feature = "std", test))]
 pub use frame_system::Call as SystemCall;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 #[cfg(any(feature = "std", test))]
 pub use pallet_sudo::Call as SudoCall;
+use sp_mmr_primitives as mmr;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
@@ -830,7 +830,7 @@ pub type Executive = frame_executive::Executive<
 	Migrations,
 >;
 
-type Migrations = (	SetIntervalValueRuntimeUpgrade,);
+type Migrations = (SetIntervalValueRuntimeUpgrade,);
 /// Please set the value of interval according to your own needs.
 const INTERVAL: u32 = 1;
 pub struct SetIntervalValueRuntimeUpgrade;

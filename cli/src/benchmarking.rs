@@ -22,8 +22,8 @@
 
 use crate::service::{create_extrinsic, FullClient};
 
-use fuso_runtime::{BalancesCall, SystemCall};
 use fuso_primitives::{AccountId, Balance};
+use fuso_runtime::{BalancesCall, SystemCall};
 use sc_cli::Result;
 use sp_inherents::{InherentData, InherentDataProvider};
 use sp_keyring::Sr25519Keyring;
