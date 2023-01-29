@@ -2488,7 +2488,9 @@ dependencies = [
  "pallet-mmr",
  "pallet-multisig",
  "pallet-octopus-appchain",
+ "pallet-octopus-appchain-benchmarking",
  "pallet-octopus-bridge",
+ "pallet-octopus-bridge-benchmarking",
  "pallet-octopus-lpos",
  "pallet-octopus-upward-messages",
  "pallet-offences",
@@ -2526,7 +2528,7 @@ dependencies = [
 [[package]]
 name = "fuso-support"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#5a38176f5bc005bc49f7997ffc3fe359bae38263"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#07a18f8bad240756e85bc38443fc2e88f87a5936"
 dependencies = [
  "bit-vec",
  "byteorder",
@@ -2543,7 +2545,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-rpc"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#5a38176f5bc005bc49f7997ffc3fe359bae38263"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#07a18f8bad240756e85bc38443fc2e88f87a5936"
 dependencies = [
  "fuso-verifier-runtime-api",
  "jsonrpc-core",
@@ -2561,7 +2563,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-runtime-api"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#5a38176f5bc005bc49f7997ffc3fe359bae38263"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#07a18f8bad240756e85bc38443fc2e88f87a5936"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -4983,7 +4985,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#5a38176f5bc005bc49f7997ffc3fe359bae38263"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#07a18f8bad240756e85bc38443fc2e88f87a5936"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5001,7 +5003,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge-handler"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#5a38176f5bc005bc49f7997ffc3fe359bae38263"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#07a18f8bad240756e85bc38443fc2e88f87a5936"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5074,7 +5076,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-agent"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#5a38176f5bc005bc49f7997ffc3fe359bae38263"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#07a18f8bad240756e85bc38443fc2e88f87a5936"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5095,7 +5097,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-foundation"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#5a38176f5bc005bc49f7997ffc3fe359bae38263"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#07a18f8bad240756e85bc38443fc2e88f87a5936"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5114,7 +5116,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-reward"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#5a38176f5bc005bc49f7997ffc3fe359bae38263"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#07a18f8bad240756e85bc38443fc2e88f87a5936"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5132,7 +5134,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-smuggler"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#5a38176f5bc005bc49f7997ffc3fe359bae38263"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#07a18f8bad240756e85bc38443fc2e88f87a5936"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5150,7 +5152,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-token"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#5a38176f5bc005bc49f7997ffc3fe359bae38263"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#07a18f8bad240756e85bc38443fc2e88f87a5936"
 dependencies = [
  "ascii",
  "frame-benchmarking",
@@ -5171,7 +5173,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-verifier"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#5a38176f5bc005bc49f7997ffc3fe359bae38263"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#07a18f8bad240756e85bc38443fc2e88f87a5936"
 dependencies = [
  "ascii",
  "frame-benchmarking",
@@ -5308,6 +5310,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-octopus-appchain-benchmarking"
+version = "4.0.0-pre.0"
+source = "git+https://github.com/octopus-network/octopus-pallets.git?branch=release-v0.9.30#200b6abbee8079e338e60ffe4730daa1650b5e5d"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "pallet-octopus-appchain",
+ "pallet-octopus-bridge",
+ "pallet-octopus-support",
+ "pallet-uniques",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-runtime",
+]
+
+[[package]]
 name = "pallet-octopus-bridge"
 version = "4.0.0-pre.0"
 source = "git+https://github.com/octopus-network/octopus-pallets.git?branch=release-v0.9.30#200b6abbee8079e338e60ffe4730daa1650b5e5d"
@@ -5325,6 +5345,24 @@ dependencies = [
  "serde_json",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-octopus-bridge-benchmarking"
+version = "4.0.0-pre.0"
+source = "git+https://github.com/octopus-network/octopus-pallets.git?branch=release-v0.9.30#200b6abbee8079e338e60ffe4730daa1650b5e5d"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-assets",
+ "pallet-octopus-appchain",
+ "pallet-octopus-bridge",
+ "pallet-octopus-support",
+ "pallet-uniques",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -5476,6 +5514,7 @@ name = "pallet-staking"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.30#a3ed0119c45cdd0d571ad34e5b3ee7518c8cef8d"
 dependencies = [
+ "frame-benchmarking",
  "frame-election-provider-support",
  "frame-support",
  "frame-system",
@@ -5483,7 +5522,9 @@ dependencies = [
  "pallet-authorship",
  "pallet-session",
  "parity-scale-codec",
+ "rand_chacha 0.2.2",
  "scale-info",
+ "serde",
  "sp-application-crypto",
  "sp-io",
  "sp-runtime",
@@ -8634,6 +8675,7 @@ source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.3
 dependencies = [
  "parity-scale-codec",
  "scale-info",
+ "serde",
  "sp-arithmetic",
  "sp-core",
  "sp-runtime",
