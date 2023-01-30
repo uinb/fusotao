@@ -1,3 +1,7 @@
+# v0.9.30-testnet.1
+
+- upgrade substrate dependencies to v0.9.30
+
 # v0.9.18-rum.10
 
 - integrate with smuggler

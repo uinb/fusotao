@@ -634,7 +634,7 @@ impl pallet_fuso_smuggler::Config for Runtime {
 parameter_types! {
 	pub const NativeTokenId: u32 = 0;
 	pub const NearChainId: ChainId = 255;
-	pub const EthChainId: ChainId = 1;
+	pub const EthChainId: ChainId = 5;
 	pub const BnbChainId: ChainId = 10;
 	pub const NativeChainId: ChainId = 42;
 
