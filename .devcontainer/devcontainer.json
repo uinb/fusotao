@@ -15,7 +15,7 @@
     9944
   ],
   "preCreateCommand": ["cargo build", "cargo check"],
-  "postStartCommand": "./target/debug/appchain-barnacle --dev --ws-external",
+  "postStartCommand": "./target/debug/fuso --dev --ws-external",
   "menuActions": [
     {"id": "polkadotjs",
      "label": "Open PolkadotJS Apps",
