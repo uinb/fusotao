@@ -670,7 +670,7 @@ parameter_types! {
 	pub NativeResourceId: fuso_support::chainbridge::ResourceId = derive_resource_id(FusotaoChainId::get(), 0, b"TAO".as_ref()).unwrap();
 	pub NativeTokenMaxValue: Balance = 0;
 	pub DonorAccount: AccountId = AccountId::new([0u8; 32]);
-	pub DonationForAgent: Balance = 100 * CENTS;
+	pub DonationForAgent: Balance = 1 * TAO;
 }
 
 impl pallet_chainbridge_handler::Config for Runtime {
