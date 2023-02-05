@@ -121,7 +121,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 139,
+	spec_version: 140,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 3,
@@ -655,7 +655,7 @@ impl pallet_fuso_token::Config for Runtime {
 
 parameter_types! {
 	pub const FusotaoChainId: u16 = 42;
-	pub const ProposalLifetime: BlockNumber = HOURS;
+	pub const ProposalLifetime: BlockNumber = 48 * HOURS;
 }
 
 impl pallet_chainbridge::Config for Runtime {
@@ -668,7 +668,7 @@ impl pallet_chainbridge::Config for Runtime {
 
 parameter_types! {
 	pub NativeResourceId: fuso_support::chainbridge::ResourceId = derive_resource_id(FusotaoChainId::get(), 0, b"TAO".as_ref()).unwrap();
-	pub NativeTokenMaxValue: Balance = 0;
+	pub NativeTokenMaxValue: Balance = 30_000_000 * TAO;
 	pub DonorAccount: AccountId = AccountId::new([0u8; 32]);
 	pub DonationForAgent: Balance = 1 * TAO;
 }
