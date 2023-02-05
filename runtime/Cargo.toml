@@ -72,29 +72,28 @@ pallet-beefy-mmr = { git = "https://github.com/paritytech/substrate.git", defaul
 sp-mmr-primitives = { git = "https://github.com/paritytech/substrate.git", default-features = false , branch = "polkadot-v0.9.30" }
 
 # octopus pallets
-pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets.git", default-features = false, branch = "release-v0.9.30" }
-pallet-octopus-bridge = { git = "https://github.com/octopus-network/octopus-pallets.git", default-features = false, branch = "release-v0.9.30" }
-pallet-octopus-lpos = { git = "https://github.com/octopus-network/octopus-pallets.git", default-features = false, branch = "release-v0.9.30" }
-pallet-octopus-upward-messages = { git = "https://github.com/octopus-network/octopus-pallets.git", default-features = false, branch = "release-v0.9.30" }
+pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets.git", default-features = false, branch = "main" }
+pallet-octopus-bridge = { git = "https://github.com/octopus-network/octopus-pallets.git", default-features = false, branch = "main" }
+pallet-octopus-lpos = { git = "https://github.com/octopus-network/octopus-pallets.git", default-features = false, branch = "main" }
+pallet-octopus-upward-messages = { git = "https://github.com/octopus-network/octopus-pallets.git", default-features = false, branch = "main" }
 
 pallet-randomness-collective-flip = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 hex-literal = { version = "0.3.4" }
 pallet-multisig = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.30', default-features = false }
 # fusotao dependencies
-fuso-support = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "fuso-support" }
-pallet-fuso-verifier = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-verifier" }
-pallet-fuso-token = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-token" }
-pallet-fuso-foundation = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-foundation" }
-pallet-fuso-reward = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-reward" }
-pallet-fuso-agent = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-agent" }
-pallet-fuso-smuggler = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-smuggler" }
-fuso-verifier-runtime-api = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "fuso-verifier-runtime-api" }
+fuso-support = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "feature/oct-test", default-features = false, package = "fuso-support" }
+pallet-fuso-verifier = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "feature/oct-test", default-features = false, package = "pallet-fuso-verifier" }
+pallet-fuso-token = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "feature/oct-test", default-features = false, package = "pallet-fuso-token" }
+pallet-fuso-foundation = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "feature/oct-test", default-features = false, package = "pallet-fuso-foundation" }
+pallet-fuso-reward = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "feature/oct-test", default-features = false, package = "pallet-fuso-reward" }
+pallet-fuso-agent = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "feature/oct-test", default-features = false, package = "pallet-fuso-agent" }
+fuso-verifier-runtime-api = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "feature/oct-test", default-features = false, package = "fuso-verifier-runtime-api" }
 # chainbridge dependencies
-pallet-chainbridge = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-chainbridge" }
-pallet-chainbridge-handler = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-chainbridge-handler" }
+pallet-chainbridge = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "feature/oct-test", default-features = false, package = "pallet-chainbridge" }
+pallet-chainbridge-handler = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "feature/oct-test", default-features = false, package = "pallet-chainbridge-handler" }
 # benchmarking
-pallet-octopus-bridge-benchmarking = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.30", default-features = false, optional = true }
-pallet-octopus-appchain-benchmarking = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.30", default-features = false, optional = true }
+pallet-octopus-bridge-benchmarking = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "main", default-features = false, optional = true }
+pallet-octopus-appchain-benchmarking = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "main", default-features = false, optional = true }
 syn = "=1.0.107"
 
 [build-dependencies]
