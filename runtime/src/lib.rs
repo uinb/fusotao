@@ -121,7 +121,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 140,
+	spec_version: 141,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 3,
@@ -619,23 +619,11 @@ impl pallet_multisig::Config for Runtime {
 	type WeightInfo = ();
 }
 
-/*parameter_types! {
-	pub const SmugglerAdmin: AccountId = AccountId::new(hex_literal::hex!["e41324216f0037a6ec49cbc55d35911c482a91472ba26eb9a3763e77938b9d56"]);
-}
-
-impl pallet_fuso_smuggler::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type EnsureAdmin = EnsureAdmin<Runtime>;
-	type Admin = SmugglerAdmin;
-	type Currency = Balances;
-}
-*/
-
 parameter_types! {
 	pub const NativeTokenId: u32 = 0;
 	pub const NearChainId: ChainId = 255;
-	pub const EthChainId: ChainId = 1;
-	pub const BnbChainId: ChainId = 10;
+	pub const EthChainId: ChainId = 5;
+	pub const BnbChainId: ChainId = 97;
 	pub const NativeChainId: ChainId = 42;
 
 }
