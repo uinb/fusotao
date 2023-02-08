@@ -1,3 +1,7 @@
+# v0.9.30-test.141
+
+ - change bsc chain id
+
 # v0.9.18-rum.10
 
 - integrate with smuggler
