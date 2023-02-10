@@ -1,3 +1,7 @@
+# v0.9.18-rum.12
+
+- update bnb chainid
+
 # v0.9.18-rum.11
 
 - tao patch
