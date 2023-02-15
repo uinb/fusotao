@@ -1,6 +1,6 @@
-# v0.9.30-test.141
+# v0.9.30-testnet.142
 
- - change bsc chain id
+- update 142 for oct test
 
 # v0.9.18-rum.10
 
