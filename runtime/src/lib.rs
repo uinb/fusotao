@@ -121,7 +121,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 140,
+	spec_version: 143,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 3,
@@ -554,6 +554,11 @@ impl pallet_octopus_appchain::Config for Runtime {
 	type WeightInfo = pallet_octopus_appchain::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+	pub const NativeTokenDecimals: u128 = TAO;
+	pub const FeeTh: u64 = 2;
+}
+
 impl pallet_octopus_bridge::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type PalletId = OctopusAppchainPalletId;
@@ -568,6 +573,8 @@ impl pallet_octopus_bridge::Config for Runtime {
 	type ItemId = ItemId;
 	type Nonfungibles = OctopusUniques;
 	type Convertor = ();
+	type NativeTokenDecimals = NativeTokenDecimals;
+	type Threshold = FeeTh;
 	type WeightInfo = pallet_octopus_bridge::weights::SubstrateWeight<Runtime>;
 }
 
@@ -635,7 +642,7 @@ parameter_types! {
 	pub const NativeTokenId: u32 = 0;
 	pub const NearChainId: ChainId = 255;
 	pub const EthChainId: ChainId = 1;
-	pub const BnbChainId: ChainId = 10;
+	pub const BnbChainId: ChainId = 56;
 	pub const NativeChainId: ChainId = 42;
 
 }
@@ -687,6 +694,10 @@ impl pallet_chainbridge_handler::Config for Runtime {
 	type DonationForAgent = DonationForAgent;
 }
 
+parameter_types! {
+	pub const MainOrTestnet: u16 = 1;
+}
+
 impl pallet_fuso_agent::Config<pallet_fuso_agent::EthInstance> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Transaction = RuntimeCall;
@@ -694,7 +705,7 @@ impl pallet_fuso_agent::Config<pallet_fuso_agent::EthInstance> for Runtime {
 	type TransactionByteFee = TransactionByteFee;
 	type Currency = Balances;
 	type ExternalSignWrapper = pallet_fuso_agent::EthPersonalSignWrapper;
-	type ExternalChainId = EthChainId;
+	type MainOrTestnet = MainOrTestnet;
 }
 
 parameter_types! {
