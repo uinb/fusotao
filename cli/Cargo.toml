@@ -93,7 +93,7 @@ beefy-primitives = { git = "https://github.com/paritytech/substrate.git", branch
 beefy-gadget = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 
 # octopus pallets
-pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.30" }
+pallet-octopus-appchain = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.30-1" }
 
 [target.'cfg(any(target_arch="x86_64", target_arch="aarch64"))'.dependencies]
 fuso-executor = { version = "4.0.1", path = "../executor", features = ["wasmtime"] }
