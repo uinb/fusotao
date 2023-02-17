@@ -1,3 +1,7 @@
+# v0.9.30-mainnet.143
+
+- upgrade substrate to v0.9.30
+
 # v0.9.18-rum.10
 
 - integrate with smuggler
