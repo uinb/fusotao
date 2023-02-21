@@ -25,6 +25,9 @@ jobs:
       - name: Set-Up
         run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl libprotobuf-dev protobuf-compiler
 
+      - name: Show-Clang-Target
+        run: clang --print-targets
+
       - name: Install Rustup
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y

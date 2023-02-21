@@ -2480,7 +2480,6 @@ dependencies = [
  "pallet-fuso-agent",
  "pallet-fuso-foundation",
  "pallet-fuso-reward",
- "pallet-fuso-smuggler",
  "pallet-fuso-token",
  "pallet-fuso-verifier",
  "pallet-grandpa",
@@ -2528,7 +2527,7 @@ dependencies = [
 [[package]]
 name = "fuso-support"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#47b8dbd7728a0480fee1eaff3a092f29c38e4c69"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#083cd4e4ae13d85f90eaa51ed4be64b8123544fa"
 dependencies = [
  "bit-vec",
  "byteorder",
@@ -2545,7 +2544,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-rpc"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#47b8dbd7728a0480fee1eaff3a092f29c38e4c69"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#083cd4e4ae13d85f90eaa51ed4be64b8123544fa"
 dependencies = [
  "fuso-verifier-runtime-api",
  "jsonrpc-core",
@@ -2563,7 +2562,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-runtime-api"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#47b8dbd7728a0480fee1eaff3a092f29c38e4c69"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#083cd4e4ae13d85f90eaa51ed4be64b8123544fa"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -4338,6 +4337,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "lz4_flex"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b8c72594ac26bfd34f2d99dfced2edfaddfe8a476e3ff2ca0eb293d925c4f83"
+
+[[package]]
 name = "mach"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4985,7 +4990,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#47b8dbd7728a0480fee1eaff3a092f29c38e4c69"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#083cd4e4ae13d85f90eaa51ed4be64b8123544fa"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5003,7 +5008,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge-handler"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#47b8dbd7728a0480fee1eaff3a092f29c38e4c69"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#083cd4e4ae13d85f90eaa51ed4be64b8123544fa"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5076,7 +5081,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-agent"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#47b8dbd7728a0480fee1eaff3a092f29c38e4c69"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#083cd4e4ae13d85f90eaa51ed4be64b8123544fa"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5097,7 +5102,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-foundation"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#47b8dbd7728a0480fee1eaff3a092f29c38e4c69"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#083cd4e4ae13d85f90eaa51ed4be64b8123544fa"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5116,25 +5121,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-reward"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#47b8dbd7728a0480fee1eaff3a092f29c38e4c69"
-dependencies = [
- "frame-support",
- "frame-system",
- "fuso-support",
- "pallet-balances",
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-fuso-smuggler"
-version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#47b8dbd7728a0480fee1eaff3a092f29c38e4c69"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#083cd4e4ae13d85f90eaa51ed4be64b8123544fa"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5152,7 +5139,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-token"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#47b8dbd7728a0480fee1eaff3a092f29c38e4c69"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#083cd4e4ae13d85f90eaa51ed4be64b8123544fa"
 dependencies = [
  "ascii",
  "frame-benchmarking",
@@ -5173,7 +5160,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-verifier"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#47b8dbd7728a0480fee1eaff3a092f29c38e4c69"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#083cd4e4ae13d85f90eaa51ed4be64b8123544fa"
 dependencies = [
  "ascii",
  "frame-benchmarking",
@@ -5181,6 +5168,7 @@ dependencies = [
  "frame-system",
  "fuso-support",
  "log",
+ "lz4_flex",
  "pallet-balances",
  "pallet-fuso-token",
  "parity-scale-codec",
@@ -10648,9 +10636,9 @@ dependencies = [
 
 [[package]]
 name = "zstd-sys"
-version = "2.0.5+zstd.1.5.2"
+version = "2.0.7+zstd.1.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "edc50ffce891ad571e9f9afe5039c4837bede781ac4bb13052ed7ae695518596"
+checksum = "94509c3ba2fe55294d752b79842c530ccfab760192521df74a081a78d2b3c7f5"
 dependencies = [
  "cc",
  "libc",
