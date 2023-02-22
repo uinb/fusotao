@@ -2527,7 +2527,7 @@ dependencies = [
 [[package]]
 name = "fuso-support"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#53ea8281e0e3e3bd7699a69fe12b2ec57be0f904"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#579aea3d93ca2add4fd3ec2798794a6c1cdc8799"
 dependencies = [
  "bit-vec",
  "byteorder",
@@ -2544,7 +2544,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-rpc"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#53ea8281e0e3e3bd7699a69fe12b2ec57be0f904"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#579aea3d93ca2add4fd3ec2798794a6c1cdc8799"
 dependencies = [
  "fuso-verifier-runtime-api",
  "jsonrpc-core",
@@ -2562,7 +2562,7 @@ dependencies = [
 [[package]]
 name = "fuso-verifier-runtime-api"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#53ea8281e0e3e3bd7699a69fe12b2ec57be0f904"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#579aea3d93ca2add4fd3ec2798794a6c1cdc8799"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -4990,7 +4990,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#53ea8281e0e3e3bd7699a69fe12b2ec57be0f904"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#579aea3d93ca2add4fd3ec2798794a6c1cdc8799"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5008,7 +5008,7 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge-handler"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#53ea8281e0e3e3bd7699a69fe12b2ec57be0f904"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#579aea3d93ca2add4fd3ec2798794a6c1cdc8799"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5081,7 +5081,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-agent"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#53ea8281e0e3e3bd7699a69fe12b2ec57be0f904"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#579aea3d93ca2add4fd3ec2798794a6c1cdc8799"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5102,7 +5102,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-foundation"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#53ea8281e0e3e3bd7699a69fe12b2ec57be0f904"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#579aea3d93ca2add4fd3ec2798794a6c1cdc8799"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5121,7 +5121,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-reward"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#53ea8281e0e3e3bd7699a69fe12b2ec57be0f904"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#579aea3d93ca2add4fd3ec2798794a6c1cdc8799"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -5139,7 +5139,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-token"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#53ea8281e0e3e3bd7699a69fe12b2ec57be0f904"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#579aea3d93ca2add4fd3ec2798794a6c1cdc8799"
 dependencies = [
  "ascii",
  "frame-benchmarking",
@@ -5160,7 +5160,7 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-verifier"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#53ea8281e0e3e3bd7699a69fe12b2ec57be0f904"
+source = "git+https://github.com/uinb/fusotao-protocol.git?branch=feature/verify_compress#579aea3d93ca2add4fd3ec2798794a6c1cdc8799"
 dependencies = [
  "ascii",
  "frame-benchmarking",
