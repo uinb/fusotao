@@ -121,7 +121,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 143,
+	spec_version: 144,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 3,
@@ -626,25 +626,12 @@ impl pallet_multisig::Config for Runtime {
 	type WeightInfo = ();
 }
 
-/*parameter_types! {
-	pub const SmugglerAdmin: AccountId = AccountId::new(hex_literal::hex!["e41324216f0037a6ec49cbc55d35911c482a91472ba26eb9a3763e77938b9d56"]);
-}
-
-impl pallet_fuso_smuggler::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type EnsureAdmin = EnsureAdmin<Runtime>;
-	type Admin = SmugglerAdmin;
-	type Currency = Balances;
-}
-*/
-
 parameter_types! {
 	pub const NativeTokenId: u32 = 0;
 	pub const NearChainId: ChainId = 255;
 	pub const EthChainId: ChainId = 1;
 	pub const BnbChainId: ChainId = 56;
 	pub const NativeChainId: ChainId = 42;
-
 }
 
 pub type TokenId = u32;
@@ -673,13 +660,18 @@ impl pallet_chainbridge::Config for Runtime {
 	type ProposalLifetime = ProposalLifetime;
 }
 
+impl pallet_fuso_indicator::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Asset = Token;
+}
+
 parameter_types! {
 	pub NativeResourceId: fuso_support::chainbridge::ResourceId = derive_resource_id(FusotaoChainId::get(), 0, b"TAO".as_ref()).unwrap();
 	pub NativeTokenMaxValue: Balance = 30_000_000 * TAO;
 	pub DonorAccount: AccountId = AccountId::new([0u8; 32]);
+	pub TreasuryAccount: AccountId = AccountId::new(hex_literal::hex!("36e5fc3abd178f8823ec53a94fb03873779fa85d61f03a95901a4bde1eca1626"));
 	pub DonationForAgent: Balance = 1 * TAO;
 }
-
 impl pallet_chainbridge_handler::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type BridgeOrigin = pallet_chainbridge::EnsureBridge<Runtime>;
@@ -692,6 +684,8 @@ impl pallet_chainbridge_handler::Config for Runtime {
 	type NativeResourceId = NativeResourceId;
 	type DonorAccount = DonorAccount;
 	type DonationForAgent = DonationForAgent;
+	type Oracle = Indicator;
+	type TreasuryAccount = TreasuryAccount;
 }
 
 parameter_types! {
@@ -763,6 +757,7 @@ impl pallet_fuso_verifier::Config for Runtime {
 	type MinimalStakingAmount = MinimalStakingAmount;
 	type MaxMakerFee = MaxMakerFee;
 	type MaxTakerFee = MaxTakerFee;
+	type Indicator = Indicator;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -800,6 +795,7 @@ construct_runtime!(
 		ChainBridgeHandler: pallet_chainbridge_handler,
 		Reward: pallet_fuso_reward,
 		Agent: pallet_fuso_agent::<EthInstance>,
+		Indicator: pallet_fuso_indicator,
 		Verifier: pallet_fuso_verifier,
 	}
 );
