@@ -1,3 +1,7 @@
+# v0.9.30-testnet.145
+
+- add bridge fee
+
 # v0.9.18-rum.10
 
 - integrate with smuggler
