@@ -188,7 +188,6 @@ runtime-benchmarks = [
 
 	"pallet-fuso-verifier/runtime-benchmarks",
 	"pallet-chainbridge/runtime-benchmarks",
-	"pallet-fuso-indicator/runtime-benchmarks",
 ]
 
 
