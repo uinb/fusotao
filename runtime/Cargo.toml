@@ -87,7 +87,9 @@ pallet-fuso-token = { git = "https://github.com/uinb/fusotao-protocol.git", bran
 pallet-fuso-foundation = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-foundation" }
 pallet-fuso-reward = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-reward" }
 pallet-fuso-agent = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-agent" }
+pallet-fuso-indicator = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default_features = false, package = "pallet-fuso-indicator" }
 fuso-verifier-runtime-api = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "fuso-verifier-runtime-api" }
+
 # chainbridge dependencies
 pallet-chainbridge = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-chainbridge" }
 pallet-chainbridge-handler = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-chainbridge-handler" }
@@ -156,6 +158,7 @@ std = [
 
 	'pallet-fuso-foundation/std',
 	'pallet-fuso-verifier/std',
+	'pallet-fuso-indicator/std',
 	'fuso-verifier-runtime-api/std',
 
 	"pallet-octopus-bridge-benchmarking?/std",
@@ -186,6 +189,7 @@ runtime-benchmarks = [
 
 	"pallet-fuso-verifier/runtime-benchmarks",
 	"pallet-chainbridge/runtime-benchmarks",
+	"pallet-fuso-indicator/runtime-benchmarks",
 ]
 
 

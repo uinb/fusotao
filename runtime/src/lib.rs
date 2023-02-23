@@ -660,13 +660,18 @@ impl pallet_chainbridge::Config for Runtime {
 	type ProposalLifetime = ProposalLifetime;
 }
 
+impl pallet_fuso_indicator::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Asset = Token;
+}
+
 parameter_types! {
 	pub NativeResourceId: fuso_support::chainbridge::ResourceId = derive_resource_id(FusotaoChainId::get(), 0, b"TAO".as_ref()).unwrap();
 	pub NativeTokenMaxValue: Balance = 30_000_000 * TAO;
 	pub DonorAccount: AccountId = AccountId::new([0u8; 32]);
+	pub TreasuryAccount: AccountId = AccountId::new(hex_literal::hex!("36e5fc3abd178f8823ec53a94fb03873779fa85d61f03a95901a4bde1eca1626"));
 	pub DonationForAgent: Balance = 1 * TAO;
 }
-
 impl pallet_chainbridge_handler::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type BridgeOrigin = pallet_chainbridge::EnsureBridge<Runtime>;
@@ -679,6 +684,8 @@ impl pallet_chainbridge_handler::Config for Runtime {
 	type NativeResourceId = NativeResourceId;
 	type DonorAccount = DonorAccount;
 	type DonationForAgent = DonationForAgent;
+	type Oracle = Indicator;
+	type TreasuryAccount = TreasuryAccount;
 }
 
 parameter_types! {
@@ -750,6 +757,7 @@ impl pallet_fuso_verifier::Config for Runtime {
 	type MinimalStakingAmount = MinimalStakingAmount;
 	type MaxMakerFee = MaxMakerFee;
 	type MaxTakerFee = MaxTakerFee;
+	type Indicator = Indicator;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -787,6 +795,7 @@ construct_runtime!(
 		ChainBridgeHandler: pallet_chainbridge_handler,
 		Reward: pallet_fuso_reward,
 		Agent: pallet_fuso_agent::<EthInstance>,
+		Indicator: pallet_fuso_indicator,
 		Verifier: pallet_fuso_verifier,
 	}
 );
