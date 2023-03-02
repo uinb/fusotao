@@ -38,11 +38,14 @@ pub use frame_support::{
 	StorageValue,
 };
 use frame_support::{
-	dispatch::DispatchClass, traits::AsEnsureOriginWithArg, weights::ConstantMultiplier, PalletId,
+	dispatch::DispatchClass,
+	traits::{AsEnsureOriginWithArg, SortedMembers},
+	weights::ConstantMultiplier,
+	PalletId,
 };
 use frame_system::{
 	limits::{BlockLength, BlockWeights},
-	EnsureSigned,
+	EnsureSigned, EnsureSignedBy,
 };
 pub use fuso_primitives::{AccountId, Balance, BlockNumber, Hash, Index, Moment, Signature};
 use fuso_support::{chainbridge::derive_resource_id, ChainId};
@@ -121,7 +124,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 144,
+	spec_version: 146,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 3,
@@ -632,6 +635,7 @@ parameter_types! {
 	pub const EthChainId: ChainId = 1;
 	pub const BnbChainId: ChainId = 56;
 	pub const NativeChainId: ChainId = 42;
+	pub const BurnTAOwhenIssue: Balance = 10 * TAO;
 }
 
 pub type TokenId = u32;
@@ -645,6 +649,8 @@ impl pallet_fuso_token::Config for Runtime {
 	type TokenId = TokenId;
 	type NativeTokenId = NativeTokenId;
 	type Weight = pallet_fuso_token::weights::SubstrateWeight<Runtime>;
+	type BurnTAOwhenIssue = BurnTAOwhenIssue;
+	type AdminOrigin = EnsureSignedBy<BridgeAdminMembers, Self::AccountId>;
 }
 
 parameter_types! {
@@ -654,38 +660,52 @@ parameter_types! {
 
 impl pallet_chainbridge::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
+	type AdminOrigin = frame_system::EnsureSignedBy<BridgeAdminMembers, Self::AccountId>;
 	type Proposal = RuntimeCall;
 	type ChainId = FusotaoChainId;
 	type ProposalLifetime = ProposalLifetime;
+	type TreasuryAccount = TreasuryAccount;
+	type Fungibles = Token;
+	type NativeResourceId = NativeResourceId;
+	type AssetIdByName = Token;
 }
 
 impl pallet_fuso_indicator::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Asset = Token;
 }
+pub const TREASURY: AccountId = AccountId::new(hex_literal::hex!(
+	"36e5fc3abd178f8823ec53a94fb03873779fa85d61f03a95901a4bde1eca1626"
+));
+
+pub const BRIDGE_ADMIN: AccountId = AccountId::new(hex_literal::hex!(
+	"9653992f8241ee51bb578076a1af026b74e08c1c0d53164fc880a4ae5442334c"
+));
 
 parameter_types! {
 	pub NativeResourceId: fuso_support::chainbridge::ResourceId = derive_resource_id(FusotaoChainId::get(), 0, b"TAO".as_ref()).unwrap();
 	pub NativeTokenMaxValue: Balance = 30_000_000 * TAO;
 	pub DonorAccount: AccountId = AccountId::new([0u8; 32]);
-	pub TreasuryAccount: AccountId = AccountId::new(hex_literal::hex!("36e5fc3abd178f8823ec53a94fb03873779fa85d61f03a95901a4bde1eca1626"));
+	pub TreasuryAccount: AccountId = TREASURY;
 	pub DonationForAgent: Balance = 1 * TAO;
 }
+
+pub struct BridgeAdminMembers;
+impl SortedMembers<AccountId> for BridgeAdminMembers {
+	fn sorted_members() -> Vec<AccountId> {
+		vec![BRIDGE_ADMIN]
+	}
+}
+
 impl pallet_chainbridge_handler::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type BridgeOrigin = pallet_chainbridge::EnsureBridge<Runtime>;
-	type AdminOrigin = frame_system::EnsureRoot<Self::AccountId>;
 	type BalanceConversion = Token;
 	type Redirect = RuntimeCall;
-	type Fungibles = Token;
-	type AssetIdByName = Token;
 	type NativeTokenMaxValue = NativeTokenMaxValue;
-	type NativeResourceId = NativeResourceId;
 	type DonorAccount = DonorAccount;
 	type DonationForAgent = DonationForAgent;
 	type Oracle = Indicator;
-	type TreasuryAccount = TreasuryAccount;
 }
 
 parameter_types! {
