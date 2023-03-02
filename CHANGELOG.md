@@ -1,3 +1,7 @@
+# v0.9.30-testnet.146
+
+- add bridge admin
+
 # v0.9.18-rum.10
 
 - integrate with smuggler
