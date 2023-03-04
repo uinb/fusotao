@@ -43,6 +43,7 @@ use sc_finality_grandpa::{
 };
 use sc_rpc::SubscriptionTaskExecutor;
 pub use sc_rpc_api::DenyUnsafe;
+use sc_service::SpawnTaskHandle;
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
@@ -86,6 +87,14 @@ pub struct BeefyDeps {
 	pub subscription_executor: sc_rpc::SubscriptionTaskExecutor,
 }
 
+/// Dependencies for Proof of Order Relay
+pub struct BrokerDeps {
+	/// spawn a task to handle the connection with prover
+	pub connector_handle: SpawnTaskHandle,
+	/// keystore to sign the users' trading commands
+	pub relayer_keystore: SyncCryptoStorePtr,
+}
+
 /// Full client dependencies.
 pub struct FullDeps<C, P, SC, B> {
 	/// The client instance to use.
@@ -104,6 +113,8 @@ pub struct FullDeps<C, P, SC, B> {
 	pub grandpa: GrandpaDeps<B>,
 	/// BEEFY specific dependencies.
 	pub beefy: BeefyDeps,
+	/// Broker dependencies.
+	pub broker: BrokerDeps,
 }
 
 /// Instantiate all Full RPC extensions.
@@ -123,7 +134,7 @@ where
 	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
 	C::Api: pallet_mmr_rpc::MmrRuntimeApi<Block, <Block as sp_runtime::traits::Block>::Hash>,
 	C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
-	C::Api: fuso_verifier_rpc::FusoVerifierRuntimeApi<Block, AccountId, Balance>,
+	C::Api: fuso_rpc::prover::FusoVerifierRuntimeApi<Block, AccountId, Balance>,
 	C::Api: BabeApi<Block>,
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + 'static,
@@ -132,7 +143,7 @@ where
 	B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashFor<Block>>,
 {
 	use beefy_gadget_rpc::{Beefy, BeefyApiServer};
-	use fuso_verifier_rpc::{FusoVerifier, FusoVerifierApiServer};
+	use fuso_rpc::{FusoBroker, FusoBrokerApiServer, FusoVerifier, FusoVerifierApiServer};
 	use pallet_mmr_rpc::{Mmr, MmrApiServer};
 	use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApiServer};
 	use sc_consensus_babe_rpc::{Babe, BabeApiServer};
@@ -143,9 +154,17 @@ where
 	use substrate_frame_rpc_system::{System, SystemApiServer};
 
 	let mut io = RpcModule::new(());
-	let FullDeps { client, pool, select_chain, chain_spec, deny_unsafe, babe, grandpa, beefy } =
-		deps;
-
+	let FullDeps {
+		client,
+		pool,
+		select_chain,
+		chain_spec,
+		deny_unsafe,
+		babe,
+		grandpa,
+		beefy,
+		broker,
+	} = deps;
 	let BabeDeps { keystore, babe_config, shared_epoch_changes } = babe;
 	let GrandpaDeps {
 		shared_voter_state,
@@ -154,13 +173,14 @@ where
 		subscription_executor,
 		finality_provider,
 	} = grandpa;
+	let BrokerDeps { connector_handle, relayer_keystore } = broker;
 
 	let chain_name = chain_spec.name().to_string();
 	let genesis_hash = client.block_hash(0).ok().flatten().expect("Genesis block exists; qed");
 	let properties = chain_spec.properties();
 	io.merge(ChainSpec::new(chain_name, genesis_hash, properties).into_rpc())?;
-
 	io.merge(FusoVerifier::new(client.clone()).into_rpc())?;
+	io.merge(FusoBroker::new(client.clone(), connector_handle, relayer_keystore).into_rpc())?;
 	io.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
 	// Making synchronous calls in light client freezes the browser currently,
 	// more context: https://github.com/paritytech/substrate/pull/3480

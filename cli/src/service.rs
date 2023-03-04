@@ -133,7 +133,7 @@ pub fn new_partial(
 		sc_transaction_pool::FullPool<Block, FullClient>,
 		(
 			impl Fn(
-				fuso_rpc::DenyUnsafe,
+				fuso_rpc_service::DenyUnsafe,
 				sc_rpc::SubscriptionTaskExecutor,
 			) -> Result<jsonrpsee::RpcModule<()>, sc_service::Error>,
 			(
@@ -259,29 +259,30 @@ pub fn new_partial(
 		let select_chain = select_chain.clone();
 		let keystore = keystore_container.sync_keystore();
 		let chain_spec = config.chain_spec.cloned_box();
+		let task_handle = task_manager.spawn_handle();
 
 		let rpc_backend = backend.clone();
 		let rpc_extensions_builder =
 			move |deny_unsafe, subscription_executor: sc_rpc::SubscriptionTaskExecutor| {
-				let deps = fuso_rpc::FullDeps {
+				let deps = fuso_rpc_service::FullDeps {
 					client: client.clone(),
 					pool: pool.clone(),
 					select_chain: select_chain.clone(),
 					chain_spec: chain_spec.cloned_box(),
 					deny_unsafe,
-					babe: fuso_rpc::BabeDeps {
+					babe: fuso_rpc_service::BabeDeps {
 						babe_config: babe_config.clone(),
 						shared_epoch_changes: shared_epoch_changes.clone(),
 						keystore: keystore.clone(),
 					},
-					grandpa: fuso_rpc::GrandpaDeps {
+					grandpa: fuso_rpc_service::GrandpaDeps {
 						shared_voter_state: shared_voter_state.clone(),
 						shared_authority_set: shared_authority_set.clone(),
 						justification_stream: justification_stream.clone(),
 						subscription_executor: subscription_executor.clone(),
 						finality_provider: finality_proof_provider.clone(),
 					},
-					beefy: fuso_rpc::BeefyDeps {
+					beefy: fuso_rpc_service::BeefyDeps {
 						beefy_finality_proof_stream: beefy_rpc_links
 							.from_voter_justif_stream
 							.clone(),
@@ -290,9 +291,13 @@ pub fn new_partial(
 							.clone(),
 						subscription_executor,
 					},
+					broker: fuso_rpc_service::BrokerDeps {
+						connector_handle: task_handle.clone(),
+						relayer_keystore: keystore.clone(),
+					},
 				};
 
-				fuso_rpc::create_full(deps, rpc_backend.clone()).map_err(Into::into)
+				fuso_rpc_service::create_full(deps, rpc_backend.clone()).map_err(Into::into)
 			};
 
 		(rpc_extensions_builder, shared_voter_state2)

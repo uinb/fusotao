@@ -1,5 +1,5 @@
 [package]
-name = "fuso-rpc"
+name = "fuso-rpc-service"
 version = "4.0.1"
 authors = ['Fusotao Team <hi@fusotao.org>']
 description = "Fusotao node rpc methods."
@@ -23,6 +23,7 @@ sc-consensus-babe-rpc = { version = "0.10.0-dev", git = "https://github.com/pari
 sc-consensus-epochs = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sc-finality-grandpa = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sc-finality-grandpa-rpc = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+sc-service = { version = "0.10.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sc-rpc = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sc-rpc-api = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sc-rpc-spec-v2 = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
@@ -36,8 +37,7 @@ sp-consensus-babe = { version = "0.10.0-dev", git = "https://github.com/parityte
 sp-keystore = { version = "0.12.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sp-runtime = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 substrate-frame-rpc-system = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
-fuso-verifier-rpc = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "fuso-verifier-rpc" }
-
-# beefy
 beefy-gadget = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 beefy-gadget-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+
+fuso-rpc = { path = "../../fusotao-protocol/rpc" }
