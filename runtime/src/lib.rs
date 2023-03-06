@@ -124,7 +124,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 	//   `spec_version`, and `authoring_version` are the same between Wasm and native.
 	// This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
 	//   the compatible custom types.
-	spec_version: 146,
+	spec_version: 149,
 	impl_version: 1,
 	apis: RUNTIME_API_VERSIONS,
 	transaction_version: 3,
@@ -682,6 +682,10 @@ pub const BRIDGE_ADMIN: AccountId = AccountId::new(hex_literal::hex!(
 	"9653992f8241ee51bb578076a1af026b74e08c1c0d53164fc880a4ae5442334c"
 ));
 
+pub const BRIDGE_ADMIN1: AccountId = AccountId::new(hex_literal::hex!(
+	"5e6197279237e048a53e59b25c50e7e48de9d1c76c7077d5f33b8fcde4af873f"
+));
+
 parameter_types! {
 	pub NativeResourceId: fuso_support::chainbridge::ResourceId = derive_resource_id(FusotaoChainId::get(), 0, b"TAO".as_ref()).unwrap();
 	pub NativeTokenMaxValue: Balance = 30_000_000 * TAO;
@@ -693,7 +697,7 @@ parameter_types! {
 pub struct BridgeAdminMembers;
 impl SortedMembers<AccountId> for BridgeAdminMembers {
 	fn sorted_members() -> Vec<AccountId> {
-		vec![BRIDGE_ADMIN]
+		vec![BRIDGE_ADMIN, BRIDGE_ADMIN1]
 	}
 }
 

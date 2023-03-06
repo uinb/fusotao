@@ -1,6 +1,8 @@
-# v0.9.18-rum.10
+# v0.9.30-mainnet.149
 
-- integrate with smuggler
+- add feature: verifier compress
+- add bridge fee
+- add bridge admin
 
 # v0.9.18-rum.9
 
