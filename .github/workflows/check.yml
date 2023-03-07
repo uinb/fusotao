@@ -1,4 +1,4 @@
-name: Check Set-Up & Build
+name: Build
 
 # Controls when the action will run.
 on:
