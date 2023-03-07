@@ -75,8 +75,7 @@ source ~/.cargo/env
 Finally, configure the Rust toolchain:
 
 ```bash
-rustup default stable
+rustup default nightly
 rustup update nightly
-rustup update stable
 rustup target add wasm32-unknown-unknown --toolchain nightly
 ```

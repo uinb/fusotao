@@ -63,6 +63,8 @@ pallet-timestamp = { version = "4.0.0-dev", default-features = false, git = "htt
 pallet-transaction-payment = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 pallet-transaction-payment-rpc-runtime-api = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 pallet-uniques = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-randomness-collective-flip = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-multisig = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.30', default-features = false }
 
 # beefy
 beefy-primitives = { git = "https://github.com/paritytech/substrate.git", default-features = false , branch = "polkadot-v0.9.30" }
@@ -77,25 +79,24 @@ pallet-octopus-bridge = { git = "https://github.com/octopus-network/octopus-pall
 pallet-octopus-lpos = { git = "https://github.com/octopus-network/octopus-pallets.git", default-features = false, branch = "release-v0.9.30-1" }
 pallet-octopus-upward-messages = { git = "https://github.com/octopus-network/octopus-pallets.git", default-features = false, branch = "release-v0.9.30-1" }
 
-pallet-randomness-collective-flip = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
-hex-literal = { version = "0.3.4" }
-pallet-multisig = { git = 'https://github.com/paritytech/substrate.git', branch = 'polkadot-v0.9.30', default-features = false }
 # fusotao dependencies
-fuso-support = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "fuso-support" }
-pallet-fuso-verifier = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-verifier" }
-pallet-fuso-token = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-token" }
-pallet-fuso-foundation = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-foundation" }
-pallet-fuso-reward = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-reward" }
-pallet-fuso-agent = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-agent" }
-pallet-fuso-indicator = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-fuso-indicator" }
-fuso-verifier-runtime-api = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "fuso-verifier-runtime-api" }
-# chainbridge dependencies
-pallet-chainbridge = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-chainbridge" }
-pallet-chainbridge-handler = { git = "https://github.com/uinb/fusotao-protocol.git", branch = "polkadot-v0.9.30", default-features = false, package = "pallet-chainbridge-handler" }
+fuso-support = { path = "../pallets/fuso-support", default-features = false }
+pallet-fuso-verifier = { path = "../pallets/verifier", default-features = false }
+pallet-fuso-token = { path = "../pallets/token", default-features = false }
+pallet-fuso-foundation = { path = "../pallets/foundation", default-features = false }
+pallet-fuso-reward = { path = "../pallets/reward", default-features = false }
+pallet-fuso-agent = { path = "../pallets/agent", default-features = false }
+pallet-fuso-indicator = { path = "../pallets/indicator", default-features = false }
+pallet-chainbridge = { path = "../pallets/chainbridge", default-features = false }
+pallet-chainbridge-handler = { path = "../pallets/chainbridge-handler", default-features = false }
+fuso-verifier-runtime-api = { path = "../runtime-api/verifier", default-features = false }
+
 # benchmarking
 pallet-octopus-bridge-benchmarking = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.30-1", default-features = false, optional = true }
 pallet-octopus-appchain-benchmarking = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.30-1", default-features = false, optional = true }
+
 syn = "=1.0.107"
+hex-literal = { version = "0.3.4" }
 
 [build-dependencies]
 substrate-wasm-builder = { version = "5.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }

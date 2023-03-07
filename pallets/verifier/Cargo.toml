@@ -1,0 +1,61 @@
+[package]
+name = "pallet-fuso-verifier"
+version = "4.0.2"
+authors = ["UINB Tech"]
+edition = "2021"
+license = "Apache-2.0"
+homepage = "https://www.fusotao.org"
+repository = "https://github.com/uinb/fusotao-protocol"
+description = "FUSOTAO verifier pallet"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
+scale-info = { version = "2.0.1", default-features = false, features = ["derive"] }
+frame-system = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
+frame-support = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
+frame-benchmarking = { default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
+sp-std = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
+ascii = { version = "1.0", default-features = false }
+serde = { default-features = false, version = "1.0" }
+sp-core = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
+sp-io = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
+sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
+fuso-support = { path = "../fuso-support", default-features = false }
+pallet-fuso-token = { path = "../token", default-features = false }
+pallet-balances = { git = "https://github.com/paritytech/substrate.git", default-features = false, branch = "polkadot-v0.9.30" }
+smt = { git = "https://github.com/uinb/sparse-merkle-tree", tag = "v0.1.7", package = "sparse-merkle-tree", default-features = false, features = ["blake2b"] }
+hex = { version = "0.4", default-features = false, optional = true }
+log = { version = "0.4.14", default-features = false }
+syn = "= 1.0.107"
+lz4_flex = { version = "0.10.0", default-features = false, features = ["safe-decode", "safe-encode", "checked-decode"] }
+
+[dev-dependencies]
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
+pallet-fuso-token = { path = "../token", default-features = false }
+pallet-fuso-indicator = { path = "../indicator", default-features = false }
+pallet-balances = { git = "https://github.com/paritytech/substrate.git", default-features = false, branch = "polkadot-v0.9.30" }
+sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+
+[features]
+runtime-benchmarks = [
+	'frame-benchmarking/runtime-benchmarks',
+	'frame-support/runtime-benchmarks',
+	'frame-system/runtime-benchmarks',
+	'pallet-fuso-token/runtime-benchmarks',
+	'pallet-balances/runtime-benchmarks'
+]
+default = ["std"]
+std = [
+    "codec/std",
+    "sp-std/std",
+    "sp-io/std",
+    "sp-runtime/std",
+    "frame-support/std",
+    "frame-system/std",
+    "frame-benchmarking/std",
+    "pallet-balances/std",
+    "lz4_flex/std",
+]

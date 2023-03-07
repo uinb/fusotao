@@ -77,7 +77,7 @@ pallet-im-online = { version = "4.0.0-dev", default-features = false, git = "htt
 
 # node-specific dependencies
 fuso-runtime = { version = "4.0.1", path = "../runtime" }
-fuso-rpc = { version = "4.0.1", path = "../rpc" }
+fuso-rpc-service = { version = "4.0.1", path = "../rpc-service" }
 fuso-primitives = { version = "4.0.1", path = "../primitives" }
 fuso-executor = { version = "4.0.1", path = "../executor" }
 

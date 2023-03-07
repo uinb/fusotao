@@ -3,10 +3,21 @@ panic = 'unwind'
 
 [workspace]
 members = [
-	'executor',
-	'inspect',
-	'primitives',
-	'rpc',
-	'runtime',
-	'cli',
+    'executor',
+    'inspect',
+    'primitives',
+    'rpc-service',
+    'rpc',
+    'runtime',
+    'runtime-api/verifier',
+    'cli',
+    'pallets/fuso-support',
+    'pallets/token',
+    'pallets/verifier',
+    'pallets/foundation',
+    'pallets/reward',
+    'pallets/agent',
+    'pallets/indicator',
+    'pallets/chainbridge',
+    'pallets/chainbridge-handler',
 ]

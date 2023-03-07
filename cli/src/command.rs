@@ -34,7 +34,7 @@ use std::sync::Arc;
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
-		"Octopus Appchain Node".into()
+		"Fusotao Node".into()
 	}
 
 	fn impl_version() -> String {
@@ -50,11 +50,11 @@ impl SubstrateCli for Cli {
 	}
 
 	fn support_url() -> String {
-		"support.anonymous.an".into()
+		"https://github.com/uinb/fusotao".into()
 	}
 
 	fn copyright_start_year() -> i32 {
-		2019
+		2021
 	}
 
 	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
