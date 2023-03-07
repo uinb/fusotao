@@ -183,7 +183,6 @@ impl fuso_support::traits::Rewarding<AccountId, Balance, BlockNumber> for Phanto
 
 parameter_types! {
     pub const DominatorOnlineThreshold: Balance = 1_000_000;
-    pub const BrokerStakingThreshold: Balance = 1_000_000;
     pub const SeasonDuration: BlockNumber = 1440;
     pub const MinimalStakingAmount: Balance = 100;
     pub const DominatorCheckGracePeriod: BlockNumber = 1;
@@ -193,7 +192,6 @@ parameter_types! {
 
 impl pallet_fuso_verifier::Config for Test {
     type Asset = Assets;
-    type BrokerStakingThreshold = BrokerStakingThreshold;
     type Callback = RuntimeCall;
     type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
     type DominatorOnlineThreshold = DominatorOnlineThreshold;

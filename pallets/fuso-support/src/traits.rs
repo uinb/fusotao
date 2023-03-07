@@ -209,22 +209,6 @@ pub trait Agent<AccountId> {
     fn execute_tx(origin: Self::Origin, msg: Self::Message) -> DispatchResult;
 }
 
-pub trait Smuggler<AccountId> {
-    fn is_wanted(t: &AccountId) -> bool;
-
-    fn repatriate_if_wanted(t: &AccountId) -> bool;
-}
-
-impl<T> Smuggler<T> for () {
-    fn is_wanted(_: &T) -> bool {
-        false
-    }
-
-    fn repatriate_if_wanted(_: &T) -> bool {
-        false
-    }
-}
-
 pub trait PriceOracle<TokenId, Balance: Default, BlockNumber> {
     fn get_price(token_id: &TokenId) -> Balance;
 
@@ -241,4 +225,29 @@ impl<TokenId, Balance: Default, BlockNumber> PriceOracle<TokenId, Balance, Block
 
 pub trait ChainIdOf<Balance> {
     fn chain_id_of(token_info: &XToken<Balance>) -> ChainId;
+}
+
+pub trait MarketManager<AccountId, TokenId, Balance> {
+    fn is_pair_open(dominator: AccountId, base: &TokenId, quote: &TokenId) -> bool;
+
+    fn open(
+        dominator: AccountId,
+        base: &TokenId,
+        quote: &TokenId,
+        base_scale: u8,
+        quote_scale: u8,
+        min_base: Balance,
+    ) -> DispatchResult;
+
+    fn close(dominator: AccountId, base: &TokenId, quote: &TokenId) -> DispatchResult;
+}
+
+pub trait Beneficiary<AccountId> {
+    fn beneficiary(origin: AccountId) -> AccountId;
+}
+
+impl<AccountId> Beneficiary<AccountId> for () {
+    fn beneficiary(origin: AccountId) -> AccountId {
+        origin
+    }
 }

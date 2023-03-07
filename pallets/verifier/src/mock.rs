@@ -112,7 +112,6 @@ impl pallet_fuso_token::Config for Test {
 
 parameter_types! {
     pub const DominatorOnlineThreshold: Balance = 10_000;
-    pub const BrokerStakingThreshold: Balance = 10_000;
     pub const SeasonDuration: BlockNumber = 1440;
     pub const MinimalStakingAmount: Balance = 100;
     pub const DominatorCheckGracePeriod: BlockNumber = 10;
@@ -153,7 +152,6 @@ impl pallet_fuso_indicator::Config for Test {
 
 impl pallet_fuso_verifier::Config for Test {
     type Asset = TokenModule;
-    type BrokerStakingThreshold = BrokerStakingThreshold;
     type Callback = RuntimeCall;
     type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
     type DominatorOnlineThreshold = DominatorOnlineThreshold;
