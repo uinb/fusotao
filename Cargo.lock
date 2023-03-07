@@ -332,9 +332,9 @@ checksum = "7a40729d2133846d9ed0ea60a8b9541bccddab49cd30f0715a1da672fe9a2524"
 
 [[package]]
 name = "async-trait"
-version = "0.1.62"
+version = "0.1.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "689894c2db1ea643a50834b999abf1c110887402542955ff5451dab8f861f9ed"
+checksum = "b84f9ebcc6c1f5b8cb160f6990096a5c127f423fcb6e1ccc46c370cbdfb75dfc"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2290,7 +2290,7 @@ dependencies = [
  "fuso-executor",
  "fuso-inspect",
  "fuso-primitives",
- "fuso-rpc",
+ "fuso-rpc-service",
  "fuso-runtime",
  "futures 0.3.25",
  "jsonrpsee",
@@ -2420,12 +2420,38 @@ dependencies = [
 
 [[package]]
 name = "fuso-rpc"
+version = "4.0.2"
+dependencies = [
+ "async-trait",
+ "fuso-verifier-runtime-api",
+ "hex-literal",
+ "jsonrpc-core",
+ "jsonrpc-core-client",
+ "jsonrpc-derive",
+ "jsonrpsee",
+ "parity-scale-codec",
+ "sc-client-api",
+ "sc-service",
+ "scale-info",
+ "serde",
+ "serde_json",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-blockchain",
+ "sp-core",
+ "sp-keystore",
+ "sp-rpc",
+ "sp-runtime",
+]
+
+[[package]]
+name = "fuso-rpc-service"
 version = "4.0.1"
 dependencies = [
  "beefy-gadget",
  "beefy-gadget-rpc",
  "fuso-primitives",
- "fuso-verifier-rpc",
+ "fuso-rpc",
  "jsonrpsee",
  "pallet-mmr-rpc",
  "pallet-transaction-payment-rpc",
@@ -2528,14 +2554,15 @@ dependencies = [
 [[package]]
 name = "fuso-support"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#0405d99325ab03244c37e2a3f2e5aec820d16b22"
 dependencies = [
  "bit-vec",
  "byteorder",
  "frame-support",
  "frame-system",
+ "hex-literal",
  "parity-scale-codec",
  "scale-info",
+ "serde",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -2543,28 +2570,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuso-verifier-rpc"
-version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#0405d99325ab03244c37e2a3f2e5aec820d16b22"
-dependencies = [
- "fuso-verifier-runtime-api",
- "jsonrpc-core",
- "jsonrpc-core-client",
- "jsonrpc-derive",
- "jsonrpsee",
- "parity-scale-codec",
- "serde",
- "serde_json",
- "sp-api",
- "sp-blockchain",
- "sp-rpc",
- "sp-runtime",
-]
-
-[[package]]
 name = "fuso-verifier-runtime-api"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#0405d99325ab03244c37e2a3f2e5aec820d16b22"
 dependencies = [
  "parity-scale-codec",
  "sp-api",
@@ -4992,7 +4999,6 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#0405d99325ab03244c37e2a3f2e5aec820d16b22"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5000,10 +5006,13 @@ dependencies = [
  "fuso-support",
  "hex-literal",
  "log",
+ "pallet-balances",
+ "pallet-fuso-token",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
  "sp-io",
+ "sp-keyring",
  "sp-runtime",
  "sp-std",
 ]
@@ -5011,20 +5020,24 @@ dependencies = [
 [[package]]
 name = "pallet-chainbridge-handler"
 version = "0.1.0"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#0405d99325ab03244c37e2a3f2e5aec820d16b22"
 dependencies = [
  "frame-support",
  "frame-system",
  "fuso-support",
  "hex",
+ "hex-literal",
  "log",
+ "pallet-balances",
  "pallet-chainbridge",
+ "pallet-fuso-indicator",
+ "pallet-fuso-token",
  "pallet-fuso-verifier",
  "parity-scale-codec",
  "scale-info",
  "sp-arithmetic",
  "sp-core",
  "sp-io",
+ "sp-keyring",
  "sp-runtime",
  "sp-std",
 ]
@@ -5084,20 +5097,23 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-agent"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#0405d99325ab03244c37e2a3f2e5aec820d16b22"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "fuso-support",
  "hex",
+ "hex-literal",
  "log",
  "pallet-balances",
  "pallet-transaction-payment",
  "parity-scale-codec",
  "scale-info",
+ "secp256k1",
  "serde",
  "sp-core",
  "sp-io",
+ "sp-keyring",
  "sp-runtime",
  "sp-std",
 ]
@@ -5105,7 +5121,6 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-foundation"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#0405d99325ab03244c37e2a3f2e5aec820d16b22"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5117,6 +5132,7 @@ dependencies = [
  "serde",
  "sp-core",
  "sp-io",
+ "sp-keyring",
  "sp-runtime",
  "sp-std",
 ]
@@ -5124,18 +5140,19 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-indicator"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#0405d99325ab03244c37e2a3f2e5aec820d16b22"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "fuso-support",
  "pallet-balances",
+ "pallet-fuso-token",
  "parity-scale-codec",
  "scale-info",
  "serde",
  "sp-core",
  "sp-io",
+ "sp-keyring",
  "sp-runtime",
  "sp-std",
 ]
@@ -5143,17 +5160,19 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-reward"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#0405d99325ab03244c37e2a3f2e5aec820d16b22"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "fuso-support",
  "pallet-balances",
+ "pallet-fuso-token",
  "parity-scale-codec",
  "scale-info",
  "serde",
  "sp-core",
  "sp-io",
+ "sp-keyring",
  "sp-runtime",
  "sp-std",
 ]
@@ -5161,7 +5180,6 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-token"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#0405d99325ab03244c37e2a3f2e5aec820d16b22"
 dependencies = [
  "ascii",
  "frame-benchmarking",
@@ -5175,6 +5193,7 @@ dependencies = [
  "serde",
  "sp-core",
  "sp-io",
+ "sp-keyring",
  "sp-runtime",
  "sp-std",
 ]
@@ -5182,22 +5201,24 @@ dependencies = [
 [[package]]
 name = "pallet-fuso-verifier"
 version = "4.0.2"
-source = "git+https://github.com/uinb/fusotao-protocol.git?branch=polkadot-v0.9.30#0405d99325ab03244c37e2a3f2e5aec820d16b22"
 dependencies = [
  "ascii",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "fuso-support",
+ "hex",
  "log",
  "lz4_flex",
  "pallet-balances",
+ "pallet-fuso-indicator",
  "pallet-fuso-token",
  "parity-scale-codec",
  "scale-info",
  "serde",
  "sp-core",
  "sp-io",
+ "sp-keyring",
  "sp-runtime",
  "sp-std",
  "sparse-merkle-tree",

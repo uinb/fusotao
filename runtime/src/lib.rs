@@ -760,6 +760,7 @@ impl pallet_fuso_reward::Config for Runtime {
 
 parameter_types! {
 	pub const DominatorOnlineThreshold: Balance = 80_000 * DOLLARS;
+	pub const BrokerStakingThreshold: Balance = 80_000 * DOLLARS;
 	pub const SeasonDuration: BlockNumber = 3 * DAYS;
 	pub const MinimalStakingAmount: Balance = 100 * DOLLARS;
 	pub const DominatorCheckGracePeriod: BlockNumber = 20;
@@ -782,6 +783,7 @@ impl pallet_fuso_verifier::Config for Runtime {
 	type MaxMakerFee = MaxMakerFee;
 	type MaxTakerFee = MaxTakerFee;
 	type Indicator = Indicator;
+	type BrokerStakingThreshold = BrokerStakingThreshold;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
