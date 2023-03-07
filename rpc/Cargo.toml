@@ -1,12 +1,12 @@
 [package]
 name = "fuso-rpc"
 version = "4.0.2"
-authors = ["UINB Tech"]
+authors = ["UINB Tech <hi@fusotao.org>"]
 edition = "2021"
 license = "Apache-2.0"
 homepage = "https://www.fusotao.org"
-repository = "https://github.com/uinb/fusotao-protocol"
-description = "Fusotao RPC specification"
+repository = "https://github.com/uinb/fusotao"
+description = "Fusotao RPC service"
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3.0.0" }

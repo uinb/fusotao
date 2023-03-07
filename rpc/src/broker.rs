@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use super::*;
 use async_trait::async_trait;
 use codec::{Codec, Compact, Decode, Encode};
 use jsonrpsee::{
     core::{error::Error as RpcError, RpcResult},
     proc_macros::rpc,
-    types::error::{CallError, ErrorCode, ErrorObject},
-    types::SubscriptionResult,
+    types::{
+        error::{CallError, ErrorCode, ErrorObject},
+        SubscriptionResult,
+    },
     ws_server::SubscriptionSink,
 };
 use sc_client_api::{Backend, StorageProvider};
@@ -163,8 +164,8 @@ where
         task_handle: SpawnTaskHandle,
         keystore: Arc<dyn CryptoStore>,
     ) -> Self {
-        task_handle.spawn("broker-relayer", "fusotao", async {
-            println!("===> TODO connect to prover");
+        task_handle.spawn("fusotao-broker-rpc", "fusotao", async {
+            // TODO connect to prover
         });
         Self {
             client,
@@ -236,7 +237,7 @@ where
         signature: Signature,
     ) -> RpcResult<Vec<Bytes>> {
         let endpoint = self.get_prover_rpc(prover);
-        println!("request to {:?}", endpoint);
+        // TODO
         Ok(vec![])
     }
 

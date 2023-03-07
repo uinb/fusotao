@@ -21,19 +21,15 @@ pub use broker::{FusoBroker, FusoBrokerApiServer};
 pub use prover::{FusoVerifier, FusoVerifierApiServer};
 
 pub fn blake2_128concat_storage_key<K: codec::Encode>(
-    module: &[u8],
-    storage: &[u8],
-    key: K,
+	module: &[u8],
+	storage: &[u8],
+	key: K,
 ) -> sp_core::storage::StorageKey {
-    let mut bytes = sp_core::twox_128(module).to_vec();
-    bytes.extend(&sp_core::twox_128(storage)[..]);
-    let encoded = key.encode();
-    let x: &[u8] = encoded.as_slice();
-    let v = sp_core::blake2_128(x)
-        .iter()
-        .chain(x.iter())
-        .cloned()
-        .collect::<Vec<_>>();
-    bytes.extend(v);
-    sp_core::storage::StorageKey(bytes)
+	let mut bytes = sp_core::twox_128(module).to_vec();
+	bytes.extend(&sp_core::twox_128(storage)[..]);
+	let encoded = key.encode();
+	let x: &[u8] = encoded.as_slice();
+	let v = sp_core::blake2_128(x).iter().chain(x.iter()).cloned().collect::<Vec<_>>();
+	bytes.extend(v);
+	sp_core::storage::StorageKey(bytes)
 }
