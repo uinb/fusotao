@@ -15,14 +15,14 @@ use fuso_support::chainbridge::{decode_resource_id, derive_resource_id};
 fn test_decode_resource_id() {
     let c: [u8; 11] = [20, 10, 12, 22, 55, 33, 55, 77, 2, 99, 96];
     let resource_id = derive_resource_id(2, 0, c.as_ref()).unwrap();
-    let (chain, dex, r) = decode_resource_id(resource_id);
+    let (chain, dex, r) = decode_resource_id(resource_id).unwrap();
     assert_eq!(chain, 2);
     assert_eq!(dex, 0);
     assert_eq!(r, c.to_vec());
 
     let c: [u8; 20] = [0xff; 20];
     let resource_id = derive_resource_id(5, 1, c.as_ref()).unwrap();
-    let (chain, dex, r) = decode_resource_id(resource_id);
+    let (chain, dex, r) = decode_resource_id(resource_id).unwrap();
     assert_eq!(chain, 5);
     assert_eq!(dex, 1);
     assert_eq!(r, c.to_vec());
@@ -82,7 +82,7 @@ fn setup_resources() {
         let id: ResourceId = [1; 32];
         let method = "Pallet.do_something".as_bytes().to_vec();
         let method2 = "Pallet.do_somethingElse".as_bytes().to_vec();
-        let (chainid, _, contract) = decode_resource_id(id);
+        let (chainid, _, contract) = decode_resource_id(id).unwrap();
         assert_ok!(Token::associate_token(
             RuntimeOrigin::signed(TREASURY),
             chainid,

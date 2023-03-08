@@ -68,7 +68,7 @@ pub trait ExternalSignWrapper<T: frame_system::Config> {
 
 pub mod chainbridge {
     use crate::ChainId;
-    use alloc::string::ToString;
+    use alloc::string::{String, ToString};
     use sp_std::vec::Vec;
 
     pub type DepositNonce = u64;
@@ -77,15 +77,11 @@ pub mod chainbridge {
     pub type EthereumCompatibleAddress = [u8; 20];
 
     /// [len, ..., 01, 01, 00]
-    pub fn derive_resource_id(
-        chain: ChainId,
-        dex: u8,
-        id: &[u8],
-    ) -> Result<ResourceId, alloc::string::String> {
+    pub fn derive_resource_id(chain: ChainId, dex: u8, id: &[u8]) -> Result<ResourceId, String> {
         let mut r_id: ResourceId = [0; 32];
         let id_len = id.len();
-        if id_len > 28 {
-            return Err("id is too long".to_string());
+        if id_len > 28 || id_len < 1 {
+            return Err("contract length error".to_string());
         }
         r_id[30..].copy_from_slice(&chain.to_le_bytes()[..]);
         r_id[29] = dex;
@@ -94,12 +90,15 @@ pub mod chainbridge {
         Ok(r_id)
     }
 
-    pub fn decode_resource_id(r_id: ResourceId) -> (ChainId, u8, Vec<u8>) {
+    pub fn decode_resource_id(r_id: ResourceId) -> Result<(ChainId, u8, Vec<u8>), String> {
         let chainid = ChainId::from_le_bytes(r_id[30..].try_into().unwrap());
         let dex = r_id[29];
         let id_len = r_id[0];
+        if id_len > 28 || id_len < 1 {
+            return Err("contract length error".to_string());
+        }
         let v: &[u8] = &r_id[29 - id_len as usize..29];
-        (chainid, dex, v.to_vec())
+        Ok((chainid, dex, v.to_vec()))
     }
 
     pub trait AssetIdResourceIdProvider<TokenId> {

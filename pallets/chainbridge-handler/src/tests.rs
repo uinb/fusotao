@@ -90,7 +90,7 @@ fn transfer_out_non_native() {
         )
         .unwrap();
         let resource = b"ChainBridgeHandler.transfer_in".to_vec();
-        let (chainid, _, contract) = decode_resource_id(resource_id);
+        let (chainid, _, contract) = decode_resource_id(resource_id).unwrap();
         assert_ok!(Assets::associate_token(
             RuntimeOrigin::signed(TREASURY),
             chainid,
@@ -198,7 +198,7 @@ fn execute_remark() {
             RuntimeOrigin::signed(TREASURY),
             src_id
         ));
-        let (chainid, _, contract) = decode_resource_id(r_id);
+        let (chainid, _, contract) = decode_resource_id(r_id).unwrap();
         assert_ok!(Assets::associate_token(
             RuntimeOrigin::signed(TREASURY),
             chainid,
@@ -267,7 +267,7 @@ fn create_sucessful_transfer_proposal_non_native_token() {
         let contract_address = "b20f54288947a89a4891d181b10fe04560b55c5e";
         let r_id = derive_resource_id(src_id, 0, hex::decode(contract_address).unwrap().as_slice())
             .unwrap();
-        let (chain, associated, contract) = decode_resource_id(r_id);
+        let (chain, associated, contract) = decode_resource_id(r_id).unwrap();
         assert_eq!(src_id, chain);
         assert_eq!(ChainBridgeTransfer::associated_dominator(associated), None);
         assert_eq!(contract, hex::decode(contract_address).unwrap());
@@ -303,7 +303,7 @@ fn create_sucessful_transfer_proposal_non_native_token() {
             RuntimeOrigin::signed(TREASURY),
             src_id
         ));
-        let (chainid, _, contract) = decode_resource_id(r_id);
+        let (chainid, _, contract) = decode_resource_id(r_id).unwrap();
         assert_ok!(Assets::associate_token(
             RuntimeOrigin::signed(TREASURY),
             chainid,
@@ -556,7 +556,7 @@ fn authorize_and_revoke_in_remote() {
             RuntimeOrigin::signed(TREASURY),
             src_id
         ));
-        let (chainid, _, contract) = decode_resource_id(r_id);
+        let (chainid, _, contract) = decode_resource_id(r_id).unwrap();
         assert_ok!(Assets::associate_token(
             RuntimeOrigin::signed(TREASURY),
             chainid,
@@ -646,7 +646,7 @@ fn transfer_out_charge_stable_non_native() {
         )
         .unwrap();
         let resource = b"ChainBridgeHandler.transfer_in".to_vec();
-        let (chainid, _, contract) = decode_resource_id(resource_id);
+        let (chainid, _, contract) = decode_resource_id(resource_id).unwrap();
         assert_ok!(Assets::associate_token(
             RuntimeOrigin::signed(TREASURY),
             chainid,
@@ -708,7 +708,7 @@ fn transfer_out_charge_unstable_non_native() {
         )
         .unwrap();
         let resource = b"ChainBridgeHandler.transfer_in".to_vec();
-        let (chainid, _, contract) = decode_resource_id(resource_id);
+        let (chainid, _, contract) = decode_resource_id(resource_id).unwrap();
         assert_ok!(Assets::associate_token(
             RuntimeOrigin::signed(TREASURY),
             chainid,

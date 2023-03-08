@@ -264,6 +264,8 @@ pub mod pallet {
         ProposalExpired,
         /// TokenId not Found by ResourceId
         ResourceIdNotMapToToken,
+        /// Resource is invalid, the first byte must in [1,28]
+        InvalidResourceId,
     }
 
     #[pallet::hooks]
@@ -301,7 +303,8 @@ pub mod pallet {
         ) -> DispatchResult {
             Self::ensure_admin(origin)?;
             if id != T::NativeResourceId::get() {
-                let (chain_id, _, contract) = decode_resource_id(id.clone());
+                let (chain_id, _, contract) =
+                    decode_resource_id(id.clone()).map_err(|_| Error::<T>::InvalidResourceId)?;
                 //check (chainId, contract) -> token mapping is ok
                 T::AssetIdByName::try_get_asset_id(chain_id, contract)
                     .map_err(|_| Error::<T>::ResourceIdNotMapToToken)?;

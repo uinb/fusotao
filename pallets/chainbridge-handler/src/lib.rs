@@ -133,6 +133,7 @@ pub mod pallet {
         DepositerNotFound,
         PriceOverflow,
         LessThanBridgingThreshold,
+        ResourceIdInvalid,
     }
 
     #[pallet::hooks]
@@ -193,7 +194,8 @@ pub mod pallet {
             match Self::is_native_resource(r_id) {
                 true => {
                     Self::do_unlock(source, to.clone(), amount)?;
-                    let (_, associated, _) = decode_resource_id(r_id);
+                    let (_, associated, _) =
+                        decode_resource_id(r_id).map_err(|_| Error::<T>::InvalidResourceId)?;
                     match Self::associated_dominator(associated) {
                         Some(dominator) => {
                             let b: u128 = T::BalanceConversion::to_asset_balance(
@@ -216,7 +218,8 @@ pub mod pallet {
                 }
                 false => {
                     Self::do_mint_assets(to.clone(), amount, r_id)?;
-                    let (chain_id, associated, maybe_contract) = decode_resource_id(r_id);
+                    let (chain_id, associated, maybe_contract) =
+                        decode_resource_id(r_id).map_err(|_| Error::<T>::InvalidResourceId)?;
                     match Self::associated_dominator(associated) {
                         Some(dominator) => {
                             let token =
@@ -279,9 +282,12 @@ pub mod pallet {
         BalanceOf<T>: Into<u128> + From<u128>,
     {
         fn is_native_resource(r_id: ResourceId) -> bool {
-            let (origin, _, p) = decode_resource_id(r_id);
-            let (native, _, p0) = decode_resource_id(T::NativeResourceId::get());
-            native == origin && p == p0
+            if let Ok((origin, _, p)) = decode_resource_id(r_id) {
+                if let Ok((native, _, p0)) = decode_resource_id(T::NativeResourceId::get()) {
+                    return native == origin && p == p0;
+                }
+            }
+            false
         }
 
         pub fn ensure_admin(o: T::RuntimeOrigin) -> DispatchResult {
@@ -362,7 +368,8 @@ pub mod pallet {
             recipient: Vec<u8>,
             dest_id: ChainId,
         ) -> DispatchResult {
-            let (chain_id, _, maybe_contract) = decode_resource_id(r_id);
+            let (chain_id, _, maybe_contract) =
+                decode_resource_id(r_id).map_err(|_| Error::<T>::InvalidResourceId)?;
             let token_id = T::AssetIdByName::try_get_asset_id(chain_id, maybe_contract)
                 .map_err(|_| Error::<T>::InvalidResourceId)?;
             let fee = Self::calculate_bridging_fee(&token_id);
@@ -383,7 +390,8 @@ pub mod pallet {
             amount: BalanceOf<T>,
             r_id: ResourceId,
         ) -> DispatchResult {
-            let (chain_id, _, maybe_contract) = decode_resource_id(r_id);
+            let (chain_id, _, maybe_contract) =
+                decode_resource_id(r_id).map_err(|_| Error::<T>::InvalidResourceId)?;
             let token_id = T::AssetIdByName::try_get_asset_id(chain_id, maybe_contract)
                 .map_err(|_| Error::<T>::InvalidResourceId)?;
             T::Fungibles::mint_into(token_id, &who, amount)?;
