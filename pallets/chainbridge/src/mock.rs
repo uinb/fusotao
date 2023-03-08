@@ -200,7 +200,7 @@ pub fn new_test_ext_initialized(
             RuntimeOrigin::signed(treasury.clone()),
             src_id
         ));
-        let (chainid, _, contract) = decode_resource_id(r_id);
+        let (chainid, _, contract) = decode_resource_id(r_id).unwrap();
         assert_ok!(Token::associate_token(
             RuntimeOrigin::signed(treasury.clone()),
             chainid,
