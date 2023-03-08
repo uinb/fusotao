@@ -196,6 +196,7 @@ impl pallet_fuso_verifier::Config for Test {
     type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
     type DominatorOnlineThreshold = DominatorOnlineThreshold;
     type Indicator = ();
+    type MarketManager = ();
     type MaxMakerFee = MaxMakerFee;
     type MaxTakerFee = MaxTakerFee;
     type MinimalStakingAmount = MinimalStakingAmount;

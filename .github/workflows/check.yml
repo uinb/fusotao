@@ -35,7 +35,7 @@ jobs:
 
       - name: Check Build
         run: |
-          SKIP_WASM_BUILD=1 cargo check --release
+          SKIP_WASM_BUILD=1 cargo test --release
 
       - name: Check Build for Benchmarking
         run: >

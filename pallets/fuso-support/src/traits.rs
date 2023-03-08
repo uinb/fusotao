@@ -40,6 +40,8 @@ pub trait Token<AccountId> {
 
     fn create(token: XToken<Self::Balance>) -> Result<Self::TokenId, DispatchError>;
 
+    fn exists(token_id: &Self::TokenId) -> bool;
+
     fn native_token_id() -> Self::TokenId;
 
     fn is_stable(token_id: &Self::TokenId) -> bool;
@@ -227,26 +229,91 @@ pub trait ChainIdOf<Balance> {
     fn chain_id_of(token_info: &XToken<Balance>) -> ChainId;
 }
 
-pub trait MarketManager<AccountId, TokenId, Balance> {
-    fn is_pair_open(dominator: AccountId, base: &TokenId, quote: &TokenId) -> bool;
+pub trait MarketManager<AccountId, TokenId, Balance, BlockNumber> {
+    fn trading_rewards_enabled(dominator: AccountId, base: TokenId, quote: TokenId) -> bool;
 
-    fn open(
+    fn is_market_open(dominator: AccountId, base: TokenId, quote: TokenId, at: BlockNumber)
+        -> bool;
+
+    fn register_market(
         dominator: AccountId,
-        base: &TokenId,
-        quote: &TokenId,
+        base: TokenId,
+        quote: TokenId,
         base_scale: u8,
         quote_scale: u8,
         min_base: Balance,
     ) -> DispatchResult;
 
-    fn close(dominator: AccountId, base: &TokenId, quote: &TokenId) -> DispatchResult;
+    fn open_market(
+        dominator: AccountId,
+        base: TokenId,
+        quote: TokenId,
+        base_scale: u8,
+        quote_scale: u8,
+        min_base: Balance,
+    ) -> DispatchResult;
+
+    fn close_market(
+        dominator: AccountId,
+        base: TokenId,
+        quote: TokenId,
+        now: BlockNumber,
+    ) -> DispatchResult;
 }
 
-pub trait Beneficiary<AccountId> {
+impl<AccountId, TokenId, Balance, BlockNumber>
+    MarketManager<AccountId, TokenId, Balance, BlockNumber> for ()
+{
+    fn trading_rewards_enabled(_dominator: AccountId, _base: TokenId, _quote: TokenId) -> bool {
+        true
+    }
+
+    fn is_market_open(
+        _dominator: AccountId,
+        _base: TokenId,
+        _quote: TokenId,
+        _at: BlockNumber,
+    ) -> bool {
+        false
+    }
+
+    fn register_market(
+        _dominator: AccountId,
+        _base: TokenId,
+        _quote: TokenId,
+        _base_scale: u8,
+        _quote_scale: u8,
+        _min_base: Balance,
+    ) -> DispatchResult {
+        Ok(())
+    }
+
+    fn open_market(
+        _dominator: AccountId,
+        _base: TokenId,
+        _quote: TokenId,
+        _base_scale: u8,
+        _quote_scale: u8,
+        _min_base: Balance,
+    ) -> DispatchResult {
+        Ok(())
+    }
+
+    fn close_market(
+        _dominator: AccountId,
+        _base: TokenId,
+        _quote: TokenId,
+        _now: BlockNumber,
+    ) -> DispatchResult {
+        Ok(())
+    }
+}
+
+pub trait FeeBeneficiary<AccountId> {
     fn beneficiary(origin: AccountId) -> AccountId;
 }
 
-impl<AccountId> Beneficiary<AccountId> for () {
+impl<AccountId> FeeBeneficiary<AccountId> for () {
     fn beneficiary(origin: AccountId) -> AccountId {
         origin
     }

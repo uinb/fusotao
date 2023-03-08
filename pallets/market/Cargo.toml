@@ -23,3 +23,20 @@ sp-std = { default-features = false, git = "https://github.com/paritytech/substr
 sp-core = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
 sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
 fuso-support = { path = "../fuso-support", default-features = false }
+
+[dev-dependencies]
+pallet-fuso-token = { path = "../token", default-features = false }
+pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+sp-io = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
+hex = { version = "0.4", default-features = false, features = ["alloc"] }
+
+[features]
+default = ['std']
+std = [
+    'codec/std',
+    'frame-support/std',
+    'frame-system/std',
+    'frame-benchmarking/std',
+    'sp-std/std'
+]

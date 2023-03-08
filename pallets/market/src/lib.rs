@@ -13,48 +13,40 @@
 // limitations under the License.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-#![recursion_limit = "256"]
+
 pub use pallet::*;
 
-// #[cfg(feature = "runtime-benchmarks")]
-// pub mod benchmarking;
-
-// #[cfg(test)]
-// pub mod mock;
-// #[cfg(test)]
-// pub mod tests;
+#[cfg(test)]
+pub mod mock;
+#[cfg(test)]
+pub mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
     use codec::{Decode, Encode};
-    use frame_support::{
-        dispatch::{Dispatchable, GetDispatchInfo, PostDispatchInfo},
-        weights::constants::RocksDbWeight,
-        {pallet_prelude::*, transactional},
-    };
+    use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use fuso_support::{
-        constants::*,
-        traits::{MarketManager, PriceOracle, ReservableToken, Rewarding, Token},
-    };
+    use fuso_support::traits::{FeeBeneficiary, MarketManager, Token};
     use scale_info::TypeInfo;
-    use sp_runtime::{
-        traits::{
-            AccountIdConversion, CheckedAdd, CheckedSub, StaticLookup, TrailingZeroInput, Zero,
-        },
-        Permill, Perquintill, RuntimeDebug,
-    };
-    use sp_std::{
-        collections::btree_map::BTreeMap, convert::*, prelude::*, result::Result, vec::Vec,
-    };
+    use sp_runtime::{traits::AccountIdConversion, RuntimeDebug, Saturating};
+    use sp_std::{convert::*, prelude::*, vec::Vec};
 
     pub const PALLET_ID: frame_support::PalletId = frame_support::PalletId(*b"fuso/mrk");
+
     pub type TokenId<T> =
         <<T as Config>::Assets as Token<<T as frame_system::Config>::AccountId>>::TokenId;
+
     pub type Balance<T> =
         <<T as Config>::Assets as Token<<T as frame_system::Config>::AccountId>>::Balance;
 
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+    pub enum MarketStatus {
+        Registered,
+        Open,
+        Closed,
+    }
+
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
     pub struct Broker<AccountId, Balance, BlockNumber> {
         pub beneficiary: AccountId,
         pub staked: Balance,
@@ -62,12 +54,14 @@ pub mod pallet {
         pub rpc_endpoint: Vec<u8>,
     }
 
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
-    pub struct Market<Balance> {
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+    pub struct Market<Balance, BlockNumber> {
         pub min_base: Balance,
         pub base_scale: u8,
         pub quote_scale: u8,
-        pub status: u8,
+        pub status: MarketStatus,
+        pub trading_rewards: bool,
+        pub unavailable_after: Option<BlockNumber>,
     }
 
     #[pallet::config]
@@ -78,6 +72,9 @@ pub mod pallet {
 
         #[pallet::constant]
         type BrokerStakingThreshold: Get<Balance<Self>>;
+
+        #[pallet::constant]
+        type MarketCloseGracePeriod: Get<Self::BlockNumber>;
     }
 
     #[pallet::storage]
@@ -97,8 +94,8 @@ pub mod pallet {
         Blake2_128Concat,
         T::AccountId,
         Blake2_128Concat,
-        (u32, u32),
-        Market<Balance<T>>,
+        (TokenId<T>, TokenId<T>),
+        Market<Balance<T>, T::BlockNumber>,
         OptionQuery,
     >;
 
@@ -106,14 +103,20 @@ pub mod pallet {
     #[pallet::generate_deposit(pub (super) fn deposit_event)]
     pub enum Event<T: Config> {
         BrokerRegistered(T::AccountId, T::AccountId),
-        MarketOpen(TokenId<T>, TokenId<T>, Balance<T>),
-        MarketClose(TokenId<T>, TokenId<T>),
+        MarketRegistered(T::AccountId, TokenId<T>, TokenId<T>, u8, u8, Balance<T>),
+        MarketOpened(T::AccountId, TokenId<T>, TokenId<T>, u8, u8, Balance<T>),
+        MarketClosed(T::AccountId, TokenId<T>, TokenId<T>),
     }
 
     #[pallet::error]
     pub enum Error<T> {
         BrokerNotFound,
         BrokerAlreadyRegistered,
+        UnsupportedQuoteCurrency,
+        TokenNotFound,
+        MarketNotRegistered,
+        MarketCouldntUpdate,
+        MarketNotExists,
     }
 
     #[pallet::pallet]
@@ -123,7 +126,7 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::weight(1000_000)]
+        #[pallet::weight(8_790_000_000)]
         pub fn register_broker(
             origin: OriginFor<T>,
             rpc_endpoint: Vec<u8>,
@@ -135,7 +138,6 @@ pub mod pallet {
                 &broker,
                 T::Assets::native_token_id(),
                 requires,
-                // TODO
                 &Self::system_account(),
             )?;
             Brokers::<T>::try_mutate(&broker, |b| -> DispatchResult {
@@ -152,7 +154,7 @@ pub mod pallet {
             Ok(().into())
         }
 
-        #[pallet::weight(1000_000)]
+        #[pallet::weight(8_790_000_000)]
         pub fn broker_set_rpc_endpoint(
             origin: OriginFor<T>,
             rpc_endpoint: Vec<u8>,
@@ -168,6 +170,21 @@ pub mod pallet {
             })?;
             Ok(().into())
         }
+
+        #[pallet::weight(8_790_000_000)]
+        pub fn apply_for_token_listing(
+            origin: OriginFor<T>,
+            dominator: T::AccountId,
+            base: TokenId<T>,
+            quote: TokenId<T>,
+            base_scale: u8,
+            quote_scale: u8,
+            min_base: Balance<T>,
+        ) -> DispatchResultWithPostInfo {
+            let _ = ensure_signed(origin)?;
+            Self::register_market(dominator, base, quote, base_scale, quote_scale, min_base)?;
+            Ok(().into())
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -176,24 +193,141 @@ pub mod pallet {
         }
     }
 
-    impl<T: Config> MarketManager<T::AccountId, TokenId<T>, Balance<T>> for Pallet<T> {
-        fn is_pair_open(dominator: T::AccountId, base: &TokenId<T>, quote: &TokenId<T>) -> bool {
-            true
+    impl<T: Config> MarketManager<T::AccountId, TokenId<T>, Balance<T>, T::BlockNumber> for Pallet<T> {
+        fn trading_rewards_enabled(
+            dominator: T::AccountId,
+            base: TokenId<T>,
+            quote: TokenId<T>,
+        ) -> bool {
+            Markets::<T>::get(&dominator, &(base, quote))
+                .map(|p| p.trading_rewards)
+                .unwrap_or_default()
         }
 
-        fn open(
+        fn is_market_open(
             dominator: T::AccountId,
-            base: &TokenId<T>,
-            quote: &TokenId<T>,
+            base: TokenId<T>,
+            quote: TokenId<T>,
+            at: T::BlockNumber,
+        ) -> bool {
+            Markets::<T>::get(&dominator, &(base, quote))
+                .map(|p| match (p.status, p.unavailable_after) {
+                    (MarketStatus::Open, _) => true,
+                    (MarketStatus::Closed, Some(deadline)) if at <= deadline => true,
+                    _ => false,
+                })
+                .unwrap_or_default()
+        }
+
+        fn register_market(
+            dominator: T::AccountId,
+            base: TokenId<T>,
+            quote: TokenId<T>,
             base_scale: u8,
             quote_scale: u8,
             min_base: Balance<T>,
         ) -> DispatchResult {
+            ensure!(
+                T::Assets::is_stable(&quote),
+                Error::<T>::UnsupportedQuoteCurrency
+            );
+            ensure!(T::Assets::exists(&base), Error::<T>::TokenNotFound);
+            Markets::<T>::try_mutate(&dominator, &(base, quote), |p| -> DispatchResult {
+                // we only permit to update markets either registered or not created yet
+                match p {
+                    None => {
+                        p.replace(Market {
+                            min_base,
+                            base_scale,
+                            quote_scale,
+                            status: MarketStatus::Registered,
+                            trading_rewards: true,
+                            unavailable_after: None,
+                        });
+                        Ok(())
+                    }
+                    Some(pair) if pair.status == MarketStatus::Registered => {
+                        p.replace(Market {
+                            min_base,
+                            base_scale,
+                            quote_scale,
+                            status: MarketStatus::Registered,
+                            trading_rewards: true,
+                            unavailable_after: None,
+                        });
+                        Ok(())
+                    }
+                    _ => Err(Error::<T>::MarketCouldntUpdate.into()),
+                }
+            })?;
+            Self::deposit_event(Event::MarketRegistered(
+                dominator,
+                base,
+                quote,
+                base_scale,
+                quote_scale,
+                min_base,
+            ));
             Ok(())
         }
 
-        fn close(dominator: T::AccountId, base: &TokenId<T>, quote: &TokenId<T>) -> DispatchResult {
+        fn open_market(
+            dominator: T::AccountId,
+            base: TokenId<T>,
+            quote: TokenId<T>,
+            base_scale: u8,
+            quote_scale: u8,
+            min_base: Balance<T>,
+        ) -> DispatchResult {
+            Markets::<T>::try_mutate(&dominator, &(base, quote), |p| -> DispatchResult {
+                // we need to confirm that the market info didn't change before open
+                // TODO re-open?
+                ensure!(p.is_some(), Error::<T>::MarketNotRegistered);
+                p.replace(Market {
+                    min_base,
+                    base_scale,
+                    quote_scale,
+                    status: MarketStatus::Open,
+                    trading_rewards: true,
+                    unavailable_after: None,
+                });
+                Ok(())
+            })?;
+            Self::deposit_event(Event::MarketOpened(
+                dominator,
+                base,
+                quote,
+                base_scale,
+                quote_scale,
+                min_base,
+            ));
             Ok(())
+        }
+
+        fn close_market(
+            dominator: T::AccountId,
+            base: TokenId<T>,
+            quote: TokenId<T>,
+            now: T::BlockNumber,
+        ) -> DispatchResult {
+            Markets::<T>::try_mutate_exists(&dominator, &(base, quote), |p| -> DispatchResult {
+                ensure!(p.is_some(), Error::<T>::MarketNotExists);
+                let mut pair = p.take().unwrap();
+                pair.status = MarketStatus::Closed;
+                pair.unavailable_after = Some(now.saturating_add(T::MarketCloseGracePeriod::get()));
+                p.replace(pair);
+                Ok(())
+            })?;
+            Self::deposit_event(Event::MarketClosed(dominator, base, quote));
+            Ok(())
+        }
+    }
+
+    impl<T: Config> FeeBeneficiary<T::AccountId> for Pallet<T> {
+        fn beneficiary(origin: T::AccountId) -> T::AccountId {
+            Brokers::<T>::get(&origin)
+                .map(|b| b.beneficiary)
+                .unwrap_or(origin)
         }
     }
 }

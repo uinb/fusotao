@@ -38,7 +38,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use fuso_support::{
         constants::*,
-        traits::{PriceOracle, ReservableToken, Rewarding, Token},
+        traits::{MarketManager, PriceOracle, ReservableToken, Rewarding, Token},
     };
     use scale_info::TypeInfo;
     use sp_core::sr25519::{Public as Sr25519Public, Signature as Sr25519Signature};
@@ -273,6 +273,13 @@ pub mod pallet {
             + GetDispatchInfo;
 
         type Indicator: PriceOracle<TokenId<Self>, Balance<Self>, Self::BlockNumber>;
+
+        type MarketManager: MarketManager<
+            Self::AccountId,
+            TokenId<Self>,
+            Balance<Self>,
+            Self::BlockNumber,
+        >;
 
         #[pallet::constant]
         type DominatorOnlineThreshold: Get<Balance<Self>>;

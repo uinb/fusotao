@@ -1,16 +1,17 @@
-use crate as pallet_fuso_verifier;
+use crate as pallet_fuso_market;
 use frame_support::traits::{ConstU32, SortedMembers};
 use frame_support::{construct_runtime, parameter_types};
 use frame_system as system;
 use frame_system::EnsureSignedBy;
 use fuso_support::ChainId;
 use sp_keyring::AccountKeyring;
-use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_runtime::{
     generic,
-    traits::{AccountIdLookup, BlakeTwo256},
+    traits::{AccountIdLookup, BlakeTwo256, IdentifyAccount, Verify},
     MultiSignature,
 };
+use sp_std::boxed::Box;
+use sp_std::{vec, vec::Vec};
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -69,6 +70,7 @@ parameter_types! {
     pub const MaxLocks: u32 = 50;
     pub const MaxReserves: u32 = 50;
 }
+
 impl pallet_balances::Config for Test {
     type AccountStore = System;
     type Balance = Balance;
@@ -97,6 +99,7 @@ impl SortedMembers<AccountId> for TreasuryMembers {
         vec![TREASURY.clone()]
     }
 }
+
 impl pallet_fuso_token::Config for Test {
     type AdminOrigin = EnsureSignedBy<TreasuryMembers, Self::AccountId>;
     type BnbChainId = BnbChainId;
@@ -111,59 +114,15 @@ impl pallet_fuso_token::Config for Test {
 }
 
 parameter_types! {
-    pub const DominatorOnlineThreshold: Balance = 10_000;
-    pub const SeasonDuration: BlockNumber = 1440;
-    pub const MinimalStakingAmount: Balance = 100;
-    pub const DominatorCheckGracePeriod: BlockNumber = 10;
-    pub const MaxMakerFee: u32 = 10000;
-    pub const MaxTakerFee: u32 = 10000;
+    pub const BrokerStakingThreshold: Balance = 10000 * DOLLARS;
+    pub const MarketCloseGracePeriod: BlockNumber = 10;
 }
 
-pub struct PhantomData;
-
-impl fuso_support::traits::Rewarding<AccountId, Balance, BlockNumber> for PhantomData {
-    type Balance = Balance;
-
-    fn era_duration() -> BlockNumber {
-        1
-    }
-
-    fn total_volume(_at: BlockNumber) -> Balance {
-        100 * DOLLARS
-    }
-
-    fn acked_reward(_who: &AccountId) -> Self::Balance {
-        0
-    }
-
-    fn save_trading(
-        _trader: &AccountId,
-        _amount: Balance,
-        _at: BlockNumber,
-    ) -> frame_support::pallet_prelude::DispatchResult {
-        Ok(())
-    }
-}
-
-impl pallet_fuso_indicator::Config for Test {
-    type Asset = TokenModule;
+impl pallet_fuso_market::Config for Test {
+    type Assets = Token;
+    type BrokerStakingThreshold = BrokerStakingThreshold;
+    type MarketCloseGracePeriod = MarketCloseGracePeriod;
     type RuntimeEvent = RuntimeEvent;
-}
-
-impl pallet_fuso_verifier::Config for Test {
-    type Asset = TokenModule;
-    type Callback = RuntimeCall;
-    type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
-    type DominatorOnlineThreshold = DominatorOnlineThreshold;
-    type Indicator = Indicator;
-    type MarketManager = ();
-    type MaxMakerFee = MaxMakerFee;
-    type MaxTakerFee = MaxTakerFee;
-    type MinimalStakingAmount = MinimalStakingAmount;
-    type Rewarding = PhantomData;
-    type RuntimeEvent = RuntimeEvent;
-    type SeasonDuration = SeasonDuration;
-    type WeightInfo = ();
 }
 
 // Configure a mock runtime to test the pallet.
@@ -175,9 +134,8 @@ construct_runtime!(
     {
         System: frame_system,
         Balances: pallet_balances,
-        TokenModule: pallet_fuso_token,
-        Indicator: pallet_fuso_indicator,
-        Verifier: pallet_fuso_verifier
+        Token: pallet_fuso_token,
+        Market: pallet_fuso_market
     }
 );
 
@@ -189,10 +147,12 @@ pub fn new_tester() -> sp_io::TestExternalities {
 
     let ferdie = AccountKeyring::Ferdie.into();
     pallet_balances::GenesisConfig::<Test> {
-        balances: vec![(ferdie, 10000000000000000000), (TREASURY, 1000 * DOLLARS)],
+        balances: vec![(ferdie, 100_000 * DOLLARS), (TREASURY, 1000 * DOLLARS)],
     }
     .assimilate_storage(&mut t)
     .unwrap();
 
-    sp_io::TestExternalities::new(t)
+    let mut ext = sp_io::TestExternalities::new(t);
+    ext.execute_with(|| System::set_block_number(1));
+    ext
 }
