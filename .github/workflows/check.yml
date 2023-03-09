@@ -20,9 +20,9 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - name: Setup - Depedencies
+      - name: Install Depedencies
         run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl libprotobuf-dev protobuf-compiler
 
       - name: Install Rustup
@@ -33,23 +33,19 @@ jobs:
           rustup update nightly
           rustup target add wasm32-unknown-unknown --toolchain nightly
 
-      - name: GCS Auth
-        uses: google-github-actions/auth@v1
+      - name: Setup Cache
+        uses: actions/cache@v3
+        continue-on-error: false
         with:
-          credentials_json: ${{ secrets.GCS_SA_KEY }}
-
-      - name: Setup - gcloud/gsutil
-        uses: google-github-actions/setup-gcloud@v1
-
-      - name: Sync Cache
-        run: |
-          mkdir target
-          gsutil rsync -r gs://fusotao-compile-cache/ubuntu-20 target
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
 
       - name: Run All Unit-tests
         run: |
-          cargo test --release
-
-      - name: Upload Cache
-        run: |-
-          gsutil rsync -r target gs://fusotao-compile-cache/ubuntu-20
+          cargo test

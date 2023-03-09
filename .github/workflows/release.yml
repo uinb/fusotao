@@ -8,7 +8,7 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: taiki-e/create-gh-release-action@v1
         with:
           changelog: CHANGELOG.md
@@ -20,9 +20,9 @@ jobs:
     name: Publish binaries
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - name: Setup - Dependencies
+      - name: Install Dependencies
         run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl libprotobuf-dev protobuf-compiler
 
       - name: Install Rustup
@@ -44,7 +44,8 @@ jobs:
       - name: Sync Cache
         run: |
           mkdir target
-          gsutil rsync -r gs://fusotao-compile-cache/ubuntu-20 target
+          gsutil -m rsync -r gs://fusotao-compile-cache/ubuntu-20 target
+          chown -R $(whoami) target
 
       - name: Build
         run: |
@@ -63,6 +64,6 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
 
-      - name: Upload Cache
-        run: |-
-          gsutil rsync -r target gs://fusotao-compile-cache/ubuntu-20
+      - name: Update Cache
+        run: |
+          gsutil -m rsync -r target gs://fusotao-compile-cache/ubuntu-20
