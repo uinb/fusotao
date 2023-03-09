@@ -44,7 +44,7 @@ jobs:
       - name: Sync Cache
         run: |
           mkdir target
-          gsutil rsync -r gs://fusotao-compile-cache/ubuntu-20 target
+          gsutil -m rsync -r gs://fusotao-compile-cache/ubuntu-20 target
 
       - name: Build
         run: |
@@ -63,6 +63,6 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
 
-      - name: Upload Cache
-        run: |-
-          gsutil rsync -r target gs://fusotao-compile-cache/ubuntu-20
+      - name: Update Cache
+        run: |
+          gsutil -m rsync -r target gs://fusotao-compile-cache/ubuntu-20
