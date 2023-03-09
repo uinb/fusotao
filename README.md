@@ -1,6 +1,7 @@
 # Fusotao
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-orange.svg)](#LICENSE)
+[![License](https://img.shields.io/badge/License-Apache2.0-orange.svg)](#LICENSE)
+[![Unlicense](https://img.shields.io/badge/License-Unlicense-purple.svg)](#LICENSE)
 [![GitHub Workflow Status (branch)](https://github.com/uinb/fusotao/actions/workflows/check.yml/badge.svg)](https://github.com/uinb/fusotao/actions?query=branch%3Amaster)
 
 <p align="center">
@@ -23,4 +24,4 @@
 
 ## License
 
-[APACHE2-LICENSE](LICENSE)
+The `rpc/`,`pallets/`,`runtime-api/` are licensed under [Apache 2.0](LICENSE-APACHE) while rest of this project is [Unlicense](LINCENSE-UNLICENSE).

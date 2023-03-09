@@ -230,6 +230,8 @@ pub trait ChainIdOf<Balance> {
 }
 
 pub trait MarketManager<AccountId, TokenId, Balance, BlockNumber> {
+    fn liquidity_rewards_enabled(dominator: AccountId, base: TokenId, quote: TokenId) -> bool;
+
     fn trading_rewards_enabled(dominator: AccountId, base: TokenId, quote: TokenId) -> bool;
 
     fn is_market_open(dominator: AccountId, base: TokenId, quote: TokenId, at: BlockNumber)
@@ -264,6 +266,10 @@ pub trait MarketManager<AccountId, TokenId, Balance, BlockNumber> {
 impl<AccountId, TokenId, Balance, BlockNumber>
     MarketManager<AccountId, TokenId, Balance, BlockNumber> for ()
 {
+    fn liquidity_rewards_enabled(_dominator: AccountId, _base: TokenId, _quote: TokenId) -> bool {
+        true
+    }
+
     fn trading_rewards_enabled(_dominator: AccountId, _base: TokenId, _quote: TokenId) -> bool {
         true
     }

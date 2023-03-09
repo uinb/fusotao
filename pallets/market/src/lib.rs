@@ -61,6 +61,7 @@ pub mod pallet {
         pub quote_scale: u8,
         pub status: MarketStatus,
         pub trading_rewards: bool,
+        pub liquidity_rewards: bool,
         pub unavailable_after: Option<BlockNumber>,
     }
 
@@ -194,6 +195,16 @@ pub mod pallet {
     }
 
     impl<T: Config> MarketManager<T::AccountId, TokenId<T>, Balance<T>, T::BlockNumber> for Pallet<T> {
+        fn liquidity_rewards_enabled(
+            dominator: T::AccountId,
+            base: TokenId<T>,
+            quote: TokenId<T>,
+        ) -> bool {
+            Markets::<T>::get(&dominator, &(base, quote))
+                .map(|p| p.liquidity_rewards)
+                .unwrap_or_default()
+        }
+
         fn trading_rewards_enabled(
             dominator: T::AccountId,
             base: TokenId<T>,
@@ -241,6 +252,7 @@ pub mod pallet {
                             base_scale,
                             quote_scale,
                             status: MarketStatus::Registered,
+                            liquidity_rewards: true,
                             trading_rewards: true,
                             unavailable_after: None,
                         });
@@ -252,6 +264,7 @@ pub mod pallet {
                             base_scale,
                             quote_scale,
                             status: MarketStatus::Registered,
+                            liquidity_rewards: true,
                             trading_rewards: true,
                             unavailable_after: None,
                         });
@@ -288,6 +301,7 @@ pub mod pallet {
                     base_scale,
                     quote_scale,
                     status: MarketStatus::Open,
+                    liquidity_rewards: true,
                     trading_rewards: true,
                     unavailable_after: None,
                 });
