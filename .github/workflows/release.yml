@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set-Up
+      - name: Setup - Dependencies
         run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl libprotobuf-dev protobuf-compiler
 
       - name: Install Rustup
@@ -33,18 +33,36 @@ jobs:
           rustup update nightly
           rustup target add wasm32-unknown-unknown --toolchain nightly
 
+      - name: GCS Auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCS_SA_KEY }}
+
+      - name: Setup - gcloud/gsutil
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Sync Cache
+        run: |
+          mkdir target
+          gsutil rsync -r gs://fusotao-compile-cache/ubuntu-20 target
+
       - name: Build
         run: |
           cargo build --release
 
-      - uses: montudor/action-zip@v1
+      - name: Package
+        uses: montudor/action-zip@v1
         with:
           args: zip -j -r fusotao.zip target/release/fuso target/release/wbuild/fuso-runtime/fuso_runtime.compact.compressed.wasm resources/ README.md LICENSE
 
-      - name: Upload binaries to release
+      - name: Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: fusotao.zip
           tag: ${{ github.ref }}
           overwrite: true
+
+      - name: Upload Cache
+        run: |-
+          gsutil rsync -r target gs://fusotao-compile-cache/ubuntu-20

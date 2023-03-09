@@ -40,6 +40,8 @@ pub trait Token<AccountId> {
 
     fn create(token: XToken<Self::Balance>) -> Result<Self::TokenId, DispatchError>;
 
+    fn exists(token_id: &Self::TokenId) -> bool;
+
     fn native_token_id() -> Self::TokenId;
 
     fn is_stable(token_id: &Self::TokenId) -> bool;
@@ -209,22 +211,6 @@ pub trait Agent<AccountId> {
     fn execute_tx(origin: Self::Origin, msg: Self::Message) -> DispatchResult;
 }
 
-pub trait Smuggler<AccountId> {
-    fn is_wanted(t: &AccountId) -> bool;
-
-    fn repatriate_if_wanted(t: &AccountId) -> bool;
-}
-
-impl<T> Smuggler<T> for () {
-    fn is_wanted(_: &T) -> bool {
-        false
-    }
-
-    fn repatriate_if_wanted(_: &T) -> bool {
-        false
-    }
-}
-
 pub trait PriceOracle<TokenId, Balance: Default, BlockNumber> {
     fn get_price(token_id: &TokenId) -> Balance;
 
@@ -241,4 +227,100 @@ impl<TokenId, Balance: Default, BlockNumber> PriceOracle<TokenId, Balance, Block
 
 pub trait ChainIdOf<Balance> {
     fn chain_id_of(token_info: &XToken<Balance>) -> ChainId;
+}
+
+pub trait MarketManager<AccountId, TokenId, Balance, BlockNumber> {
+    fn liquidity_rewards_enabled(dominator: AccountId, base: TokenId, quote: TokenId) -> bool;
+
+    fn trading_rewards_enabled(dominator: AccountId, base: TokenId, quote: TokenId) -> bool;
+
+    fn is_market_open(dominator: AccountId, base: TokenId, quote: TokenId, at: BlockNumber)
+        -> bool;
+
+    fn register_market(
+        dominator: AccountId,
+        base: TokenId,
+        quote: TokenId,
+        base_scale: u8,
+        quote_scale: u8,
+        min_base: Balance,
+    ) -> DispatchResult;
+
+    fn open_market(
+        dominator: AccountId,
+        base: TokenId,
+        quote: TokenId,
+        base_scale: u8,
+        quote_scale: u8,
+        min_base: Balance,
+    ) -> DispatchResult;
+
+    fn close_market(
+        dominator: AccountId,
+        base: TokenId,
+        quote: TokenId,
+        now: BlockNumber,
+    ) -> DispatchResult;
+}
+
+impl<AccountId, TokenId, Balance, BlockNumber>
+    MarketManager<AccountId, TokenId, Balance, BlockNumber> for ()
+{
+    fn liquidity_rewards_enabled(_dominator: AccountId, _base: TokenId, _quote: TokenId) -> bool {
+        true
+    }
+
+    fn trading_rewards_enabled(_dominator: AccountId, _base: TokenId, _quote: TokenId) -> bool {
+        true
+    }
+
+    fn is_market_open(
+        _dominator: AccountId,
+        _base: TokenId,
+        _quote: TokenId,
+        _at: BlockNumber,
+    ) -> bool {
+        false
+    }
+
+    fn register_market(
+        _dominator: AccountId,
+        _base: TokenId,
+        _quote: TokenId,
+        _base_scale: u8,
+        _quote_scale: u8,
+        _min_base: Balance,
+    ) -> DispatchResult {
+        Ok(())
+    }
+
+    fn open_market(
+        _dominator: AccountId,
+        _base: TokenId,
+        _quote: TokenId,
+        _base_scale: u8,
+        _quote_scale: u8,
+        _min_base: Balance,
+    ) -> DispatchResult {
+        Ok(())
+    }
+
+    fn close_market(
+        _dominator: AccountId,
+        _base: TokenId,
+        _quote: TokenId,
+        _now: BlockNumber,
+    ) -> DispatchResult {
+        Ok(())
+    }
+}
+
+pub trait FeeBeneficiary<AccountId> {
+    fn beneficiary(origin: AccountId) -> AccountId;
+}
+
+impl<AccountId> FeeBeneficiary<AccountId> for () {
+    fn beneficiary(origin: AccountId) -> AccountId {
+        origin
+    }
 }

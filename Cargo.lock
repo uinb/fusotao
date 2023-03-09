@@ -5145,6 +5145,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-fuso-market"
+version = "4.0.2"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "fuso-support",
+ "hex",
+ "pallet-balances",
+ "pallet-fuso-token",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-keyring",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-fuso-reward"
 version = "4.0.2"
 dependencies = [

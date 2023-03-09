@@ -349,8 +349,6 @@ pub fn test_authorize_should_work() {
 #[test]
 pub fn test_set_price_should_work() {
     new_tester().execute_with(|| {
-        let alice: AccountId = AccountKeyring::Alice.into();
-        let bob: AccountId = AccountKeyring::Bob.into();
         let ferdie: AccountId = AccountKeyring::Ferdie.into();
         frame_system::Pallet::<Test>::set_block_number(15);
         let usdt = XToken::NEP141(

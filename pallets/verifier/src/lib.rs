@@ -38,7 +38,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use fuso_support::{
         constants::*,
-        traits::{PriceOracle, ReservableToken, Rewarding, Token},
+        traits::{MarketManager, PriceOracle, ReservableToken, Rewarding, Token},
     };
     use scale_info::TypeInfo;
     use sp_core::sr25519::{Public as Sr25519Public, Signature as Sr25519Signature};
@@ -250,14 +250,6 @@ pub mod pallet {
         pub rpc_endpoint: Vec<u8>,
     }
 
-    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
-    pub struct Broker<AccountId, Balance, BlockNumber> {
-        pub beneficiary: AccountId,
-        pub staked: Balance,
-        pub register_at: BlockNumber,
-        pub rpc_endpoint: Vec<u8>,
-    }
-
     #[derive(Clone, RuntimeDebug)]
     struct Distribution<T: Config> {
         from_season: Season,
@@ -282,11 +274,15 @@ pub mod pallet {
 
         type Indicator: PriceOracle<TokenId<Self>, Balance<Self>, Self::BlockNumber>;
 
-        #[pallet::constant]
-        type DominatorOnlineThreshold: Get<Balance<Self>>;
+        type MarketManager: MarketManager<
+            Self::AccountId,
+            TokenId<Self>,
+            Balance<Self>,
+            Self::BlockNumber,
+        >;
 
         #[pallet::constant]
-        type BrokerStakingThreshold: Get<Balance<Self>>;
+        type DominatorOnlineThreshold: Get<Balance<Self>>;
 
         #[pallet::constant]
         type SeasonDuration: Get<Self::BlockNumber>;
@@ -331,16 +327,6 @@ pub mod pallet {
     #[pallet::getter(fn dominator_settings)]
     pub type DominatorSettings<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, DominatorSetting<T::AccountId>, OptionQuery>;
-
-    #[pallet::storage]
-    #[pallet::getter(fn brokers)]
-    pub type Brokers<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        T::AccountId,
-        Broker<T::AccountId, Balance<T>, T::BlockNumber>,
-        OptionQuery,
-    >;
 
     #[pallet::storage]
     #[pallet::getter(fn reserves)]
@@ -439,8 +425,6 @@ pub mod pallet {
         ProofDecompressError,
         ProofFormatError,
         ProofTooLarge,
-        BrokerNotFound,
-        BrokerAlreadyRegistered,
         InvalidBeneficiaryProof,
     }
 
@@ -674,51 +658,6 @@ pub mod pallet {
             Ok(().into())
         }
 
-        #[pallet::weight(<T as Config>::WeightInfo::register())]
-        pub fn register_broker(
-            origin: OriginFor<T>,
-            rpc_endpoint: Vec<u8>,
-            beneficiary: T::AccountId,
-        ) -> DispatchResultWithPostInfo {
-            let broker = ensure_signed(origin)?;
-            let requires = T::BrokerStakingThreshold::get();
-            T::Asset::transfer_token(
-                &broker,
-                T::Asset::native_token_id(),
-                requires,
-                &Self::system_account(),
-            )?;
-            Brokers::<T>::try_mutate(&broker, |b| -> DispatchResult {
-                ensure!(b.is_none(), Error::<T>::BrokerAlreadyRegistered);
-                let broker = Broker {
-                    beneficiary,
-                    staked: requires,
-                    register_at: frame_system::Pallet::<T>::block_number(),
-                    rpc_endpoint,
-                };
-                b.replace(broker);
-                Ok(())
-            })?;
-            Ok(().into())
-        }
-
-        #[pallet::weight(<T as Config>::WeightInfo::update_setting())]
-        pub fn broker_set_rpc_endpoint(
-            origin: OriginFor<T>,
-            rpc_endpoint: Vec<u8>,
-        ) -> DispatchResultWithPostInfo {
-            let broker = ensure_signed(origin)?;
-            Brokers::<T>::try_mutate_exists(&broker, |b| -> DispatchResult {
-                if let Some(broker) = b {
-                    broker.rpc_endpoint = rpc_endpoint;
-                    Ok(())
-                } else {
-                    Err(Error::<T>::BrokerNotFound.into())
-                }
-            })?;
-            Ok(().into())
-        }
-
         #[pallet::weight((<T as Config>::WeightInfo::verify(), DispatchClass::Normal, Pays::No))]
         pub fn verify_compress(
             origin: OriginFor<T>,
@@ -852,12 +791,6 @@ pub mod pallet {
             let fund_owner = ensure_signed(origin)?;
             let dominator = T::Lookup::lookup(dominator)?;
             Self::revoke_from(fund_owner, dominator, token_id, amount, Some(*callback))?;
-            Ok(().into())
-        }
-
-        #[transactional]
-        #[pallet::weight(100_000)]
-        pub fn listing(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             Ok(().into())
         }
     }
