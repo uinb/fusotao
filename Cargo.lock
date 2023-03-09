@@ -1505,6 +1505,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashmap"
+version = "5.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "907076dfda823b0b36d2a1bb5f90c96660a5bbcd7729e10727f07858f22c4edc"
+dependencies = [
+ "cfg-if 1.0.0",
+ "hashbrown 0.12.3",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core 0.9.7",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2409,7 +2422,9 @@ name = "fuso-rpc"
 version = "4.0.2"
 dependencies = [
  "async-trait",
+ "dashmap",
  "fuso-verifier-runtime-api",
+ "futures 0.3.26",
  "hex-literal",
  "jsonrpc-core",
  "jsonrpc-core-client",
@@ -2451,7 +2466,6 @@ dependencies = [
  "sc-rpc",
  "sc-rpc-api",
  "sc-rpc-spec-v2",
- "sc-service",
  "sc-sync-state-rpc",
  "sc-transaction-pool-api",
  "sp-api",
@@ -3377,6 +3391,7 @@ version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8bd0d559d5e679b1ab2f869b486a11182923863b1b3ee8b421763cdd707b783a"
 dependencies = [
+ "jsonrpsee-client-transport",
  "jsonrpsee-core",
  "jsonrpsee-http-server",
  "jsonrpsee-proc-macros",
