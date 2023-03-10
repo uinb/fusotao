@@ -397,7 +397,7 @@ pub mod pallet {
             );
             let actual_fee = standard_ammount - standard_bridge_amount;
             T::Fungibles::transfer_token(&who, token_id, actual_fee, &T::TreasuryAccount::get())?;
-            T::Fungibles::burn_from(token_id, &who, standard_bridge_amount)?;
+            T::Fungibles::burn_from(token_id, &who, external_bridge_amount)?;
             bridge::Pallet::<T>::transfer_fungible(
                 dest_id,
                 r_id,
