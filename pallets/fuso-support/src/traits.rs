@@ -65,6 +65,13 @@ pub trait Token<AccountId> {
         token: &Self::TokenId,
         f: impl FnOnce(&mut Self::Balance) -> Result<(), DispatchError>,
     ) -> Result<(), DispatchError>;
+
+    fn token_external_decimals(token: &Self::TokenId) -> Result<u8, DispatchError>;
+}
+
+pub trait DecimalsTransformer<Balance> {
+    fn transform_decimals_to_standard(amount: Balance, external_decimals: u8) -> Balance;
+    fn transform_decimals_to_external(amount: Balance, external_decimals: u8) -> Balance;
 }
 
 pub trait ReservableToken<AccountId>: Token<AccountId> {
