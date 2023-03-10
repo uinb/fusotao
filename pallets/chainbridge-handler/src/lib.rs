@@ -378,27 +378,31 @@ pub mod pallet {
             let token_id = T::AssetIdByName::try_get_asset_id(chain_id, maybe_contract)
                 .map_err(|_| Error::<T>::InvalidResourceId)?;
             let external_decimals = T::Fungibles::token_external_decimals(&token_id)?;
-            let unified_ammount =
+            let standard_ammount =
                 T::Fungibles::transform_decimals_to_standard(amount, external_decimals);
             let fee = Self::calculate_bridging_fee(&token_id);
             ensure!(
-                unified_ammount > fee + fee,
+                standard_ammount > fee + fee,
                 Error::<T>::LessThanBridgingThreshold
             );
-            T::Fungibles::transfer_token(&who, token_id, fee, &T::TreasuryAccount::get())?;
-            let bridge_amount = unified_ammount - fee;
-            T::Fungibles::burn_from(token_id, &who, bridge_amount)?;
+
+            let standard_bridge_amount = standard_ammount - fee;
+            let external_bridge_amount = T::Fungibles::transform_decimals_to_external(
+                standard_bridge_amount,
+                external_decimals,
+            );
+            let standard_bridge_amount = T::Fungibles::transform_decimals_to_standard(
+                external_bridge_amount,
+                external_decimals,
+            );
+            let actual_fee = standard_ammount - standard_bridge_amount;
+            T::Fungibles::transfer_token(&who, token_id, actual_fee, &T::TreasuryAccount::get())?;
+            T::Fungibles::burn_from(token_id, &who, standard_bridge_amount)?;
             bridge::Pallet::<T>::transfer_fungible(
                 dest_id,
                 r_id,
                 recipient.clone(),
-                U256::from(
-                    (T::Fungibles::transform_decimals_to_external(
-                        bridge_amount,
-                        external_decimals,
-                    ))
-                    .saturated_into::<u128>(),
-                ),
+                U256::from(external_bridge_amount.into()),
             )?;
             Ok(())
         }
