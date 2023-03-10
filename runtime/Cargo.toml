@@ -90,7 +90,9 @@ pallet-fuso-indicator = { path = "../pallets/indicator", default-features = fals
 pallet-fuso-market = { path = "../pallets/market", default-features = false }
 pallet-chainbridge = { path = "../pallets/chainbridge", default-features = false }
 pallet-chainbridge-handler = { path = "../pallets/chainbridge-handler", default-features = false }
-fuso-verifier-runtime-api = { path = "../runtime-api/verifier", default-features = false }
+
+# fusotao runtime api
+fuso-runtime-api = { path = "../runtime-api", default-features = false }
 
 # benchmarking
 pallet-octopus-bridge-benchmarking = { git = "https://github.com/octopus-network/octopus-pallets.git", branch = "release-v0.9.30-1", default-features = false, optional = true }
@@ -159,8 +161,11 @@ std = [
 
 	'pallet-fuso-foundation/std',
 	'pallet-fuso-verifier/std',
+	'pallet-fuso-token/std',
+	'pallet-fuso-reward/std',
 	'pallet-fuso-indicator/std',
-	'fuso-verifier-runtime-api/std',
+	'pallet-fuso-agent/std',
+	'fuso-runtime-api/std',
 
 	"pallet-octopus-bridge-benchmarking?/std",
 	"pallet-octopus-appchain-benchmarking?/std",

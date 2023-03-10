@@ -2423,7 +2423,7 @@ version = "4.0.2"
 dependencies = [
  "async-trait",
  "dashmap",
- "fuso-verifier-runtime-api",
+ "fuso-runtime-api",
  "futures 0.3.26",
  "hex-literal",
  "jsonrpc-core",
@@ -2492,8 +2492,8 @@ dependencies = [
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "fuso-primitives",
+ "fuso-runtime-api",
  "fuso-support",
- "fuso-verifier-runtime-api",
  "hex-literal",
  "log",
  "pallet-assets",
@@ -2554,6 +2554,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuso-runtime-api"
+version = "4.0.2"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
+ "sp-runtime",
+]
+
+[[package]]
 name = "fuso-support"
 version = "4.0.2"
 dependencies = [
@@ -2569,15 +2578,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "fuso-verifier-runtime-api"
-version = "4.0.2"
-dependencies = [
- "parity-scale-codec",
- "sp-api",
- "sp-runtime",
 ]
 
 [[package]]

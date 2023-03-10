@@ -37,6 +37,5 @@ sp-runtime = { version = "6.0.0", git = "https://github.com/paritytech/substrate
 substrate-frame-rpc-system = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 fuso-primitives = { path = "../primitives" }
 fuso-rpc = { path = "../rpc" }
-# beefy
 beefy-gadget = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 beefy-gadget-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }

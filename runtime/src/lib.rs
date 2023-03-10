@@ -1179,7 +1179,7 @@ impl_runtime_apis! {
         }
     }
 
-    impl fuso_verifier_runtime_api::FusoVerifierRuntimeApi<Block, AccountId, Balance> for Runtime {
+    impl fuso_runtime_api::FusoVerifierRuntimeApi<Block, AccountId, Balance> for Runtime {
         fn current_season_of_dominator(dominator: AccountId) -> u32 {
             Verifier::current_season_of_dominator(dominator)
         }
