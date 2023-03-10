@@ -70,7 +70,7 @@ pub trait Token<AccountId> {
 }
 
 pub trait DecimalsUnifier<Balance> {
-    fn transform_decimals_to_standard(amount: Balance, decimals: u8) -> Balance;
+    fn transform_decimals_to_standard(amount: Balance, external_decimals: u8) -> Balance;
     fn transform_decimals_to_external(amount: Balance, external_decimals: u8) -> Balance;
 }
 
