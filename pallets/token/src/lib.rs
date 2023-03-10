@@ -113,7 +113,7 @@ pub mod pallet {
         BalanceLow,
         BalanceZero,
         InvalidTokenName,
-        InvalidToken,
+        TokenNotFound,
         InsufficientBalance,
         Overflow,
         TooManyReserves,
@@ -191,13 +191,13 @@ pub mod pallet {
         pub fn mark_stable(origin: OriginFor<T>, id: T::TokenId) -> DispatchResultWithPostInfo {
             let _ = ensure_root(origin)?;
             Tokens::<T>::try_mutate_exists(id, |info| -> DispatchResult {
-                ensure!(info.is_some(), Error::<T>::InvalidToken);
+                ensure!(info.is_some(), Error::<T>::TokenNotFound);
                 let mut token_info = info.take().unwrap();
                 match token_info {
                     XToken::NEP141(_, _, _, ref mut stable, _) => *stable = true,
                     XToken::ERC20(_, _, _, ref mut stable, _) => *stable = true,
                     XToken::BEP20(_, _, _, ref mut stable, _) => *stable = true,
-                    XToken::FND10(_, _) => return Err(Error::<T>::InvalidToken.into()),
+                    XToken::FND10(_, _) => return Err(Error::<T>::TokenNotFound.into()),
                 }
                 info.replace(token_info);
                 Ok(())
@@ -249,7 +249,7 @@ pub mod pallet {
                 return Ok(());
             }
             Tokens::<T>::try_mutate_exists(&token, |token_info| -> DispatchResult {
-                ensure!(token_info.is_some(), Error::<T>::InvalidToken);
+                ensure!(token_info.is_some(), Error::<T>::TokenNotFound);
                 let mut info = token_info.take().unwrap();
                 let unified_amount = match info {
                     XToken::NEP141(_, _, ref mut total, _, decimals)
@@ -623,7 +623,7 @@ pub mod pallet {
                     XToken::FND10(_, _) => Err(DispatchError::Other("not support")),
                 }
             } else {
-                Err(DispatchError::Other("can't find token"))
+                Err(Error::<T>::TokenNotFound.into())
             }
         }
     }
@@ -876,7 +876,7 @@ pub mod pallet {
                     }
                     XToken::FND10(..) => balance,
                 })
-                .map_err(|_| Error::<T>::InvalidToken.into())
+                .map_err(|_| Error::<T>::TokenNotFound.into())
         }
     }
 
