@@ -12,27 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod backend;
+
 use async_trait::async_trait;
 use codec::{Compact, Decode, Encode};
-use dashmap::DashMap;
 use futures::{
     future::{self, FutureExt},
     stream::{self, Stream, StreamExt},
 };
 use jsonrpsee::{
-    client_transport::ws::{Receiver, Sender, Uri, WsTransportClientBuilder},
     core::{
         client::{Subscription, SubscriptionClientT},
-        error::{Error as RpcError, SubscriptionClosed},
+        error::Error as RpcError,
         RpcResult,
     },
     proc_macros::rpc,
-    rpc_params,
-    types::{
-        error::{CallError, ErrorCode, ErrorObject, ErrorObjectOwned, SubscriptionResult},
-        params::ParamsSer,
-    },
-    ws_client::{WsClient, WsClientBuilder},
+    types::error::{CallError, ErrorCode, ErrorObject, ErrorObjectOwned, SubscriptionResult},
     ws_server::SubscriptionSink,
 };
 use sc_client_api::{Backend, StorageProvider};
@@ -42,18 +37,16 @@ use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::{
     crypto::{AccountId32, CryptoTypePublicPair, KeyTypeId},
-    storage::StorageKey,
     Bytes, H256,
 };
 use sp_keystore::CryptoStore;
-use sp_rpc::number::NumberOrHex;
 use sp_runtime::{
     generic::BlockId,
     traits::{Block as BlockT, MaybeDisplay},
 };
 use std::sync::Arc;
 
-type SubscriptionTaskExecutor = Arc<dyn sp_core::traits::SpawnNamed>;
+type TaskExecutor = Arc<dyn sp_core::traits::SpawnNamed>;
 // sha256
 type Signature = H256;
 type AccountId = AccountId32;
@@ -154,9 +147,9 @@ pub trait FusoBrokerApi {
 use sp_application_crypto::sr25519::CRYPTO_ID as Sr25519Id;
 pub struct FusoBroker<C, B, S> {
     client: Arc<C>,
-    executor: SubscriptionTaskExecutor,
+    executor: TaskExecutor,
     keystore: Arc<dyn CryptoStore>,
-    backend_sessions: Arc<DashMap<AccountId, Arc<WsClient>>>,
+    backend_session: crate::broker::backend::BackendSession,
     _marker: std::marker::PhantomData<(B, S)>,
     // TODO maintain a connection and the map prover -> rpc_endpoint
 }
@@ -174,14 +167,16 @@ where
 {
     pub fn new(
         client: Arc<Client>,
-        executor: SubscriptionTaskExecutor,
+        executor: TaskExecutor,
         keystore: Arc<dyn CryptoStore>,
     ) -> Self {
+        let backend_session =
+            crate::broker::backend::BackendSession::new_session(executor.clone(), vec![]);
         Self {
             client,
             executor,
             keystore,
-            backend_sessions: Default::default(),
+            backend_session,
             _marker: Default::default(),
         }
     }
@@ -214,37 +209,37 @@ where
             .ok_or(sp_keystore::Error::Unavailable)?
     }
 
-    fn get_prover_connection(&self, prover: AccountId) -> Option<Arc<WsClient>> {
-        let slot = self
-            .backend_sessions
-            .get(&prover)
-            .map(|k| k.value().clone());
-        let backend_sessions = self.backend_sessions.clone();
-        match slot {
-            Some(session) if session.is_connected() => Some(session),
-            _ => {
-                let p = prover.clone();
-                self.executor.spawn_blocking(
-                    "connecting-to-beckend-prover",
-                    Some("fusotao-rpc"),
-                    async move {
-                        // TODO
-                        if let Ok(ws) = WsClientBuilder::default()
-                            .build("ws://127.0.0.1:10086")
-                            .await
-                        {
-                            let session = Arc::new(ws);
-                            backend_sessions.insert(p, session);
-                        }
-                    }
-                    .boxed(),
-                );
-                self.backend_sessions
-                    .get(&prover)
-                    .map(|k| k.value().clone())
-            }
-        }
-    }
+    // fn get_prover_connection(&self, prover: AccountId) -> Option<Arc<WsClient>> {
+    //     let slot = self
+    //         .backend_sessions
+    //         .get(&prover)
+    //         .map(|k| k.value().clone());
+    //     let backend_sessions = self.backend_sessions.clone();
+    //     match slot {
+    //         Some(session) if session.is_connected() => Some(session),
+    //         _ => {
+    //             let p = prover.clone();
+    //             self.executor.spawn_blocking(
+    //                 "connecting-to-beckend-prover",
+    //                 Some("fusotao-rpc"),
+    //                 async move {
+    //                     // TODO
+    //                     if let Ok(ws) = WsClientBuilder::default()
+    //                         .build("ws://127.0.0.1:10086")
+    //                         .await
+    //                     {
+    //                         let session = Arc::new(ws);
+    //                         backend_sessions.insert(p, session);
+    //                     }
+    //                 }
+    //                 .boxed(),
+    //             );
+    //             self.backend_sessions
+    //                 .get(&prover)
+    //                 .map(|k| k.value().clone())
+    //         }
+    //     }
+    // }
 }
 
 #[async_trait]
@@ -291,42 +286,27 @@ where
         account_id: AccountId,
         signature: Signature,
     ) -> SubscriptionResult {
-        match self.get_prover_connection(prover) {
-            None => {
-                let err = ErrorObject::owned(
-                    ErrorCode::ServerError(93101i32).code(),
-                    "The prover is not available.",
-                    None::<String>,
-                );
-                sink.close(err.clone());
-                Err(CallError::Custom(err).into())
-            }
-            Some(session) => {
-                self.executor.spawn(
-                    "broker-order-relayer",
-                    Some("fusotao-rpc"),
-                    async move {
-                        match session
-                            .subscribe::<String>("sub_one_param", rpc_params![1], "unsub_one_param")
-                            .await
-                        {
-                            Ok(channel) => {
-                                sink.pipe_from_try_stream(channel).await;
-                            }
-                            Err(e) => {
-                                let err = ErrorObject::owned(
-                                    ErrorCode::ServerError(93101i32).code(),
-                                    "The prover is not available.",
-                                    Some(format!("{:?}", e)),
-                                );
-                                sink.close(err.clone());
-                            }
-                        }
-                    }
-                    .boxed(),
-                );
-                Ok(())
-            }
-        }
+        let err = ErrorObject::owned(
+            ErrorCode::ServerError(93101i32).code(),
+            "The prover is not available.",
+            None::<String>,
+        );
+        // let tx = self.backend_session.clone();
+        // self.executor.spawn(
+        //     "broker-subscribe-order-events",
+        //     Some("fusotao-rpc"),
+        //     async move {
+        //         let _ = tx.send((prover, sink, 0)).await;
+        //     }
+        //     .boxed(),
+        // );
+        self.backend_session.subscribe_until_failed_n(
+            sink,
+            "sub_one_param".to_string(),
+            None,
+            "unsub_one_param".to_string(),
+            10,
+        );
+        Ok(())
     }
 }

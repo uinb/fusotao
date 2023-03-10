@@ -2425,6 +2425,7 @@ dependencies = [
  "dashmap",
  "fuso-runtime-api",
  "futures 0.3.26",
+ "futures-channel",
  "hex-literal",
  "jsonrpc-core",
  "jsonrpc-core-client",
@@ -2443,6 +2444,7 @@ dependencies = [
  "sp-keystore",
  "sp-rpc",
  "sp-runtime",
+ "tokio",
 ]
 
 [[package]]
