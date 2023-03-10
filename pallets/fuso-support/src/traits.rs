@@ -69,7 +69,7 @@ pub trait Token<AccountId> {
     fn token_external_decimals(token: &Self::TokenId) -> Result<u8, DispatchError>;
 }
 
-pub trait DecimalsUnifier<Balance> {
+pub trait DecimalsTransformer<Balance> {
     fn transform_decimals_to_standard(amount: Balance, external_decimals: u8) -> Balance;
     fn transform_decimals_to_external(amount: Balance, external_decimals: u8) -> Balance;
 }

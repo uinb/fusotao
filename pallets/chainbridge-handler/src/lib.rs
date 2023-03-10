@@ -19,7 +19,7 @@ pub mod pallet {
         transactional,
     };
     use frame_system::{ensure_signed, pallet_prelude::*};
-    use fuso_support::traits::DecimalsUnifier;
+    use fuso_support::traits::DecimalsTransformer;
     use fuso_support::{
         chainbridge::*,
         traits::{PriceOracle, Token},

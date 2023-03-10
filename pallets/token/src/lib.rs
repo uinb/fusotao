@@ -40,7 +40,7 @@ pub mod pallet {
         transactional,
     };
     use frame_system::pallet_prelude::*;
-    use fuso_support::traits::{ChainIdOf, DecimalsUnifier};
+    use fuso_support::traits::{ChainIdOf, DecimalsTransformer};
     use fuso_support::{
         constants::*,
         traits::{ReservableToken, Token},
@@ -628,7 +628,7 @@ pub mod pallet {
         }
     }
 
-    impl<T: Config> DecimalsUnifier<BalanceOf<T>> for Pallet<T>
+    impl<T: Config> DecimalsTransformer<BalanceOf<T>> for Pallet<T>
     where
         BalanceOf<T>: From<u128> + Into<u128>,
     {

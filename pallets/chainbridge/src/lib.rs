@@ -100,7 +100,7 @@ pub mod pallet {
     use frame_support::traits::fungibles::Mutate;
     use frame_support::{dispatch::GetDispatchInfo, pallet_prelude::*, Blake2_128Concat};
     use frame_system::pallet_prelude::*;
-    use fuso_support::traits::{DecimalsUnifier, Token};
+    use fuso_support::traits::{DecimalsTransformer, Token};
 
     type AssetId<T> =
         <<T as Config>::Fungibles as Token<<T as frame_system::Config>::AccountId>>::TokenId;
@@ -138,7 +138,7 @@ pub mod pallet {
         /// Expose customizable associated type of asset transfer, lock and unlock
         type Fungibles: Mutate<Self::AccountId, AssetId = AssetId<Self>, Balance = BalanceOf<Self>>
             + Token<Self::AccountId>
-            + DecimalsUnifier<BalanceOf<Self>>;
+            + DecimalsTransformer<BalanceOf<Self>>;
 
         type NativeResourceId: Get<ResourceId>;
 
