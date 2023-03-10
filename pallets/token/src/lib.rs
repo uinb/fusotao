@@ -27,7 +27,7 @@ pub mod pallet {
     use ascii::AsciiStr;
     use codec::{Codec, Decode, Encode};
     use frame_support::traits::fungible::Mutate;
-    use frame_support::traits::tokens::{AssetId, Balance};
+    use frame_support::traits::tokens::AssetId;
     use frame_support::{
         pallet_prelude::*,
         traits::{
@@ -620,7 +620,7 @@ pub mod pallet {
                     XToken::NEP141(_, _, _, _, decimals)
                     | XToken::ERC20(_, _, _, _, decimals)
                     | XToken::BEP20(_, _, _, _, decimals) => Ok(decimals),
-                    XToken::FND10(_, _) => Err(DispatchError::Other("not support")),
+                    XToken::FND10(_, _) => Err(Error::<T>::TokenNotFound.into()),
                 }
             } else {
                 Err(Error::<T>::TokenNotFound.into())
