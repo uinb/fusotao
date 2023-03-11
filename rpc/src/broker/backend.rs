@@ -22,7 +22,6 @@ use serde_json::Value as JsonValue;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::time;
 
-pub type FromBackend = Subscription<String>;
 pub type ToFront = SubscriptionSink;
 
 pub enum FrontToBack {
@@ -48,20 +47,15 @@ pub type Tx = Sender<FrontToBack>;
 pub type Rx = Receiver<FrontToBack>;
 
 pub struct BackendSession {
-    remote: Vec<u8>,
     tx: Tx,
     executor: TaskExecutor,
 }
 
 impl BackendSession {
-    pub fn init(executor: TaskExecutor, remote: Vec<u8>) -> Self {
+    pub fn init(executor: TaskExecutor, remote: String) -> Self {
         let (tx, rx): (Tx, Rx) = mpsc::channel(10000);
         Self::start_inner_task(executor.clone(), remote.clone(), rx, tx.clone());
-        Self {
-            remote,
-            tx,
-            executor,
-        }
+        Self { tx, executor }
     }
 
     pub fn subscribe_until_fail_n_times(
@@ -105,12 +99,13 @@ impl BackendSession {
         }
     }
 
-    fn start_inner_task(executor: TaskExecutor, remote: Vec<u8>, mut rx: Rx, tx: Tx) {
+    fn start_inner_task(executor: TaskExecutor, remote: String, mut rx: Rx, tx: Tx) {
         executor.clone().spawn(
             "broker-prover-connector",
             Some("fusotao-rpc"),
             async move {
                 let mut client = None;
+                let remote = remote.clone();
                 loop {
                     let signal = rx.recv().await;
                     if signal.is_none() {
@@ -118,7 +113,7 @@ impl BackendSession {
                     }
                     let signal = signal.unwrap();
                     // TODO
-                    Self::try_connect(&mut client, "ws://127.0.0.1:10086").await;
+                    Self::try_connect(&mut client, &remote).await;
                     match client {
                         None => match signal {
                             FrontToBack::Sub(topic) => {
@@ -188,9 +183,7 @@ impl BackendSession {
                     retry_left,
                 } = topic;
                 match sink.pipe_from_try_stream(stream).await {
-                    SubscriptionClosed::RemotePeerAborted => {
-                        println!("user aborted -------");
-                    }
+                    SubscriptionClosed::RemotePeerAborted => {}
                     SubscriptionClosed::Failed(e) => {}
                     SubscriptionClosed::Success => {
                         Self::retry_or_close(

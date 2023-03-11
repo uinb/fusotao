@@ -2445,6 +2445,7 @@ dependencies = [
  "sp-rpc",
  "sp-runtime",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

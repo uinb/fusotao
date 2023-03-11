@@ -17,7 +17,7 @@ mod backend;
 use async_trait::async_trait;
 use codec::{Compact, Decode, Encode};
 use dashmap::DashMap;
-use futures::{future::FutureExt, stream::StreamExt};
+use futures::future::FutureExt;
 use jsonrpsee::{
     core::{client::SubscriptionClientT, error::Error as RpcError, RpcResult},
     proc_macros::rpc,
@@ -181,11 +181,13 @@ where
             Some(v) => f(Some(v.value())),
             None => {
                 let rpc = self.get_prover_rpc(&prover);
+                tracing::info!("lookup rpc endpoint of {}", prover);
                 if rpc.is_none() {
                     return f(None);
                 }
-                let new = backend::BackendSession::init(self.executor.clone(), rpc.unwrap());
-                let assoc = self.backend_sessions.insert(prover.clone(), new);
+                let rpc_endpoint = rpc.unwrap();
+                let new = backend::BackendSession::init(self.executor.clone(), rpc_endpoint);
+                self.backend_sessions.insert(prover.clone(), new);
                 self.backend_sessions
                     .get(&prover)
                     .map(|s| f(Some(s.value())))
@@ -195,16 +197,18 @@ where
         }
     }
 
-    fn get_prover_rpc(&self, prover: &AccountId) -> Option<Vec<u8>> {
+    fn get_prover_rpc(&self, prover: &AccountId) -> Option<String> {
         let key = super::blake2_128concat_storage_key(b"Verifier", b"DominatorSettings", prover);
         self.client
             .storage(&BlockId::Hash(self.client.info().best_hash), &key)
             .ok()
             .flatten()
-            .map(|v| {
-                DominatorSetting::decode(&mut v.0.as_slice())
+            .map(|v| DominatorSetting::decode(&mut v.0.as_slice()).ok())
+            .flatten()
+            .map(|s| {
+                std::str::from_utf8(&s.rpc_endpoint)
                     .ok()
-                    .map(|s| s.rpc_endpoint)
+                    .map(|s| s.to_owned())
             })
             .flatten()
     }
@@ -279,12 +283,15 @@ where
                 );
                 Ok::<(), SubscriptionEmptyError>(())
             }
-            None => Err(CallError::Custom(ErrorObject::owned(
-                ErrorCode::ServerError(93102i32).code(),
-                "Illegal prover address.",
-                Some(format!("{:?}", prover)),
-            ))
-            .into()),
+            None => {
+                let err = ErrorObject::owned(
+                    ErrorCode::ServerError(93102i32).code(),
+                    "Illegal prover address.",
+                    Some(format!("{:?}", prover)),
+                );
+                sink.close(err.clone());
+                Err(CallError::Custom(err).into())
+            }
         })
     }
 }
