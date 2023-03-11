@@ -305,9 +305,6 @@ where
                                 Some(vec![json!(account_id), json!(orders), json!(signature)]),
                             )
                             .await
-                        // .map(|mut p| p.get("data").take().map(|mut s| s.as_array()))
-                        // .transpose()
-                        // .unwrap_or(Err(rpc_error!(req => "The prover didn't reply correctly."))),
                     }
                     None => Err(rpc_error!(req => "The prover is not available.")),
                 }
@@ -327,6 +324,7 @@ where
     ) -> SubscriptionResult {
         self.try_use_sync_session(prover.clone(), |session| match session {
             Some(session) => {
+                // TODO
                 session.subscribe_until_fail_n_times(
                     sink,
                     "sub_one_param".to_string(),
@@ -338,7 +336,6 @@ where
             }
             None => {
                 sink.close(error_msg!("Illegal prover address"));
-                // Err(RpcError::Call(err).into())
                 Err(rpc_error!(sub => "Illegal prover address").into())
             }
         })

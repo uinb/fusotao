@@ -50,6 +50,14 @@ pub struct Topic {
     retry_left: u32,
 }
 
+impl Topic {
+    fn decr_retry(&mut self) {
+        if self.retry_left > 0 {
+            self.retry_left -= 1;
+        }
+    }
+}
+
 pub type Tx = Sender<ToBack>;
 pub type Rx = Receiver<ToBack>;
 
@@ -71,7 +79,7 @@ impl BackendSession {
         method: impl ToString,
         params: Option<Vec<JsonValue>>,
         unsub: impl ToString,
-        n: u32,
+        retry_left: u32,
     ) {
         let tx = self.tx.clone();
         let (method, unsub) = (method.to_string(), unsub.to_string());
@@ -85,7 +93,7 @@ impl BackendSession {
                         method,
                         params,
                         unsub,
-                        retry_left: n,
+                        retry_left,
                     }))
                     .await;
             }
@@ -145,40 +153,23 @@ impl BackendSession {
                     match client {
                         None => Self::retry_or_close(executor.clone(), tx.clone(), signal),
                         Some(ref ready) => match signal {
-                            ToBack::Sub(Topic {
-                                sink,
-                                method,
-                                params,
-                                unsub,
-                                retry_left,
-                            }) => {
-                                let param = params.clone().map(|r| ParamsSer::Array(r));
-                                match ready.subscribe::<String>(&method, param, &unsub).await {
+                            ToBack::Sub(mut topic) => {
+                                let param = topic.params.clone().map(|r| ParamsSer::Array(r));
+                                match ready.subscribe(&topic.method, param, &topic.unsub).await {
                                     Ok(stream) => {
                                         Self::start_pipe(
                                             executor.clone(),
                                             tx.clone(),
-                                            Topic {
-                                                sink,
-                                                method,
-                                                params,
-                                                unsub,
-                                                retry_left,
-                                            },
+                                            topic,
                                             stream,
                                         );
                                     }
                                     Err(_) => {
+                                        topic.decr_retry();
                                         Self::retry_or_close(
                                             executor.clone(),
                                             tx.clone(),
-                                            ToBack::Sub(Topic {
-                                                sink,
-                                                method,
-                                                params,
-                                                unsub,
-                                                retry_left: retry_left - 1,
-                                            }),
+                                            ToBack::Sub(topic),
                                         );
                                     }
                                 }
@@ -199,41 +190,29 @@ impl BackendSession {
         );
     }
 
-    fn start_pipe(executor: TaskExecutor, tx: Tx, topic: Topic, mut channel: Subscription<String>) {
+    fn start_pipe(
+        executor: TaskExecutor,
+        tx: Tx,
+        mut topic: Topic,
+        mut channel: Subscription<String>,
+    ) {
         executor.clone().spawn(
             "enduser-broker-pipeline",
             Some("fusotao-rpc"),
             async move {
-                let Topic {
-                    mut sink,
-                    method,
-                    unsub,
-                    params,
-                    retry_left,
-                } = topic;
                 match channel.next().await {
                     Some(Ok(s)) => {
                         let s = stream::once(future::ok(s)).chain(channel);
-                        match sink.pipe_from_try_stream(s).await {
+                        match topic.sink.pipe_from_try_stream(s).await {
                             SubscriptionClosed::RemotePeerAborted => {}
                             SubscriptionClosed::Failed(_) => {}
                             SubscriptionClosed::Success => {
-                                Self::retry_or_close(
-                                    executor,
-                                    tx,
-                                    ToBack::Sub(Topic {
-                                        sink,
-                                        method,
-                                        params,
-                                        unsub,
-                                        retry_left,
-                                    }),
-                                );
+                                Self::retry_or_close(executor, tx, ToBack::Sub(topic));
                             }
                         }
                     }
                     _ => {
-                        sink.close(error_msg!("Unauthorized key"));
+                        topic.sink.close(error_msg!("Unauthorized key"));
                     }
                 }
             }
