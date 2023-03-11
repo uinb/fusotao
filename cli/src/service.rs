@@ -125,9 +125,10 @@ pub fn create_extrinsic(
     )
 }
 
-/// Creates a new partial node.
+/// Creates a new partial node. Generally, we should move the flag into `sc_cli::RunCmd`
 pub fn new_partial(
     config: &Configuration,
+    enable_order_relay: bool,
 ) -> Result<
     sc_service::PartialComponents<
         FullClient,
@@ -299,6 +300,7 @@ pub fn new_partial(
                     },
                     broker: fuso_rpc_service::BrokerDeps {
                         relayer_keystore: async_keystore.clone(),
+                        enable_order_relay,
                     },
                 };
 
@@ -338,6 +340,7 @@ pub struct NewFullBase {
 pub fn new_full_base(
     mut config: Configuration,
     disable_hardware_benchmarks: bool,
+    enable_order_relay: bool,
     with_startup_data: impl FnOnce(
         &sc_consensus_babe::BabeBlockImport<Block, FullClient, FullBeefyBlockImport>,
         &sc_consensus_babe::BabeLink<Block>,
@@ -361,7 +364,7 @@ pub fn new_full_base(
         select_chain,
         transaction_pool,
         other: (rpc_builder, import_setup, rpc_setup, mut telemetry),
-    } = new_partial(&config)?;
+    } = new_partial(&config, enable_order_relay)?;
 
     let shared_voter_state = rpc_setup;
     let genesis_hash = client
@@ -479,15 +482,9 @@ pub fn new_full_base(
                         &*client_clone,
                         parent,
                     )?;
-
                     let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-
-                    let slot =
-						sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-							*timestamp,
-							slot_duration,
-						);
-
+                    let slot = sp_consensus_babe::inherents::InherentDataProvider::
+                        from_timestamp_and_slot_duration(*timestamp, slot_duration);
                     Ok((slot, timestamp, uncles))
                 }
             },
@@ -585,9 +582,15 @@ pub fn new_full_base(
 pub fn new_full(
     config: Configuration,
     disable_hardware_benchmarks: bool,
+    enable_order_relay: bool,
 ) -> Result<TaskManager, ServiceError> {
-    new_full_base(config, disable_hardware_benchmarks, |_, _| ())
-        .map(|NewFullBase { task_manager, .. }| task_manager)
+    new_full_base(
+        config,
+        disable_hardware_benchmarks,
+        enable_order_relay,
+        |_, _| (),
+    )
+    .map(|NewFullBase { task_manager, .. }| task_manager)
 }
 
 #[cfg(test)]
@@ -659,6 +662,7 @@ mod tests {
                     ..
                 } = new_full_base(
                     config,
+                    false,
                     false,
                     |block_import: &sc_consensus_babe::BabeBlockImport<Block, _, _>,
                      babe_link: &sc_consensus_babe::BabeLink<Block>| {
@@ -860,7 +864,7 @@ mod tests {
                     network,
                     transaction_pool,
                     ..
-                } = new_full_base(config, false, |_, _| ())?;
+                } = new_full_base(config, false, false, |_, _| ())?;
                 Ok(sc_service_test::TestNetComponents::new(
                     task_manager,
                     client,

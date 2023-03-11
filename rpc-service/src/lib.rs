@@ -90,6 +90,8 @@ pub struct BeefyDeps {
 pub struct BrokerDeps {
     /// keystore to sign the users' trading commands
     pub relayer_keystore: Arc<dyn CryptoStore>,
+    /// enable broker rpc
+    pub enable_order_relay: bool,
 }
 
 /// Full client dependencies.
@@ -175,7 +177,10 @@ where
         subscription_executor,
         finality_provider,
     } = grandpa;
-    let BrokerDeps { relayer_keystore } = broker;
+    let BrokerDeps {
+        relayer_keystore,
+        enable_order_relay,
+    } = broker;
 
     let chain_name = chain_spec.name().to_string();
     let genesis_hash = client
@@ -186,14 +191,16 @@ where
     let properties = chain_spec.properties();
     io.merge(ChainSpec::new(chain_name, genesis_hash, properties).into_rpc())?;
     io.merge(FusoVerifier::new(client.clone()).into_rpc())?;
-    io.merge(
-        FusoBroker::new(
-            client.clone(),
-            subscription_executor.clone(),
-            relayer_keystore,
-        )
-        .into_rpc(),
-    )?;
+    if enable_order_relay {
+        io.merge(
+            FusoBroker::new(
+                client.clone(),
+                subscription_executor.clone(),
+                relayer_keystore,
+            )
+            .into_rpc(),
+        )?;
+    }
     io.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
     // Making synchronous calls in light client freezes the browser currently,
     // more context: https://github.com/paritytech/substrate/pull/3480
