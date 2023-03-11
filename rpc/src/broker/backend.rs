@@ -222,32 +222,20 @@ impl BackendSession {
 
     fn retry_or_close(executor: TaskExecutor, tx: Tx, to_back: ToBack) {
         match to_back {
-            ToBack::Sub(Topic {
-                sink,
-                method,
-                unsub,
-                params,
-                retry_left,
-            }) => {
-                if retry_left > 0 && !sink.is_closed() {
+            ToBack::Sub(mut topic) => {
+                if topic.retry_left > 0 && !topic.sink.is_closed() {
                     executor.spawn(
                         "broker-prover-retry",
                         Some("fusotao-rpc"),
                         async move {
                             time::sleep(time::Duration::from_millis(5000)).await;
-                            let v = ToBack::Sub(Topic {
-                                sink,
-                                method,
-                                unsub,
-                                params,
-                                retry_left: retry_left - 1,
-                            });
-                            let _ = tx.send(v).await;
+                            topic.decr_retry();
+                            let _ = tx.send(ToBack::Sub(topic)).await;
                         }
                         .boxed(),
                     )
                 } else {
-                    sink.close(error_msg!("The prover is not available."));
+                    topic.sink.close(error_msg!("The prover is not available."));
                 }
             }
             ToBack::Req(Cmd { back_tx, .. }) => executor.spawn(
