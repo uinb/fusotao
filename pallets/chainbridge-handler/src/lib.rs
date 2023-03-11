@@ -19,6 +19,7 @@ pub mod pallet {
         transactional,
     };
     use frame_system::{ensure_signed, pallet_prelude::*};
+    use fuso_support::traits::DecimalsTransformer;
     use fuso_support::{
         chainbridge::*,
         traits::{PriceOracle, Token},
@@ -41,6 +42,10 @@ pub mod pallet {
     >>::TokenId;
 
     type BalanceOf<T> = <<T as bridge::Config>::Fungibles as Token<
+        <T as frame_system::Config>::AccountId,
+    >>::Balance;
+
+    type BalanceOfExternal<T> = <<T as bridge::Config>::Fungibles as Token<
         <T as frame_system::Config>::AccountId,
     >>::Balance;
 
@@ -163,7 +168,7 @@ pub mod pallet {
         #[pallet::weight(195_000_0000)]
         pub fn transfer_out(
             origin: OriginFor<T>,
-            amount: BalanceOf<T>,
+            amount: BalanceOfExternal<T>,
             r_id: ResourceId,
             recipient: Vec<u8>,
             dest_id: ChainId,
@@ -363,7 +368,7 @@ pub mod pallet {
         #[transactional]
         pub(crate) fn do_burn_assets(
             who: T::AccountId,
-            amount: BalanceOf<T>,
+            amount: BalanceOfExternal<T>,
             r_id: ResourceId,
             recipient: Vec<u8>,
             dest_id: ChainId,
@@ -372,15 +377,32 @@ pub mod pallet {
                 decode_resource_id(r_id).map_err(|_| Error::<T>::InvalidResourceId)?;
             let token_id = T::AssetIdByName::try_get_asset_id(chain_id, maybe_contract)
                 .map_err(|_| Error::<T>::InvalidResourceId)?;
+            let external_decimals = T::Fungibles::token_external_decimals(&token_id)?;
+            let standard_ammount =
+                T::Fungibles::transform_decimals_to_standard(amount, external_decimals);
             let fee = Self::calculate_bridging_fee(&token_id);
-            ensure!(amount > fee + fee, Error::<T>::LessThanBridgingThreshold);
-            T::Fungibles::transfer_token(&who, token_id, fee, &T::TreasuryAccount::get())?;
-            T::Fungibles::burn_from(token_id, &who, amount - fee)?;
+            ensure!(
+                standard_ammount > fee + fee,
+                Error::<T>::LessThanBridgingThreshold
+            );
+
+            let standard_bridge_amount = standard_ammount - fee;
+            let external_bridge_amount = T::Fungibles::transform_decimals_to_external(
+                standard_bridge_amount,
+                external_decimals,
+            );
+            let standard_bridge_amount = T::Fungibles::transform_decimals_to_standard(
+                external_bridge_amount,
+                external_decimals,
+            );
+            let actual_fee = standard_ammount - standard_bridge_amount;
+            T::Fungibles::transfer_token(&who, token_id, actual_fee, &T::TreasuryAccount::get())?;
+            T::Fungibles::burn_from(token_id, &who, external_bridge_amount)?;
             bridge::Pallet::<T>::transfer_fungible(
                 dest_id,
                 r_id,
                 recipient.clone(),
-                U256::from((amount - fee).saturated_into::<u128>()),
+                U256::from(external_bridge_amount.into()),
             )?;
             Ok(())
         }

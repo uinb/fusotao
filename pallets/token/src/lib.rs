@@ -40,7 +40,7 @@ pub mod pallet {
         transactional,
     };
     use frame_system::pallet_prelude::*;
-    use fuso_support::traits::ChainIdOf;
+    use fuso_support::traits::{ChainIdOf, DecimalsTransformer};
     use fuso_support::{
         constants::*,
         traits::{ReservableToken, Token},
@@ -113,7 +113,7 @@ pub mod pallet {
         BalanceLow,
         BalanceZero,
         InvalidTokenName,
-        InvalidToken,
+        TokenNotFound,
         InsufficientBalance,
         Overflow,
         TooManyReserves,
@@ -191,13 +191,13 @@ pub mod pallet {
         pub fn mark_stable(origin: OriginFor<T>, id: T::TokenId) -> DispatchResultWithPostInfo {
             let _ = ensure_root(origin)?;
             Tokens::<T>::try_mutate_exists(id, |info| -> DispatchResult {
-                ensure!(info.is_some(), Error::<T>::InvalidToken);
+                ensure!(info.is_some(), Error::<T>::TokenNotFound);
                 let mut token_info = info.take().unwrap();
                 match token_info {
                     XToken::NEP141(_, _, _, ref mut stable, _) => *stable = true,
                     XToken::ERC20(_, _, _, ref mut stable, _) => *stable = true,
                     XToken::BEP20(_, _, _, ref mut stable, _) => *stable = true,
-                    XToken::FND10(_, _) => return Err(Error::<T>::InvalidToken.into()),
+                    XToken::FND10(_, _) => return Err(Error::<T>::TokenNotFound.into()),
                 }
                 info.replace(token_info);
                 Ok(())
@@ -236,22 +236,6 @@ pub mod pallet {
     where
         BalanceOf<T>: From<u128> + Into<u128>,
     {
-        pub fn unify_decimals(amount: BalanceOf<T>, decimals: u8) -> BalanceOf<T> {
-            let mut amount: u128 = amount.into();
-            if decimals > STANDARD_DECIMALS {
-                let diff = decimals - STANDARD_DECIMALS;
-                for _i in 0..diff {
-                    amount /= 10
-                }
-            } else {
-                let diff = STANDARD_DECIMALS - decimals;
-                for _i in 0..diff {
-                    amount *= 10
-                }
-            }
-            amount.into()
-        }
-
         /// the verifier requests all amount should be 10^18, the `do_mint` is called by oct-pallets,
         /// the parameter `amount` is 10^decimals_of_metadata, in anthor word, the real storage of token amount unified
         #[transactional]
@@ -265,13 +249,13 @@ pub mod pallet {
                 return Ok(());
             }
             Tokens::<T>::try_mutate_exists(&token, |token_info| -> DispatchResult {
-                ensure!(token_info.is_some(), Error::<T>::InvalidToken);
+                ensure!(token_info.is_some(), Error::<T>::TokenNotFound);
                 let mut info = token_info.take().unwrap();
                 let unified_amount = match info {
                     XToken::NEP141(_, _, ref mut total, _, decimals)
                     | XToken::ERC20(_, _, ref mut total, _, decimals)
                     | XToken::BEP20(_, _, ref mut total, _, decimals) => {
-                        let unified_amount = Self::unify_decimals(amount, decimals);
+                        let unified_amount = Self::transform_decimals_to_standard(amount, decimals);
                         *total = total
                             .checked_add(&unified_amount)
                             .ok_or(Error::<T>::InsufficientBalance)?;
@@ -317,7 +301,7 @@ pub mod pallet {
                     XToken::NEP141(_, _, ref mut total, _, decimals)
                     | XToken::ERC20(_, _, ref mut total, _, decimals)
                     | XToken::BEP20(_, _, ref mut total, _, decimals) => {
-                        let unified_amount = Self::unify_decimals(amount, decimals);
+                        let unified_amount = Self::transform_decimals_to_standard(amount, decimals);
                         *total = total
                             .checked_sub(&unified_amount)
                             .ok_or(Error::<T>::InsufficientBalance)?;
@@ -628,6 +612,70 @@ pub mod pallet {
                 Zero::zero()
             }
         }
+
+        fn token_external_decimals(token: &T::TokenId) -> Result<u8, DispatchError> {
+            if *token == Self::native_token_id() {
+                return Ok(STANDARD_DECIMALS);
+            }
+            let token_info = Self::get_token_info(token);
+            if token_info.is_some() {
+                let token = token_info.unwrap();
+                match token {
+                    XToken::NEP141(_, _, _, _, decimals)
+                    | XToken::ERC20(_, _, _, _, decimals)
+                    | XToken::BEP20(_, _, _, _, decimals) => Ok(decimals),
+                    XToken::FND10(_, _) => Err(Error::<T>::TokenNotFound.into()),
+                }
+            } else {
+                Err(Error::<T>::TokenNotFound.into())
+            }
+        }
+    }
+
+    impl<T: Config> DecimalsTransformer<BalanceOf<T>> for Pallet<T>
+    where
+        BalanceOf<T>: From<u128> + Into<u128>,
+    {
+        fn transform_decimals_to_standard(
+            amount: BalanceOf<T>,
+            external_decimals: u8,
+        ) -> BalanceOf<T>
+        where
+            BalanceOf<T>: From<u128> + Into<u128>,
+        {
+            let mut amount: u128 = amount.into();
+            if external_decimals > STANDARD_DECIMALS {
+                let diff = external_decimals - STANDARD_DECIMALS;
+                for _i in 0..diff {
+                    amount /= 10
+                }
+            } else {
+                let diff = STANDARD_DECIMALS - external_decimals;
+                for _i in 0..diff {
+                    amount *= 10
+                }
+            }
+            amount.into()
+        }
+
+        fn transform_decimals_to_external(
+            amount: BalanceOf<T>,
+            external_decimals: u8,
+        ) -> BalanceOf<T> {
+            let mut amount: u128 = amount.into();
+            if external_decimals > STANDARD_DECIMALS {
+                let diff = external_decimals - STANDARD_DECIMALS;
+                for _i in 0..diff {
+                    amount *= 10
+                }
+            } else {
+                let diff = STANDARD_DECIMALS - external_decimals;
+                for _i in 0..diff {
+                    amount /= 10
+                }
+            }
+            amount.into()
+        }
     }
 
     impl<T: Config> ReservableToken<T::AccountId> for Pallet<T> {
@@ -828,11 +876,11 @@ pub mod pallet {
                     XToken::NEP141(_, _, _, _, decimals)
                     | XToken::ERC20(_, _, _, _, decimals)
                     | XToken::BEP20(_, _, _, _, decimals) => {
-                        Self::unify_decimals(balance, decimals)
+                        Self::transform_decimals_to_standard(balance, decimals)
                     }
                     XToken::FND10(..) => balance,
                 })
-                .map_err(|_| Error::<T>::InvalidToken.into())
+                .map_err(|_| Error::<T>::TokenNotFound.into())
         }
     }
 

@@ -209,7 +209,7 @@ fn test_xtoken_should_work() {
         );
         assert_noop!(
             Token::do_mint(3, &alice, 100000000000, Option::None),
-            Error::<Test>::InvalidToken
+            Error::<Test>::TokenNotFound
         );
 
         assert_ok!(Token::do_mint(1, &alice, 1000000000, Option::None));
