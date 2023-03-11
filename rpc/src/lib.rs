@@ -37,3 +37,26 @@ pub fn blake2_128concat_storage_key<K: codec::Encode>(
     bytes.extend(v);
     sp_core::storage::StorageKey(bytes)
 }
+
+#[macro_export]
+macro_rules! error_msg {
+    ($msg:expr) => {
+        jsonrpsee::types::error::ErrorObject::owned(
+            jsonrpsee::types::error::ErrorCode::InternalError.code(),
+            stringify!($msg),
+            None::<String>,
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! rpc_error {
+    (req=>$msg:expr) => {
+        jsonrpsee::core::Error::Call(jsonrpsee::types::error::CallError::Custom(error_msg!($msg)))
+    };
+    (sub=>$msg:expr) => {
+        jsonrpsee::types::error::SubscriptionEmptyError::from(
+            jsonrpsee::types::error::CallError::Custom(error_msg!($msg)),
+        )
+    };
+}

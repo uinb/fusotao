@@ -13,8 +13,15 @@
 // limitations under the License.
 
 use super::*;
+use crate::{error_msg, rpc_error};
+use futures::{
+    future,
+    stream::{self, StreamExt},
+};
 use jsonrpsee::core::{
-    client::Subscription, error::SubscriptionClosed, server::rpc_module::SubscriptionSink,
+    client::{ClientT, Subscription},
+    error::{Error as RpcError, SubscriptionClosed},
+    server::rpc_module::SubscriptionSink,
 };
 use jsonrpsee::types::params::ParamsSer;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
@@ -24,13 +31,13 @@ use tokio::time;
 
 pub type ToFront = SubscriptionSink;
 
-pub enum FrontToBack {
+pub enum ToBack {
     Sub(Topic),
     Req(Cmd),
 }
 
 pub struct Cmd {
-    // TODO
+    back_tx: Sender<Result<JsonValue, RpcError>>,
     method: String,
     params: Option<Vec<JsonValue>>,
 }
@@ -43,8 +50,8 @@ pub struct Topic {
     retry_left: u32,
 }
 
-pub type Tx = Sender<FrontToBack>;
-pub type Rx = Receiver<FrontToBack>;
+pub type Tx = Sender<ToBack>;
+pub type Rx = Receiver<ToBack>;
 
 pub struct BackendSession {
     tx: Tx,
@@ -61,18 +68,19 @@ impl BackendSession {
     pub fn subscribe_until_fail_n_times(
         &self,
         sink: ToFront,
-        method: String,
+        method: impl ToString,
         params: Option<Vec<JsonValue>>,
-        unsub: String,
+        unsub: impl ToString,
         n: u32,
     ) {
         let tx = self.tx.clone();
+        let (method, unsub) = (method.to_string(), unsub.to_string());
         self.executor.spawn(
             "broker-subscription-pipeline",
             Some("fusotao-rpc"),
             async move {
                 let _ = tx
-                    .send(FrontToBack::Sub(Topic {
+                    .send(ToBack::Sub(Topic {
                         sink,
                         method,
                         params,
@@ -83,6 +91,27 @@ impl BackendSession {
             }
             .boxed(),
         );
+    }
+
+    pub async fn request(
+        &self,
+        method: impl ToString,
+        params: Option<Vec<JsonValue>>,
+    ) -> Result<JsonValue, RpcError> {
+        let (back_tx, mut front_rx) = mpsc::channel(1);
+        let method = method.to_string();
+        let _ = self
+            .tx
+            .send(ToBack::Req(Cmd {
+                back_tx,
+                method,
+                params,
+            }))
+            .await;
+        front_rx
+            .recv()
+            .await
+            .unwrap_or(Err(rpc_error!(req => "Something went wrong.")))
     }
 
     async fn try_connect(established: &mut Option<WsClient>, url: impl AsRef<str>) {
@@ -112,24 +141,17 @@ impl BackendSession {
                         break;
                     }
                     let signal = signal.unwrap();
-                    // TODO
                     Self::try_connect(&mut client, &remote).await;
                     match client {
-                        None => match signal {
-                            FrontToBack::Sub(topic) => {
-                                Self::retry_or_close(executor.clone(), tx.clone(), topic)
-                            }
-                            FrontToBack::Req(cmd) => {}
-                        },
+                        None => Self::retry_or_close(executor.clone(), tx.clone(), signal),
                         Some(ref ready) => match signal {
-                            FrontToBack::Sub(topic) => {
-                                let Topic {
-                                    sink,
-                                    method,
-                                    params,
-                                    unsub,
-                                    retry_left,
-                                } = topic;
+                            ToBack::Sub(Topic {
+                                sink,
+                                method,
+                                params,
+                                unsub,
+                                retry_left,
+                            }) => {
                                 let param = params.clone().map(|r| ParamsSer::Array(r));
                                 match ready.subscribe::<String>(&method, param, &unsub).await {
                                     Ok(stream) => {
@@ -146,22 +168,29 @@ impl BackendSession {
                                             stream,
                                         );
                                     }
-                                    Err(e) => {
+                                    Err(_) => {
                                         Self::retry_or_close(
                                             executor.clone(),
                                             tx.clone(),
-                                            Topic {
+                                            ToBack::Sub(Topic {
                                                 sink,
                                                 method,
                                                 params,
                                                 unsub,
                                                 retry_left: retry_left - 1,
-                                            },
+                                            }),
                                         );
                                     }
                                 }
                             }
-                            FrontToBack::Req(cmd) => {}
+                            ToBack::Req(Cmd {
+                                back_tx,
+                                method,
+                                params,
+                            }) => {
+                                let param = params.map(|p| ParamsSer::Array(p));
+                                let _ = back_tx.send(ready.request(&method, param).await).await;
+                            }
                         },
                     }
                 }
@@ -170,7 +199,7 @@ impl BackendSession {
         );
     }
 
-    fn start_pipe(executor: TaskExecutor, tx: Tx, topic: Topic, stream: Subscription<String>) {
+    fn start_pipe(executor: TaskExecutor, tx: Tx, topic: Topic, mut channel: Subscription<String>) {
         executor.clone().spawn(
             "enduser-broker-pipeline",
             Some("fusotao-rpc"),
@@ -182,21 +211,29 @@ impl BackendSession {
                     params,
                     retry_left,
                 } = topic;
-                match sink.pipe_from_try_stream(stream).await {
-                    SubscriptionClosed::RemotePeerAborted => {}
-                    SubscriptionClosed::Failed(e) => {}
-                    SubscriptionClosed::Success => {
-                        Self::retry_or_close(
-                            executor,
-                            tx,
-                            Topic {
-                                sink,
-                                method,
-                                params,
-                                unsub,
-                                retry_left,
-                            },
-                        );
+                match channel.next().await {
+                    Some(Ok(s)) => {
+                        let s = stream::once(future::ok(s)).chain(channel);
+                        match sink.pipe_from_try_stream(s).await {
+                            SubscriptionClosed::RemotePeerAborted => {}
+                            SubscriptionClosed::Failed(_) => {}
+                            SubscriptionClosed::Success => {
+                                Self::retry_or_close(
+                                    executor,
+                                    tx,
+                                    ToBack::Sub(Topic {
+                                        sink,
+                                        method,
+                                        params,
+                                        unsub,
+                                        retry_left,
+                                    }),
+                                );
+                            }
+                        }
+                    }
+                    _ => {
+                        sink.close(error_msg!("Unauthorized key"));
                     }
                 }
             }
@@ -204,38 +241,46 @@ impl BackendSession {
         );
     }
 
-    fn retry_or_close(executor: TaskExecutor, tx: Tx, topic: Topic) {
-        let Topic {
-            sink,
-            method,
-            unsub,
-            params,
-            retry_left,
-        } = topic;
-        if retry_left > 0 && !sink.is_closed() {
-            executor.spawn(
+    fn retry_or_close(executor: TaskExecutor, tx: Tx, to_back: ToBack) {
+        match to_back {
+            ToBack::Sub(Topic {
+                sink,
+                method,
+                unsub,
+                params,
+                retry_left,
+            }) => {
+                if retry_left > 0 && !sink.is_closed() {
+                    executor.spawn(
+                        "broker-prover-retry",
+                        Some("fusotao-rpc"),
+                        async move {
+                            time::sleep(time::Duration::from_millis(5000)).await;
+                            let v = ToBack::Sub(Topic {
+                                sink,
+                                method,
+                                unsub,
+                                params,
+                                retry_left: retry_left - 1,
+                            });
+                            let _ = tx.send(v).await;
+                        }
+                        .boxed(),
+                    )
+                } else {
+                    sink.close(error_msg!("The prover is not available."));
+                }
+            }
+            ToBack::Req(Cmd { back_tx, .. }) => executor.spawn(
                 "broker-prover-retry",
                 Some("fusotao-rpc"),
                 async move {
-                    time::sleep(time::Duration::from_millis(5000)).await;
-                    let v = FrontToBack::Sub(Topic {
-                        sink,
-                        method,
-                        unsub,
-                        params,
-                        retry_left: retry_left - 1,
-                    });
-                    let _ = tx.send(v).await;
+                    let _ = back_tx
+                        .send(Err(rpc_error!(req => "The prover is not available.")))
+                        .await;
                 }
                 .boxed(),
-            )
-        } else {
-            let err = ErrorObject::owned(
-                ErrorCode::ServerError(93101i32).code(),
-                "The prover is not available.",
-                None::<String>,
-            );
-            sink.close(err);
+            ),
         }
     }
 }
