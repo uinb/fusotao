@@ -16,23 +16,18 @@ mod backend;
 
 use async_trait::async_trait;
 use codec::{Compact, Decode, Encode};
-use futures::{
-    future::{self, FutureExt},
-    stream::{self, Stream, StreamExt},
-};
+use dashmap::DashMap;
+use futures::{future::FutureExt, stream::StreamExt};
 use jsonrpsee::{
-    core::{
-        client::{Subscription, SubscriptionClientT},
-        error::Error as RpcError,
-        RpcResult,
-    },
+    core::{client::SubscriptionClientT, error::Error as RpcError, RpcResult},
     proc_macros::rpc,
-    types::error::{CallError, ErrorCode, ErrorObject, ErrorObjectOwned, SubscriptionResult},
+    types::error::{CallError, ErrorCode, ErrorObject, SubscriptionEmptyError, SubscriptionResult},
     ws_server::SubscriptionSink,
 };
 use sc_client_api::{Backend, StorageProvider};
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::{
@@ -149,9 +144,8 @@ pub struct FusoBroker<C, B, S> {
     client: Arc<C>,
     executor: TaskExecutor,
     keystore: Arc<dyn CryptoStore>,
-    backend_session: crate::broker::backend::BackendSession,
+    backend_sessions: DashMap<AccountId, backend::BackendSession>,
     _marker: std::marker::PhantomData<(B, S)>,
-    // TODO maintain a connection and the map prover -> rpc_endpoint
 }
 
 impl<Client, Block, Storage> FusoBroker<Client, Block, Storage>
@@ -170,18 +164,38 @@ where
         executor: TaskExecutor,
         keystore: Arc<dyn CryptoStore>,
     ) -> Self {
-        let backend_session =
-            crate::broker::backend::BackendSession::new_session(executor.clone(), vec![]);
         Self {
             client,
             executor,
             keystore,
-            backend_session,
+            backend_sessions: Default::default(),
             _marker: Default::default(),
         }
     }
 
-    fn get_prover_rpc(&self, prover: AccountId) -> Option<Vec<u8>> {
+    fn try_use_sync_session<T, E, F>(&self, prover: AccountId, f: F) -> Result<T, E>
+    where
+        F: FnOnce(Option<&backend::BackendSession>) -> Result<T, E>,
+    {
+        match self.backend_sessions.get(&prover) {
+            Some(v) => f(Some(v.value())),
+            None => {
+                let rpc = self.get_prover_rpc(&prover);
+                if rpc.is_none() {
+                    return f(None);
+                }
+                let new = backend::BackendSession::init(self.executor.clone(), rpc.unwrap());
+                let assoc = self.backend_sessions.insert(prover.clone(), new);
+                self.backend_sessions
+                    .get(&prover)
+                    .map(|s| f(Some(s.value())))
+                    .unwrap()
+                // TODO re-register from asscoc, otherwise `drop` all the subscriptions
+            }
+        }
+    }
+
+    fn get_prover_rpc(&self, prover: &AccountId) -> Option<Vec<u8>> {
         let key = super::blake2_128concat_storage_key(b"Verifier", b"DominatorSettings", prover);
         self.client
             .storage(&BlockId::Hash(self.client.info().best_hash), &key)
@@ -208,38 +222,6 @@ where
             .transpose()
             .ok_or(sp_keystore::Error::Unavailable)?
     }
-
-    // fn get_prover_connection(&self, prover: AccountId) -> Option<Arc<WsClient>> {
-    //     let slot = self
-    //         .backend_sessions
-    //         .get(&prover)
-    //         .map(|k| k.value().clone());
-    //     let backend_sessions = self.backend_sessions.clone();
-    //     match slot {
-    //         Some(session) if session.is_connected() => Some(session),
-    //         _ => {
-    //             let p = prover.clone();
-    //             self.executor.spawn_blocking(
-    //                 "connecting-to-beckend-prover",
-    //                 Some("fusotao-rpc"),
-    //                 async move {
-    //                     // TODO
-    //                     if let Ok(ws) = WsClientBuilder::default()
-    //                         .build("ws://127.0.0.1:10086")
-    //                         .await
-    //                     {
-    //                         let session = Arc::new(ws);
-    //                         backend_sessions.insert(p, session);
-    //                     }
-    //                 }
-    //                 .boxed(),
-    //             );
-    //             self.backend_sessions
-    //                 .get(&prover)
-    //                 .map(|k| k.value().clone())
-    //         }
-    //     }
-    // }
 }
 
 #[async_trait]
@@ -274,39 +256,35 @@ where
         orders: Vec<(u32, u32, String)>,
         signature: Signature,
     ) -> RpcResult<Vec<Bytes>> {
-        let endpoint = self.get_prover_rpc(prover);
+        let endpoint = self.get_prover_rpc(&prover);
         // TODO
         Ok(vec![])
     }
 
     fn subscribe_order_events(
         &self,
-        mut sink: SubscriptionSink,
+        sink: SubscriptionSink,
         prover: AccountId,
         account_id: AccountId,
         signature: Signature,
     ) -> SubscriptionResult {
-        let err = ErrorObject::owned(
-            ErrorCode::ServerError(93101i32).code(),
-            "The prover is not available.",
-            None::<String>,
-        );
-        // let tx = self.backend_session.clone();
-        // self.executor.spawn(
-        //     "broker-subscribe-order-events",
-        //     Some("fusotao-rpc"),
-        //     async move {
-        //         let _ = tx.send((prover, sink, 0)).await;
-        //     }
-        //     .boxed(),
-        // );
-        self.backend_session.subscribe_until_failed_n(
-            sink,
-            "sub_one_param".to_string(),
-            None,
-            "unsub_one_param".to_string(),
-            10,
-        );
-        Ok(())
+        self.try_use_sync_session(prover.clone(), |session| match session {
+            Some(session) => {
+                session.subscribe_until_fail_n_times(
+                    sink,
+                    "sub_one_param".to_string(),
+                    Some(vec![json!(1)]),
+                    "unsub_one_param".to_string(),
+                    10,
+                );
+                Ok::<(), SubscriptionEmptyError>(())
+            }
+            None => Err(CallError::Custom(ErrorObject::owned(
+                ErrorCode::ServerError(93102i32).code(),
+                "Illegal prover address.",
+                Some(format!("{:?}", prover)),
+            ))
+            .into()),
+        })
     }
 }
