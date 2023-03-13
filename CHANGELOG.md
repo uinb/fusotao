@@ -1,3 +1,7 @@
+# v0.9.30-testnet.153
+
+- fix bug about chainbridge fees
+
 # v0.9.30-mainnet.149
 
 - add feature: verifier compress
