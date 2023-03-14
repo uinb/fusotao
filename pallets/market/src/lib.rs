@@ -118,6 +118,7 @@ pub mod pallet {
         MarketNotRegistered,
         MarketCouldntUpdate,
         MarketNotExists,
+        MarketScaleOverflow,
     }
 
     #[pallet::pallet]
@@ -243,6 +244,10 @@ pub mod pallet {
                 Error::<T>::UnsupportedQuoteCurrency
             );
             ensure!(T::Assets::exists(&base), Error::<T>::TokenNotFound);
+            ensure!(
+                base_scale <= 7 && quote_scale <= 7,
+                Error::<T>::MarketScaleOverflow
+            );
             Markets::<T>::try_mutate(&dominator, &(base, quote), |p| -> DispatchResult {
                 // we only permit to update markets either registered or not created yet
                 match p {
@@ -296,6 +301,10 @@ pub mod pallet {
                 // we need to confirm that the market info didn't change before open
                 // TODO re-open?
                 ensure!(p.is_some(), Error::<T>::MarketNotRegistered);
+                ensure!(
+                    base_scale <= 7 && quote_scale <= 7,
+                    Error::<T>::MarketScaleOverflow
+                );
                 p.replace(Market {
                     min_base,
                     base_scale,

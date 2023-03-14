@@ -87,6 +87,7 @@ pallet-fuso-foundation = { path = "../pallets/foundation", default-features = fa
 pallet-fuso-reward = { path = "../pallets/reward", default-features = false }
 pallet-fuso-agent = { path = "../pallets/agent", default-features = false }
 pallet-fuso-indicator = { path = "../pallets/indicator", default-features = false }
+pallet-fuso-market = { path = "../pallets/market", default-features = false }
 pallet-chainbridge = { path = "../pallets/chainbridge", default-features = false }
 pallet-chainbridge-handler = { path = "../pallets/chainbridge-handler", default-features = false }
 fuso-verifier-runtime-api = { path = "../runtime-api/verifier", default-features = false }
