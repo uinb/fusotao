@@ -2493,6 +2493,7 @@ dependencies = [
  "pallet-fuso-agent",
  "pallet-fuso-foundation",
  "pallet-fuso-indicator",
+ "pallet-fuso-market",
  "pallet-fuso-reward",
  "pallet-fuso-token",
  "pallet-fuso-verifier",

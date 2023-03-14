@@ -793,6 +793,32 @@ pub mod pallet {
             Self::revoke_from(fund_owner, dominator, token_id, amount, Some(*callback))?;
             Ok(().into())
         }
+
+        #[transactional]
+        #[pallet::weight(1_000_000)]
+        pub fn open_market(
+            origin: OriginFor<T>,
+            base: TokenId<T>,
+            quote: TokenId<T>,
+            base_scale: u8,
+            quote_scale: u8,
+            min_base: Balance<T>,
+        ) -> DispatchResultWithPostInfo {
+            let dominator = ensure_signed(origin)?;
+            ensure!(
+                Dominators::<T>::contains_key(&dominator),
+                Error::<T>::DominatorNotFound
+            );
+            T::MarketManager::open_market(
+                dominator,
+                base,
+                quote,
+                base_scale,
+                quote_scale,
+                min_base,
+            )?;
+            Ok(().into())
+        }
     }
 
     #[derive(Clone)]
