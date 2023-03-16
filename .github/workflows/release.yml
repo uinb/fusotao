@@ -29,12 +29,9 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly-2023-01-29
+          target: wasm32-unknown-unknown
           override: true
           components: rustfmt, clippy
-
-      - name: Install wasm32 target
-        run: |
-          rustup target add wasm32-unknown-unknown --toolchain nightly
 
       # - name: Install Rustup
       #   run: |

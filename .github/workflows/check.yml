@@ -28,11 +28,8 @@ jobs:
         with:
           toolchain: nightly-2023-01-29
           override: true
+          target: wasm32-unknown-unknown
           components: rustfmt, clippy
-
-      - name: Install wasm32 target
-        run: |
-          rustup target add wasm32-unknown-unknown --toolchain nightly
 
       - name: Cargo test
         uses: actions-rs/cargo@v1
