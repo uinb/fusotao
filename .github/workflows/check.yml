@@ -23,19 +23,12 @@ jobs:
       - name: Install Depedencies
         run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl libprotobuf-dev protobuf-compiler
 
-      # - name: Install Rustup
-      #   run: |
-      #     curl https://sh.rustup.rs -sSf | sh -s -- -y
-      #     source ~/.cargo/env
-      #     rustup default nightly
-      #     rustup update nightly
-      #     rustup target add wasm32-unknown-unknown --toolchain nightly
-
       - name: Install Rust toochain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly-2023-01-29
           override: true
+          target: wasm32-unknown-unknown
           components: rustfmt, clippy
 
       - name: Cargo test

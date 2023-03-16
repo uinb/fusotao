@@ -20,8 +20,9 @@ pub fn register_broker_should_work() {
         let ferdie: AccountId = AccountKeyring::Ferdie.into();
         assert_ok!(Market::register_broker(
             RuntimeOrigin::signed(ferdie.clone()),
-            b"127.0.0.1".to_vec(),
             charlie.clone().into(),
+            b"127.0.0.1".to_vec(),
+            b"test-broker".to_vec(),
         ));
         assert_eq!(Balances::free_balance(&ferdie), 90000 * DOLLARS);
         assert_eq!(Market::beneficiary(ferdie.clone()), charlie.clone().into());
