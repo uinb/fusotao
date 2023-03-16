@@ -32,6 +32,10 @@ jobs:
           override: true
           components: rustfmt, clippy
 
+      - name: Install wasm32 target
+        run: |
+          rustup target add wasm32-unknown-unknown --toolchain nightly
+
       # - name: Install Rustup
       #   run: |
       #     curl https://sh.rustup.rs -sSf | sh -s -- -y

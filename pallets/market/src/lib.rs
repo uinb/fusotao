@@ -52,6 +52,7 @@ pub mod pallet {
         pub staked: Balance,
         pub register_at: BlockNumber,
         pub rpc_endpoint: Vec<u8>,
+        pub name: Vec<u8>,
     }
 
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
@@ -119,6 +120,7 @@ pub mod pallet {
         MarketCouldntUpdate,
         MarketNotExists,
         MarketScaleOverflow,
+        BrokerNameTooLong,
     }
 
     #[pallet::pallet]
@@ -131,10 +133,12 @@ pub mod pallet {
         #[pallet::weight(8_790_000_000)]
         pub fn register_broker(
             origin: OriginFor<T>,
-            rpc_endpoint: Vec<u8>,
             beneficiary: T::AccountId,
+            rpc_endpoint: Vec<u8>,
+            name: Vec<u8>,
         ) -> DispatchResultWithPostInfo {
             let broker = ensure_signed(origin)?;
+            ensure!(name.len() <= 20, Error::<T>::BrokerNameTooLong);
             let requires = T::BrokerStakingThreshold::get();
             T::Assets::transfer_token(
                 &broker,
@@ -149,6 +153,7 @@ pub mod pallet {
                     staked: requires,
                     register_at: frame_system::Pallet::<T>::block_number(),
                     rpc_endpoint,
+                    name,
                 };
                 b.replace(broker);
                 Ok(())
