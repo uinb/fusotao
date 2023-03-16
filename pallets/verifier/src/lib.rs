@@ -380,8 +380,10 @@ pub mod pallet {
     #[pallet::generate_deposit(pub (super) fn deposit_event)]
     pub enum Event<T: Config> {
         DominatorClaimed(T::AccountId),
+        // DEPREACATED
         CoinHosted(T::AccountId, T::AccountId, Balance<T>),
         TokenHosted(T::AccountId, T::AccountId, TokenId<T>, Balance<T>),
+        // DEPREACATED
         CoinRevoked(T::AccountId, T::AccountId, Balance<T>),
         TokenRevoked(T::AccountId, T::AccountId, TokenId<T>, Balance<T>),
         ProofAccepted(T::AccountId, u32),

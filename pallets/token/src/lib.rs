@@ -571,7 +571,7 @@ pub mod pallet {
         }
 
         fn exists(token: &T::TokenId) -> bool {
-            Tokens::<T>::contains_key(token)
+            *token == Self::native_token_id() || Tokens::<T>::contains_key(token)
         }
 
         fn native_token_id() -> Self::TokenId {
