@@ -784,7 +784,7 @@ impl pallet_fuso_verifier::Config for Runtime {
     type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
     type DominatorOnlineThreshold = DominatorOnlineThreshold;
     type Indicator = Indicator;
-    type MarketManager = ();
+    type MarketManager = Market;
     type MaxMakerFee = MaxMakerFee;
     type MaxTakerFee = MaxTakerFee;
     type MinimalStakingAmount = MinimalStakingAmount;
@@ -795,15 +795,17 @@ impl pallet_fuso_verifier::Config for Runtime {
 }
 
 parameter_types! {
-    pub const BrokerStakingThreshold: Balance = 20000 * TAO;
+    pub const BrokerStakingThreshold: Balance = 50000 * TAO;
     pub const MarketCloseGracePeriod: BlockNumber = 14400;
 }
+
 impl pallet_fuso_market::Config for Runtime {
     type Assets = Token;
     type BrokerStakingThreshold = BrokerStakingThreshold;
     type MarketCloseGracePeriod = MarketCloseGracePeriod;
     type RuntimeEvent = RuntimeEvent;
 }
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
