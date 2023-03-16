@@ -26,7 +26,7 @@ pub mod pallet {
     use codec::{Decode, Encode};
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
-    use fuso_support::traits::{FeeBeneficiary, MarketManager, Token};
+    use fuso_support::traits::{FeeBeneficiary, MarketManager, ReservableToken, Token};
     use scale_info::TypeInfo;
     use sp_runtime::{traits::AccountIdConversion, RuntimeDebug, Saturating};
     use sp_std::{convert::*, prelude::*, vec::Vec};
@@ -69,7 +69,7 @@ pub mod pallet {
     pub trait Config: frame_system::Config {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        type Assets: Token<Self::AccountId>;
+        type Assets: ReservableToken<Self::AccountId>;
 
         #[pallet::constant]
         type BrokerStakingThreshold: Get<Balance<Self>>;

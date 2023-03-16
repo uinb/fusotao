@@ -25,27 +25,34 @@ jobs:
       - name: Install Dependencies
         run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl libprotobuf-dev protobuf-compiler
 
-      - name: Install Rustup
-        run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
-          source ~/.cargo/env
-          rustup default nightly
-          rustup update nightly
-          rustup target add wasm32-unknown-unknown --toolchain nightly
-
-      - name: GCS Auth
-        uses: google-github-actions/auth@v1
+      - name: Install Rust toochain
+        uses: actions-rs/toolchain@v1
         with:
-          credentials_json: ${{ secrets.GCS_SA_KEY }}
+          toolchain: nightly-2023-01-29
+          override: true
+          components: rustfmt, clippy
 
-      - name: Setup - gcloud/gsutil
-        uses: google-github-actions/setup-gcloud@v1
+      # - name: Install Rustup
+      #   run: |
+      #     curl https://sh.rustup.rs -sSf | sh -s -- -y
+      #     source ~/.cargo/env
+      #     rustup default nightly
+      #     rustup update nightly
+      #     rustup target add wasm32-unknown-unknown --toolchain nightly
 
-      - name: Sync Cache
-        run: |
-          mkdir target
-          gsutil -m rsync -r gs://fusotao-compile-cache/ubuntu-20 target
-          chown -R $(whoami) target
+      # - name: GCS Auth
+      #   uses: google-github-actions/auth@v1
+      #   with:
+      #     credentials_json: ${{ secrets.GCS_SA_KEY }}
+
+      # - name: Setup - gcloud/gsutil
+      #   uses: google-github-actions/setup-gcloud@v1
+
+      # - name: Sync Cache
+      #   run: |
+      #     mkdir target
+      #     gsutil -m rsync -r gs://fusotao-compile-cache/ubuntu-20 target
+      #     chown -R $(whoami) target
 
       - name: Build
         run: |
@@ -64,6 +71,6 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
 
-      - name: Update Cache
-        run: |
-          gsutil -m rsync -r target gs://fusotao-compile-cache/ubuntu-20
+      # - name: Update Cache
+      #   run: |
+      #     gsutil -m rsync -r target gs://fusotao-compile-cache/ubuntu-20

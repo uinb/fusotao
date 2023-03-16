@@ -12,37 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod backend;
+
+use crate::{error_msg, rpc_error};
 use async_trait::async_trait;
-use codec::{Codec, Compact, Decode, Encode};
+use codec::{Compact, Decode, Encode};
+use dashmap::DashMap;
+use futures::future::{BoxFuture, FutureExt};
 use jsonrpsee::{
-    core::{error::Error as RpcError, RpcResult},
+    core::{client::SubscriptionClientT, RpcResult},
     proc_macros::rpc,
-    types::{
-        error::{CallError, ErrorCode, ErrorObject},
-        SubscriptionResult,
-    },
+    types::error::SubscriptionResult,
     ws_server::SubscriptionSink,
 };
 use sc_client_api::{Backend, StorageProvider};
-use sc_service::SpawnTaskHandle;
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::{
-    crypto::{AccountId32, CryptoTypeId, CryptoTypePublicPair, KeyTypeId},
-    storage::StorageKey,
+    crypto::{AccountId32, CryptoTypePublicPair, KeyTypeId},
     Bytes, H256,
 };
 use sp_keystore::CryptoStore;
-use sp_rpc::number::NumberOrHex;
-use sp_runtime::{
-    generic::BlockId,
-    traits::{Block as BlockT, MaybeDisplay},
-};
+use sp_runtime::{generic::BlockId, traits::Block as BlockT};
 use std::sync::Arc;
 
-// sha256
+type TaskExecutor = Arc<dyn sp_core::traits::SpawnNamed>;
 type Signature = H256;
 type AccountId = AccountId32;
 
@@ -142,10 +139,10 @@ pub trait FusoBrokerApi {
 use sp_application_crypto::sr25519::CRYPTO_ID as Sr25519Id;
 pub struct FusoBroker<C, B, S> {
     client: Arc<C>,
-    task_handle: SpawnTaskHandle,
+    executor: TaskExecutor,
     keystore: Arc<dyn CryptoStore>,
+    backend_sessions: DashMap<AccountId, Arc<backend::BackendSession>>,
     _marker: std::marker::PhantomData<(B, S)>,
-    // TODO maintain a connection and the map prover -> rpc_endpoint
 }
 
 impl<Client, Block, Storage> FusoBroker<Client, Block, Storage>
@@ -161,30 +158,76 @@ where
 {
     pub fn new(
         client: Arc<Client>,
-        task_handle: SpawnTaskHandle,
+        executor: TaskExecutor,
         keystore: Arc<dyn CryptoStore>,
     ) -> Self {
-        task_handle.spawn("fusotao-broker-rpc", "fusotao", async {
-            // TODO connect to prover
-        });
         Self {
             client,
-            task_handle,
+            executor,
             keystore,
+            backend_sessions: Default::default(),
             _marker: Default::default(),
         }
     }
 
-    fn get_prover_rpc(&self, prover: AccountId) -> Option<Vec<u8>> {
+    fn try_use_sync_session<T, E, F>(&self, prover: AccountId, f: F) -> Result<T, E>
+    where
+        F: FnOnce(Option<&backend::BackendSession>) -> Result<T, E>,
+    {
+        match self.backend_sessions.get(&prover) {
+            Some(v) => f(Some(v.value())),
+            None => {
+                let rpc = self.get_prover_rpc(&prover);
+                tracing::info!("lookup rpc endpoint of {}", prover);
+                if rpc.is_none() {
+                    return f(None);
+                }
+                let rpc_endpoint = rpc.unwrap();
+                let new = backend::BackendSession::init(self.executor.clone(), rpc_endpoint);
+                self.backend_sessions.insert(prover.clone(), Arc::new(new));
+                self.backend_sessions
+                    .get(&prover)
+                    .map(|s| f(Some(s.value())))
+                    .unwrap()
+                // TODO re-register from asscoc, otherwise `drop` all the subscriptions
+            }
+        }
+    }
+
+    async fn try_use_async_session<T, E, F>(&self, prover: AccountId, f: F) -> Result<T, E>
+    where
+        F: FnOnce(Option<&Arc<backend::BackendSession>>) -> BoxFuture<Result<T, E>>,
+    {
+        match self.backend_sessions.get(&prover) {
+            Some(v) => f(Some(v.value())).await,
+            None => {
+                let rpc = self.get_prover_rpc(&prover);
+                tracing::info!("lookup rpc endpoint of {}", prover);
+                if rpc.is_none() {
+                    return f(None).await;
+                }
+                let rpc_endpoint = rpc.unwrap();
+                let new = backend::BackendSession::init(self.executor.clone(), rpc_endpoint);
+                self.backend_sessions.insert(prover.clone(), Arc::new(new));
+                let new = self.backend_sessions.get(&prover).unwrap();
+                f(Some(new.value())).await
+                // TODO re-register from asscoc, otherwise `drop` all the subscriptions
+            }
+        }
+    }
+
+    fn get_prover_rpc(&self, prover: &AccountId) -> Option<String> {
         let key = super::blake2_128concat_storage_key(b"Verifier", b"DominatorSettings", prover);
         self.client
             .storage(&BlockId::Hash(self.client.info().best_hash), &key)
             .ok()
             .flatten()
-            .map(|v| {
-                DominatorSetting::decode(&mut v.0.as_slice())
+            .map(|v| DominatorSetting::decode(&mut v.0.as_slice()).ok())
+            .flatten()
+            .map(|s| {
+                std::str::from_utf8(&s.rpc_endpoint)
                     .ok()
-                    .map(|s| s.rpc_endpoint)
+                    .map(|s| s.to_owned())
             })
             .flatten()
     }
@@ -218,15 +261,30 @@ where
 {
     async fn trade(&self, prover: AccountId, cmd: TradingCommand) -> RpcResult<String> {
         let payload = cmd.encode();
-        let v = self.sign_request(&payload).await.map_err(|e| {
-            RpcError::Call(CallError::Custom(ErrorObject::owned(
-                ErrorCode::ServerError(93101i32).code(),
-                "The broker hasn't register its signing key, please switch to another node.",
-                Some(format!("{:?}", e)),
-            )))
+        let v = self.sign_request(&payload).await.map_err(|_| {
+            rpc_error!(req => "The broker didn't register the signing key, please switch to another node.")
         })?;
-        // TODO RELAY
-        Ok("Ni4qf".to_string())
+        self.try_use_async_session(prover.clone(), |session| {
+            async move {
+                match session {
+                    Some(session) => session
+                        // TODO
+                        .request("prover_trade", Some(vec![json!(payload), json!(v)]))
+                        .await
+                        .map(|p| {
+                            p.get("data")
+                                .map(|s| s.as_str())
+                                .flatten()
+                                .map(|s| s.to_string())
+                        })
+                        .transpose()
+                        .unwrap_or(Err(rpc_error!(req => "The prover didn't reply correctly."))),
+                    None => Err(rpc_error!(req => "The prover is not available.")),
+                }
+            }
+            .boxed()
+        })
+        .await
     }
 
     async fn query_orders(
@@ -236,18 +294,49 @@ where
         orders: Vec<(u32, u32, String)>,
         signature: Signature,
     ) -> RpcResult<Vec<Bytes>> {
-        let endpoint = self.get_prover_rpc(prover);
-        // TODO
+        self.try_use_async_session(prover.clone(), |session| {
+            async move {
+                match session {
+                    Some(session) => {
+                        session
+                            // TODO
+                            .request(
+                                "prover_queryOrders",
+                                Some(vec![json!(account_id), json!(orders), json!(signature)]),
+                            )
+                            .await
+                    }
+                    None => Err(rpc_error!(req => "The prover is not available.")),
+                }
+            }
+            .boxed()
+        })
+        .await?;
         Ok(vec![])
     }
 
     fn subscribe_order_events(
         &self,
-        mut sink: SubscriptionSink,
+        sink: SubscriptionSink,
         prover: AccountId,
         account_id: AccountId,
         signature: Signature,
     ) -> SubscriptionResult {
-        Ok(())
+        self.try_use_sync_session(prover.clone(), |s| match s {
+            Some(session) => {
+                session.subscribe_until_fail_n_times(
+                    sink,
+                    "sub_orderEvents".to_string(),
+                    Some(vec![json!(account_id), json!(signature)]),
+                    "unsub_orderEvents".to_string(),
+                    10,
+                );
+                Ok(())
+            }
+            None => {
+                sink.close(error_msg!("Illegal prover address"));
+                Err(rpc_error!(sub => "Illegal prover address").into())
+            }
+        })
     }
 }
