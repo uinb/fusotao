@@ -17,21 +17,31 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-20.04
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
       - name: Install Depedencies
         run: sudo apt install -y cmake pkg-config libssl-dev git build-essential clang libclang-dev curl libprotobuf-dev protobuf-compiler
 
-      - name: Install Rustup
-        run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
-          source ~/.cargo/env
-          rustup default nightly
-          rustup update nightly
-          rustup target add wasm32-unknown-unknown --toolchain nightly
+      # - name: Install Rustup
+      #   run: |
+      #     curl https://sh.rustup.rs -sSf | sh -s -- -y
+      #     source ~/.cargo/env
+      #     rustup default nightly
+      #     rustup update nightly
+      #     rustup target add wasm32-unknown-unknown --toolchain nightly
+
+      - name: Install Rust toochain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2023-01-29
+          override: true
+          components: rustfmt, clippy
+
+      - name: Cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
 
 #      - name: Setup Cache
 #        uses: actions/cache@v3
@@ -45,7 +55,3 @@ jobs:
 #            target/
 #          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 #          restore-keys: ${{ runner.os }}-cargo-
-
-      - name: Run All Unit-tests
-        run: |
-          cargo test
