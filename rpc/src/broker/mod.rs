@@ -311,7 +311,7 @@ where
             }
             .boxed()
         })
-        .await;
+        .await?;
         Ok(vec![])
     }
 
@@ -322,14 +322,13 @@ where
         account_id: AccountId,
         signature: Signature,
     ) -> SubscriptionResult {
-        self.try_use_sync_session(prover.clone(), |session| match session {
+        self.try_use_sync_session(prover.clone(), |s| match s {
             Some(session) => {
-                // TODO
                 session.subscribe_until_fail_n_times(
                     sink,
-                    "sub_one_param".to_string(),
-                    Some(vec![json!(1)]),
-                    "unsub_one_param".to_string(),
+                    "sub_orderEvents".to_string(),
+                    Some(vec![json!(account_id), json!(signature)]),
+                    "unsub_orderEvents".to_string(),
                     10,
                 );
                 Ok(())
