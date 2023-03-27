@@ -18,6 +18,7 @@ use futures::{
     future,
     stream::{self, StreamExt},
 };
+use hyper::header::{HeaderMap, HeaderValue};
 use jsonrpsee::core::{
     client::{ClientT, Subscription},
     error::{Error as RpcError, SubscriptionClosed},
@@ -25,7 +26,12 @@ use jsonrpsee::core::{
 };
 use jsonrpsee::types::params::ParamsSer;
 use jsonrpsee::ws_client::{WsClient, WsClientBuilder};
+use sc_client_api::{Backend, StorageProvider};
 use serde_json::Value as JsonValue;
+use sp_application_crypto::Ss58Codec;
+use sp_blockchain::HeaderBackend;
+use sp_keystore::CryptoStore;
+use sp_runtime::traits::Block;
 use tokio::sync::mpsc::{self, Receiver, Sender};
 use tokio::time;
 
@@ -67,9 +73,19 @@ pub struct BackendSession {
 }
 
 impl BackendSession {
-    pub fn init(executor: TaskExecutor, remote: String) -> Self {
+    pub fn init<B, S, BS>(
+        executor: TaskExecutor,
+        prover: AccountId,
+        storage: Arc<BS>,
+        keystore: Arc<dyn CryptoStore>,
+    ) -> Self
+    where
+        B: Block,
+        S: Backend<B>,
+        BS: StorageProvider<B, S> + HeaderBackend<B> + 'static,
+    {
         let (tx, rx): (Tx, Rx) = mpsc::channel(10000);
-        Self::start_inner_task(executor.clone(), remote.clone(), rx, tx.clone());
+        Self::start_inner_task(executor.clone(), prover, storage, keystore, rx, tx.clone());
         Self { tx, executor }
     }
 
@@ -122,34 +138,94 @@ impl BackendSession {
             .unwrap_or(Err(rpc_error!(req => "Something went wrong.")))
     }
 
-    async fn try_connect(established: &mut Option<WsClient>, url: impl AsRef<str>) {
+    async fn try_connect<B, S, BS>(
+        established: &mut Option<WsClient>,
+        prover: &AccountId,
+        storage: Arc<BS>,
+        keystore: &Arc<dyn CryptoStore>,
+    ) where
+        B: Block,
+        S: Backend<B>,
+        BS: StorageProvider<B, S> + HeaderBackend<B>,
+    {
         match established {
             Some(conn) if conn.is_connected() => {}
-            _ => match WsClientBuilder::default().build(url).await.ok() {
-                Some(new) => {
-                    established.replace(new);
+            _ => {
+                let mut headers = HeaderMap::new();
+                let block_number = super::get_best_block_number(&storage);
+                headers.insert(
+                    "X-Broker-Nonce",
+                    HeaderValue::from_str(&format!("{}", block_number)).expect("local read;qed"),
+                );
+                let to_be_signed = block_number.encode();
+                let (account, sig) =
+                    match super::sign_using_keystore(keystore.clone(), to_be_signed.as_slice())
+                        .await
+                    {
+                        Ok((account, sig)) => (account, sig),
+                        Err(e) => {
+                            log::error!("Relayer key not found: {:?}.", e);
+                            return;
+                        }
+                    };
+                headers.insert(
+                    "X-Broker-Account",
+                    HeaderValue::from_str(&account.to_ss58check()).expect("local read;qed"),
+                );
+                headers.insert(
+                    "X-Broker-Signature",
+                    HeaderValue::from_str(&format!("0x{}", hex::encode(sig)))
+                        .expect("local read;qed"),
+                );
+                let rpc = super::get_prover_rpc(storage.clone(), prover);
+                if rpc.is_none() {
+                    return;
                 }
-                None => {
-                    established.take();
+                let rpc = rpc.expect("qed;");
+                match WsClientBuilder::default()
+                    .set_headers(headers)
+                    .build(rpc)
+                    .await
+                    .ok()
+                {
+                    Some(new) => {
+                        established.replace(new);
+                    }
+                    None => {
+                        established.take();
+                    }
                 }
-            },
+            }
         }
     }
 
-    fn start_inner_task(executor: TaskExecutor, remote: String, mut rx: Rx, tx: Tx) {
+    fn start_inner_task<B, S, BS>(
+        executor: TaskExecutor,
+        prover: AccountId,
+        storage: Arc<BS>,
+        keystore: Arc<dyn CryptoStore>,
+        mut rx: Rx,
+        tx: Tx,
+    ) where
+        B: Block,
+        S: Backend<B>,
+        BS: StorageProvider<B, S> + HeaderBackend<B> + 'static,
+    {
         executor.clone().spawn(
             "broker-prover-connector",
             Some("fusotao-rpc"),
             async move {
                 let mut client = None;
-                let remote = remote.clone();
+                let storage = storage;
+                let keystore = keystore;
+                let prover = prover;
                 loop {
                     let signal = rx.recv().await;
                     if signal.is_none() {
                         break;
                     }
                     let signal = signal.unwrap();
-                    Self::try_connect(&mut client, &remote).await;
+                    Self::try_connect(&mut client, &prover, storage.clone(), &keystore).await;
                     match client {
                         None => Self::retry_or_close(executor.clone(), tx.clone(), signal),
                         Some(ref ready) => match signal {
