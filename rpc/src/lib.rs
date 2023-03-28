@@ -43,7 +43,7 @@ macro_rules! error_msg {
     ($msg:expr) => {
         jsonrpsee::types::error::ErrorObject::owned(
             jsonrpsee::types::error::ErrorCode::InternalError.code(),
-            stringify!($msg),
+            $msg,
             None::<String>,
         )
     };

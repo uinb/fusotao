@@ -189,9 +189,11 @@ impl BackendSession {
                     .ok()
                 {
                     Some(new) => {
+                        log::info!("Connected to galois.");
                         established.replace(new);
                     }
                     None => {
+                        log::info!("Failed to connect to galois.");
                         established.take();
                     }
                 }
@@ -215,6 +217,7 @@ impl BackendSession {
             "broker-prover-connector",
             Some("fusotao-rpc"),
             async move {
+                log::info!("Starting broker-prover-connector.");
                 let mut client = None;
                 let storage = storage;
                 let keystore = keystore;
