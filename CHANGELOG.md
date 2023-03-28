@@ -1,3 +1,7 @@
+# v0.9.30-testnet.sidecar
+
+- add sidecar rpcs
+
 # v0.9.30-mainnet.154
 
 - fix bug about chainbridge fee
