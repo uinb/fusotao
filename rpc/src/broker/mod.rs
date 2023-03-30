@@ -129,7 +129,7 @@ pub trait FusoBrokerApi {
         orders: String,
         signature: String,
         nonce: String,
-    ) -> RpcResult<Vec<Bytes>>;
+    ) -> RpcResult<Vec<String>>;
 
     #[method(name = "broker_queryAccount")]
     async fn query_account(
@@ -138,7 +138,7 @@ pub trait FusoBrokerApi {
         account_id: String,
         signature: String,
         nonce: String,
-    ) -> RpcResult<Bytes>;
+    ) -> RpcResult<Vec<String>>;
 
     #[method(name = "broker_registerTradingKey")]
     async fn register_trading_key(
@@ -147,10 +147,10 @@ pub trait FusoBrokerApi {
         account_id: String,
         x25519: String,
         sr25519: String,
-    ) -> RpcResult<Bytes>;
+    ) -> RpcResult<String>;
 
     #[method(name = "broker_getNonce")]
-    async fn get_nonce(&self, prover: AccountId, account_id: String) -> RpcResult<u32>;
+    async fn get_nonce(&self, prover: AccountId, account_id: String) -> RpcResult<String>;
 
     #[subscription(
         name = "broker_subscribeTrading",
@@ -202,48 +202,56 @@ where
 
     fn try_use_sync_session<T, E, F>(&self, prover: AccountId, f: F) -> Result<T, E>
     where
-        F: FnOnce(Option<&backend::BackendSession>) -> Result<T, E>,
+        F: FnOnce(Arc<backend::BackendSession>) -> Result<T, E>,
+        E: From<jsonrpsee::types::error::SubscriptionEmptyError>,
     {
-        match self.backend_sessions.get(&prover) {
-            Some(v) => f(Some(v.value())),
+        let session = match self.backend_sessions.get(&prover) {
+            Some(v) => v.value().clone(),
             None => {
-                let new = BackendSession::init(
+                let new = Arc::new(BackendSession::init(
                     self.executor.clone(),
                     prover.clone(),
                     self.client.clone(),
                     self.keystore.clone(),
-                );
-                self.backend_sessions.insert(prover.clone(), Arc::new(new));
-                self.backend_sessions
-                    .get(&prover)
-                    .map(|s| f(Some(s.value())))
-                    .unwrap()
+                ));
+                self.backend_sessions.insert(prover.clone(), new.clone());
+                new
                 // TODO re-register from asscoc, otherwise `drop` all the subscriptions
             }
+        };
+        if session.is_initialized() {
+            f(session)
+        } else {
+            self.backend_sessions.remove(&prover);
+            Err(rpc_error!(sub => "session not initialized").into())
         }
     }
 
     async fn try_use_async_session<T, E, F>(&self, prover: AccountId, f: F) -> Result<T, E>
     where
-        F: FnOnce(Option<&Arc<backend::BackendSession>>) -> BoxFuture<Result<T, E>>,
+        F: FnOnce(Arc<backend::BackendSession>) -> BoxFuture<'static, Result<T, E>>,
+        T: Send + 'static,
+        E: From<jsonrpsee::core::Error>,
     {
-        match self.backend_sessions.get(&prover) {
-            Some(v) => f(Some(v.value())).await,
+        let session = match self.backend_sessions.get(&prover) {
+            Some(v) => v.value().clone(),
             None => {
-                let new = BackendSession::init(
+                let new = Arc::new(BackendSession::init(
                     self.executor.clone(),
                     prover.clone(),
                     self.client.clone(),
                     self.keystore.clone(),
-                );
-                self.backend_sessions.insert(prover.clone(), Arc::new(new));
-                let new = self
-                    .backend_sessions
-                    .get(&prover)
-                    .expect("just inserted;qed");
-                f(Some(new.value())).await
+                ));
+                self.backend_sessions.insert(prover.clone(), new.clone());
+                new
                 // TODO re-register from asscoc, otherwise `drop` all the subscriptions
             }
+        };
+        if session.is_initialized() {
+            f(session).await
+        } else {
+            self.backend_sessions.remove(&prover);
+            Err(rpc_error!(req => "session not initialized").into())
         }
     }
 }
@@ -322,23 +330,12 @@ where
     ) -> RpcResult<String> {
         self.try_use_async_session(prover.clone(), |session| {
             async move {
-                match session {
-                    Some(s) => s
-                        .request(
-                            "trade",
-                            Some(vec![json!(cmd), json!(signature), json!(nonce)]),
-                        )
-                        .await
-                        .map(|p| {
-                            p.get("data")
-                                .map(|s| s.as_str())
-                                .flatten()
-                                .map(|s| s.to_string())
-                        })
-                        .transpose()
-                        .unwrap_or(Err(rpc_error!(req => "The prover didn't reply correctly."))),
-                    None => Err(rpc_error!(req => "The prover is not available.")),
-                }
+                let r = session
+                    .request("trade", vec![json!(cmd), json!(signature), json!(nonce)])
+                    .await?;
+                r.as_str()
+                    .ok_or(rpc_error!(req => "The prover didn't reply correctly."))
+                    .map(|s| s.to_owned())
             }
             .boxed()
         })
@@ -352,29 +349,36 @@ where
         symbol: String,
         signature: String,
         nonce: String,
-    ) -> RpcResult<Vec<Bytes>> {
+    ) -> RpcResult<Vec<String>> {
         self.try_use_async_session(prover, |session| {
             async move {
-                match session {
-                    Some(s) => {
-                        s.request(
-                            "query_pending_orders",
-                            Some(vec![
-                                json!(account_id),
-                                json!(symbol),
-                                json!(signature),
-                                json!(nonce),
-                            ]),
-                        )
-                        .await
-                    }
-                    None => Err(rpc_error!(req => "The prover is not available.")),
+                let r = session
+                    .request(
+                        "query_pending_orders",
+                        vec![
+                            json!(account_id),
+                            json!(symbol),
+                            json!(signature),
+                            json!(nonce),
+                        ],
+                    )
+                    .await?;
+                let v = r
+                    .as_array()
+                    .ok_or(rpc_error!(req => "The prover didn't reply correctly."))?;
+                let mut orders = Vec::new();
+                for order in v {
+                    let order = order
+                        .as_str()
+                        .ok_or(rpc_error!(req => "The prover didn't reply correctly."))?
+                        .to_string();
+                    orders.push(order.to_string());
                 }
+                Ok(orders)
             }
             .boxed()
         })
-        .await?;
-        Ok(vec![])
+        .await
     }
 
     async fn query_account(
@@ -383,24 +387,31 @@ where
         account_id: String,
         signature: String,
         nonce: String,
-    ) -> RpcResult<Bytes> {
+    ) -> RpcResult<Vec<String>> {
         self.try_use_async_session(prover, |session| {
             async move {
-                match session {
-                    Some(s) => {
-                        s.request(
-                            "query_account",
-                            Some(vec![json!(account_id), json!(signature), json!(nonce)]),
-                        )
-                        .await
-                    }
-                    None => Err(rpc_error!(req => "The prover is not available.")),
+                let r = session
+                    .request(
+                        "query_account",
+                        vec![json!(account_id), json!(signature), json!(nonce)],
+                    )
+                    .await?;
+                let v = r
+                    .as_array()
+                    .ok_or(rpc_error!(req => "The prover didn't reply correctly."))?;
+                let mut balances = Vec::new();
+                for balance in v {
+                    let balance = balance
+                        .as_str()
+                        .ok_or(rpc_error!(req => "The prover didn't reply correctly."))?
+                        .to_string();
+                    balances.push(balance.to_string());
                 }
+                Ok(balances)
             }
             .boxed()
         })
-        .await?;
-        Ok(sp_core::Bytes(vec![]))
+        .await
     }
 
     async fn register_trading_key(
@@ -409,38 +420,39 @@ where
         account_id: String,
         x25519: String,
         sr25519: String,
-    ) -> RpcResult<Bytes> {
+    ) -> RpcResult<String> {
         self.try_use_async_session(prover, |session| {
-            async move {
-                match session {
-                    Some(s) => {
-                        s.request(
+            {
+                async move {
+                    let r = session
+                        .request(
                             "register_trading_key",
-                            Some(vec![json!(account_id), json!(x25519), json!(sr25519)]),
+                            vec![json!(account_id), json!(x25519), json!(sr25519)],
                         )
-                        .await
-                    }
-                    None => Err(rpc_error!(req => "The prover is not available.")),
+                        .await?;
+                    r.as_str()
+                        .ok_or(rpc_error!(req => "The prover didn't reply correctly."))
+                        .map(|s| s.to_string())
                 }
             }
             .boxed()
         })
-        .await?;
-        Ok(sp_core::Bytes(vec![]))
+        .await
     }
 
-    async fn get_nonce(&self, prover: AccountId, account_id: String) -> RpcResult<u32> {
+    async fn get_nonce(&self, prover: AccountId, account_id: String) -> RpcResult<String> {
         self.try_use_async_session(prover, |session| {
             async move {
-                match session {
-                    Some(s) => s.request("get_nonce", Some(vec![json!(account_id)])).await,
-                    None => Err(rpc_error!(req => "The prover is not available.")),
-                }
+                let r = session
+                    .request("get_nonce", vec![json!(account_id)])
+                    .await?;
+                r.as_str()
+                    .ok_or(rpc_error!(req => "The prover didn't reply correctly."))
+                    .map(|s| s.to_string())
             }
             .boxed()
         })
-        .await?;
-        Ok(0)
+        .await
     }
 
     fn subscribe_trading(
@@ -451,21 +463,14 @@ where
         signature: String,
         nonce: String,
     ) -> SubscriptionResult {
-        self.try_use_sync_session(prover.clone(), |s| match s {
-            Some(session) => {
-                session.subscribe_until_fail_n_times(
-                    sink,
-                    "sub_trading".to_string(),
-                    Some(vec![json!(account_id), json!(signature), json!(nonce)]),
-                    "unsub_trading".to_string(),
-                    10,
-                );
-                Ok(())
-            }
-            None => {
-                sink.close(error_msg!("Illegal prover address"));
-                Err(rpc_error!(sub => "Illegal prover address").into())
-            }
+        self.try_use_sync_session(prover.clone(), |session| {
+            session.subscribe_until_fail_n_times(
+                sink,
+                "sub_trading".to_string(),
+                vec![json!(account_id), json!(signature), json!(nonce)],
+                "unsub_trading".to_string(),
+                10,
+            )
         })
     }
 }

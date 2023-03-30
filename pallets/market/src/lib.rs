@@ -105,6 +105,7 @@ pub mod pallet {
     #[pallet::generate_deposit(pub (super) fn deposit_event)]
     pub enum Event<T: Config> {
         BrokerRegistered(T::AccountId, T::AccountId),
+        BrokerDeregistered(T::AccountId),
         MarketRegistered(T::AccountId, TokenId<T>, TokenId<T>, u8, u8, Balance<T>),
         MarketOpened(T::AccountId, TokenId<T>, TokenId<T>, u8, u8, Balance<T>),
         MarketClosed(T::AccountId, TokenId<T>, TokenId<T>),
@@ -149,7 +150,7 @@ pub mod pallet {
             Brokers::<T>::try_mutate(&broker, |b| -> DispatchResult {
                 ensure!(b.is_none(), Error::<T>::BrokerAlreadyRegistered);
                 let broker = Broker {
-                    beneficiary,
+                    beneficiary: beneficiary.clone(),
                     staked: requires,
                     register_at: frame_system::Pallet::<T>::block_number(),
                     rpc_endpoint,
@@ -158,6 +159,7 @@ pub mod pallet {
                 b.replace(broker);
                 Ok(())
             })?;
+            Self::deposit_event(Event::BrokerRegistered(broker, beneficiary));
             Ok(().into())
         }
 
