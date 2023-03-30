@@ -130,6 +130,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     }
     .assimilate_storage(&mut t)
     .unwrap();
+    let ferdie = AccountKeyring::Ferdie.into();
+    pallet_balances::GenesisConfig::<Test> {
+        balances: vec![(ferdie, 1000000000000000000000000)],
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
 
     sp_io::TestExternalities::new(t)
 }

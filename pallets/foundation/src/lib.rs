@@ -23,7 +23,8 @@ pub mod tests;
 pub mod pallet {
     use frame_support::{
         pallet_prelude::*,
-        traits::{Currency, Get, ReservableCurrency},
+        traits::{Currency, ExistenceRequirement, Get, ReservableCurrency},
+        transactional,
         weights::Weight,
     };
     use frame_system::pallet_prelude::*;
@@ -117,7 +118,10 @@ pub mod pallet {
     }
 
     #[pallet::error]
-    pub enum Error<T> {}
+    pub enum Error<T> {
+        AlreadyExists,
+        EpochNotReached,
+    }
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T>
@@ -140,7 +144,40 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::call]
-    impl<T: Config> Pallet<T> {}
+    impl<T: Config> Pallet<T>
+    where
+        T::BlockNumber: Into<u32>,
+    {
+        #[transactional]
+        #[pallet::weight(8_790_000_000)]
+        pub fn put_into_vault(
+            origin: OriginFor<T>,
+            beneficiary: T::AccountId,
+            fund: FoundationData<BalanceOf<T>>,
+        ) -> DispatchResultWithPostInfo {
+            let seller = ensure_signed(origin)?;
+            ensure!(
+                !Foundation::<T>::contains_key(&beneficiary),
+                Error::<T>::AlreadyExists
+            );
+            let current_epoch: u32 =
+                frame_system::Pallet::<T>::block_number().into() / T::Duration::get().into();
+            ensure!(
+                current_epoch < fund.delay_durations,
+                Error::<T>::EpochNotReached
+            );
+            let total_amount = fund.amount * fund.times.into() + fund.first_amount;
+            <pallet_balances::Pallet<T> as Currency<_>>::transfer(
+                &seller,
+                &beneficiary,
+                total_amount,
+                ExistenceRequirement::AllowDeath,
+            )?;
+            pallet_balances::Pallet::<T>::reserve(&beneficiary, total_amount)?;
+            Foundation::<T>::insert(beneficiary, fund);
+            Ok(().into())
+        }
+    }
 
     impl<T: Config> Pallet<T>
     where
