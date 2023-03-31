@@ -722,7 +722,7 @@ impl pallet_chainbridge_handler::Config for Runtime {
 }
 
 parameter_types! {
-    pub const MainOrTestnet: u16 = 1;
+    pub const MainOrTestnet: u16 = 5;
 }
 
 impl pallet_fuso_agent::Config<pallet_fuso_agent::EthInstance> for Runtime {
