@@ -33,7 +33,7 @@ use serde_json::json;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
 use sp_core::{
-    crypto::{AccountId32, CryptoTypePublicPair, KeyTypeId},
+    crypto::{AccountId32, CryptoTypePublicPair, KeyTypeId, Ss58Codec},
     Bytes,
 };
 use sp_keystore::CryptoStore;
@@ -280,6 +280,15 @@ pub(crate) async fn sign_using_keystore(
     ))
 }
 
+async fn get_broker_public(keystore: Arc<dyn CryptoStore>) -> anyhow::Result<Sr25519Public> {
+    CryptoStore::sr25519_public_keys(&*keystore, RELAYER_KEY_TYPE)
+        .await
+        .iter()
+        .last()
+        .map(|v| *v)
+        .ok_or(anyhow::anyhow!("no broker key found"))
+}
+
 pub(crate) fn get_prover_rpc<B, S, BS>(store: Arc<BS>, prover: &AccountId) -> Option<String>
 where
     B: BlockT,
@@ -328,10 +337,23 @@ where
         signature: String,
         nonce: String,
     ) -> RpcResult<String> {
+        let keystore = self.keystore.clone();
         self.try_use_async_session(prover.clone(), |session| {
             async move {
+                let key = get_broker_public(keystore)
+                    .await
+                    .inspect_err(|e| log::error!("{:?}", e))
+                    .map_err(|_| rpc_error!(req => "The broker key is not registered."))?;
                 let r = session
-                    .request("trade", vec![json!(cmd), json!(signature), json!(nonce)])
+                    .request(
+                        "trade",
+                        vec![
+                            json!(cmd),
+                            json!(signature),
+                            json!(nonce),
+                            json!(key.to_ss58check()),
+                        ],
+                    )
                     .await?;
                 r.as_str()
                     .ok_or(rpc_error!(req => "The prover didn't reply correctly."))
