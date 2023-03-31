@@ -806,6 +806,12 @@ impl pallet_fuso_market::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+impl pallet_fuso_mapobridge::Config for Runtime {
+    type AssetIdByName = Token;
+    type Fungibles = Token;
+    type RuntimeEvent = RuntimeEvent;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -843,7 +849,8 @@ construct_runtime!(
         Agent: pallet_fuso_agent::<EthInstance>,
         Indicator: pallet_fuso_indicator,
         Verifier: pallet_fuso_verifier,
-        Market: pallet_fuso_market
+        Market: pallet_fuso_market,
+        Mapo: pallet_fuso_mapobridge,
     }
 );
 

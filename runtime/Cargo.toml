@@ -88,6 +88,7 @@ pallet-fuso-reward = { path = "../pallets/reward", default-features = false }
 pallet-fuso-agent = { path = "../pallets/agent", default-features = false }
 pallet-fuso-indicator = { path = "../pallets/indicator", default-features = false }
 pallet-fuso-market = { path = "../pallets/market", default-features = false }
+pallet-fuso-mapobridge = {path = "../pallets/mapobridge", default-features = false}
 pallet-chainbridge = { path = "../pallets/chainbridge", default-features = false }
 pallet-chainbridge-handler = { path = "../pallets/chainbridge-handler", default-features = false }
 
@@ -166,6 +167,7 @@ std = [
 	'pallet-fuso-indicator/std',
 	'pallet-fuso-agent/std',
 	'fuso-runtime-api/std',
+	'pallet-fuso-mapobridge/std',
 
 	"pallet-octopus-bridge-benchmarking?/std",
 	"pallet-octopus-appchain-benchmarking?/std",

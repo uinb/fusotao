@@ -21,4 +21,5 @@ members = [
     'pallets/market',
     'pallets/chainbridge',
     'pallets/chainbridge-handler',
+	'pallets/mapobridge'
 ]
