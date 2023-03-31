@@ -1,3 +1,7 @@
+# v0.9.30-testnet.sidecar.1
+
+- add broker rpcs
+
 # v0.9.30-mainnet.155
 
 - add investor vault transaction
