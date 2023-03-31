@@ -126,7 +126,7 @@ pub trait FusoBrokerApi {
         &self,
         prover: AccountId,
         account_id: String,
-        orders: String,
+        symbol: String,
         signature: String,
         nonce: String,
     ) -> RpcResult<Vec<String>>;
