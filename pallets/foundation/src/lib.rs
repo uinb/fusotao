@@ -23,7 +23,7 @@ pub mod tests;
 pub mod pallet {
     use frame_support::{
         pallet_prelude::*,
-        traits::{Currency, ExistenceRequirement, Get, ReservableCurrency},
+        traits::{BalanceStatus, Currency, ExistenceRequirement, Get, ReservableCurrency},
         transactional,
         weights::Weight,
     };
@@ -121,6 +121,7 @@ pub mod pallet {
     pub enum Error<T> {
         AlreadyExists,
         EpochNotReached,
+        InvalidApprover,
     }
 
     #[pallet::hooks]
@@ -138,6 +139,18 @@ pub mod pallet {
     pub type Foundation<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, FoundationData<BalanceOf<T>>, OptionQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn approvals)]
+    pub type Approvals<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        T::AccountId,
+        Identity,
+        u32,
+        T::AccountId,
+        OptionQuery,
+    >;
+
     #[pallet::pallet]
     #[pallet::without_storage_info]
     #[pallet::generate_store(pub (super) trait Store)]
@@ -154,6 +167,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             beneficiary: T::AccountId,
             fund: FoundationData<BalanceOf<T>>,
+            need_to_approve: bool,
         ) -> DispatchResultWithPostInfo {
             let seller = ensure_signed(origin)?;
             ensure!(
@@ -174,7 +188,38 @@ pub mod pallet {
                 ExistenceRequirement::AllowDeath,
             )?;
             pallet_balances::Pallet::<T>::reserve(&beneficiary, total_amount)?;
+            if need_to_approve {
+                for i in 0..fund.times {
+                    Approvals::<T>::insert(
+                        &beneficiary,
+                        fund.delay_durations + i * fund.interval_durations,
+                        &seller,
+                    );
+                }
+            }
             Foundation::<T>::insert(beneficiary, fund);
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(8_790_000_000)]
+        pub fn approve(
+            origin: OriginFor<T>,
+            beneficiary: T::AccountId,
+            epoch: u32,
+        ) -> DispatchResultWithPostInfo {
+            let approver = ensure_signed(origin)?;
+            Approvals::<T>::try_mutate_exists(
+                &beneficiary,
+                epoch,
+                |maybe_approver| -> DispatchResult {
+                    if let Some(a) = maybe_approver {
+                        ensure!(a == &approver, Error::<T>::InvalidApprover);
+                        *maybe_approver = None;
+                    }
+                    Ok(())
+                },
+            )?;
             Ok(().into())
         }
     }
@@ -203,11 +248,20 @@ pub mod pallet {
                     && (now.saturating_sub(balance.delay_durations) % balance.interval_durations
                         == 0u32)
                 {
-                    <pallet_balances::Pallet<T>>::unreserve(&account, balance.amount);
-                    Self::deposit_event(Event::PreLockedFundUnlocked(
-                        account.clone(),
-                        balance.amount,
-                    ));
+                    if let Some(approver) = Approvals::<T>::take(&account, now) {
+                        let _ = <pallet_balances::Pallet<T>>::repatriate_reserved(
+                            &account,
+                            &approver,
+                            balance.amount,
+                            BalanceStatus::Free,
+                        );
+                    } else {
+                        <pallet_balances::Pallet<T>>::unreserve(&account, balance.amount);
+                        Self::deposit_event(Event::PreLockedFundUnlocked(
+                            account.clone(),
+                            balance.amount,
+                        ));
+                    }
                     balance.times = balance.times - 1;
                     if balance.times == 0 {
                         Foundation::<T>::remove(account);
@@ -220,11 +274,20 @@ pub mod pallet {
                         == 0u32)
                 {
                     //initial unlock
-                    <pallet_balances::Pallet<T>>::unreserve(&account, balance.first_amount);
-                    Self::deposit_event(Event::PreLockedFundUnlocked(
-                        account.clone(),
-                        balance.first_amount,
-                    ));
+                    if let Some(approver) = Approvals::<T>::take(&account, now) {
+                        let _ = <pallet_balances::Pallet<T>>::repatriate_reserved(
+                            &account,
+                            &approver,
+                            balance.first_amount,
+                            BalanceStatus::Free,
+                        );
+                    } else {
+                        <pallet_balances::Pallet<T>>::unreserve(&account, balance.first_amount);
+                        Self::deposit_event(Event::PreLockedFundUnlocked(
+                            account.clone(),
+                            balance.first_amount,
+                        ));
+                    }
                     weight = weight.saturating_add(T::DbWeight::get().writes(1u64));
                 }
             }

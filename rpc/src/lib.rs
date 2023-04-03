@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![feature(result_option_inspect)]
 #![feature(result_flattening)]
 pub mod broker;
 pub mod token;
@@ -43,7 +44,7 @@ macro_rules! error_msg {
     ($msg:expr) => {
         jsonrpsee::types::error::ErrorObject::owned(
             jsonrpsee::types::error::ErrorCode::InternalError.code(),
-            stringify!($msg),
+            $msg,
             None::<String>,
         )
     };

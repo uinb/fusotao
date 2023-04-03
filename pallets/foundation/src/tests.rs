@@ -63,6 +63,7 @@ fn test_foundation() {
                 amount: 83333_333333333_333333333,
                 first_amount: 83333_333333333_333333333,
             },
+            true,
         )
         .is_ok());
         assert_eq!(0, Balances::free_balance(&bob));
@@ -70,14 +71,29 @@ fn test_foundation() {
         run_to_block(21);
         assert_eq!(0, Balances::free_balance(&bob));
         assert_eq!(499999_999999999_999999998, Balances::reserved_balance(&bob));
+        assert!(Foundation::approve(RuntimeOrigin::signed(ferdie.clone()), bob.clone(), 3).is_ok());
+        assert!(Foundation::approvals(&bob, 3).is_none());
         run_to_block(30);
         assert_eq!(83333_333333333_333333333, Balances::free_balance(&bob));
         assert_eq!(416666_666666666_666666665, Balances::reserved_balance(&bob));
+        assert!(Foundation::approve(RuntimeOrigin::signed(ferdie.clone()), bob.clone(), 4).is_ok());
+        assert!(Foundation::approvals(&bob, 4).is_none());
         run_to_block(40);
         assert_eq!(166666_666666666_666666666, Balances::free_balance(&bob));
         assert_eq!(333333_333333333_333333332, Balances::reserved_balance(&bob));
+        assert!(Foundation::approvals(&bob, 5).is_some());
         run_to_block(50);
+        // the bob's free balance shouldn't change
+        assert_eq!(166666_666666666_666666666, Balances::free_balance(&bob));
+        // the bob's reserved balance should be decreased
+        assert_eq!(249999_999999999_999999999, Balances::reserved_balance(&bob));
+        // the ferdie's free balance should be increased by 83333_333333333_333333333
+        assert_eq!(249999_999999999_999999999, Balances::reserved_balance(&bob));
+        assert_eq!(583333_333333333_333333335, Balances::free_balance(&ferdie));
+        assert!(Foundation::approvals(&bob, 5).is_none());
         run_to_block(60);
+        assert!(Foundation::approvals(&bob, 6).is_none());
+        assert!(Foundation::approvals(&bob, 7).is_some());
         let alice_foundation_data = Foundation::foundation(&alice);
         assert!(alice_foundation_data.is_some());
         let alice_foundation = Foundation::foundation(&alice);

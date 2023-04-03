@@ -24,6 +24,11 @@ futures-channel = "0.3.26"
 dashmap = "5.4.0"
 hex-literal = "0.3.4"
 tracing = "0.1.34"
+hyper = "0.14.25"
+hex = "0.4"
+log = "0.4"
+anyhow = "1"
+async-recursion = "1.0.4"
 sp-api = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
 sp-rpc = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
