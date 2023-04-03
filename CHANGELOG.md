@@ -1,3 +1,8 @@
+# v0.9.30-testnet.157
+
+- add broker rpcs
+- approval on vault unlocking
+
 # v0.9.30-mainnet.157
 
 - add broker rpcs
