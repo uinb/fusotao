@@ -17,7 +17,7 @@ mod backend;
 use crate::{error_msg, rpc_error};
 use async_trait::async_trait;
 use backend::BackendSession;
-use codec::{Compact, Decode, Encode};
+use codec::{Decode, Encode};
 use dashmap::DashMap;
 use futures::future::{BoxFuture, FutureExt};
 use jsonrpsee::{
@@ -27,8 +27,6 @@ use jsonrpsee::{
     ws_server::SubscriptionSink,
 };
 use sc_client_api::{Backend, StorageProvider};
-use scale_info::TypeInfo;
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
@@ -56,59 +54,6 @@ pub struct DominatorSetting {
     pub rpc_endpoint: Vec<u8>,
 }
 
-#[derive(Eq, PartialEq, Clone, TypeInfo, Encode, Decode, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum TradingCommand {
-    Ask {
-        order_id: String,
-        account_id: AccountId,
-        base: u32,
-        quote: u32,
-        amount: Compact<u128>,
-        price: Compact<u128>,
-    },
-    Bid {
-        order_id: String,
-        account_id: AccountId,
-        base: u32,
-        quote: u32,
-        amount: Compact<u128>,
-        price: Compact<u128>,
-    },
-    Cancel {
-        order_id: String,
-        account_id: AccountId,
-    },
-}
-
-#[derive(Eq, PartialEq, Clone, Encode, Decode, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OrderEvent {
-    order_id: String,
-    account_id: AccountId,
-    base: u32,
-    quote: u32,
-    state: u8,
-    filled: Compact<u128>,
-    price: Compact<u128>,
-    update_at: u64,
-}
-
-#[derive(Eq, PartialEq, Clone, Encode, Decode, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OrderState {
-    order_id: String,
-    direction: u8,
-    base: u32,
-    quote: u32,
-    state: u8,
-    unfilled: Compact<u128>,
-    total: Compact<u128>,
-    price: Compact<u128>,
-    filled_quote: Compact<u128>,
-    update_at: u64,
-}
-
 /// relayer + runtime_api
 #[rpc(client, server)]
 pub trait FusoBrokerApi {
@@ -116,6 +61,7 @@ pub trait FusoBrokerApi {
     async fn trade(
         &self,
         prover: AccountId,
+        account_id: String,
         cmd: String,
         signature: String,
         nonce: String,
@@ -223,7 +169,7 @@ where
             f(session)
         } else {
             self.backend_sessions.remove(&prover);
-            Err(rpc_error!(sub => "session not initialized").into())
+            Err(rpc_error!(sub => "prover not available").into())
         }
     }
 
@@ -251,7 +197,7 @@ where
             f(session).await
         } else {
             self.backend_sessions.remove(&prover);
-            Err(rpc_error!(req => "session not initialized").into())
+            Err(rpc_error!(req => "prover not available").into())
         }
     }
 }
@@ -333,6 +279,7 @@ where
     async fn trade(
         &self,
         prover: AccountId,
+        account_id: String,
         cmd: String,
         signature: String,
         nonce: String,
@@ -348,6 +295,7 @@ where
                     .request(
                         "trade",
                         vec![
+                            json!(account_id),
                             json!(cmd),
                             json!(signature),
                             json!(nonce),
