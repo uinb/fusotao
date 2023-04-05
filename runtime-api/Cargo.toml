@@ -10,8 +10,8 @@ description = "Fusotao runtime api"
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false }
-sp-api = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
-sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"  }
+sp-api = { default-features = false, git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30"  }
+sp-runtime = { default-features = false, git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30"  }
 
 [features]
 default = ["std"]

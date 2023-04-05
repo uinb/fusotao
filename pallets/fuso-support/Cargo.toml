@@ -21,7 +21,7 @@ features = ['derive']
 
 [dependencies.sp-core]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/uinb/substrate.git"
 branch = "polkadot-v0.9.30"
 
 [dependencies.bit-vec]
@@ -34,27 +34,27 @@ default-features = false
 
 [dependencies.sp-io]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/uinb/substrate.git"
 branch = "polkadot-v0.9.30"
 
 [dependencies.sp-runtime]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/uinb/substrate.git"
 branch = "polkadot-v0.9.30"
 
 [dependencies.frame-system]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/uinb/substrate.git"
 branch = "polkadot-v0.9.30"
 
 [dependencies.frame-support]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/uinb/substrate.git"
 branch = "polkadot-v0.9.30"
 
 [dependencies.sp-std]
 default-features = false
-git = "https://github.com/paritytech/substrate.git"
+git = "https://github.com/uinb/substrate.git"
 branch = "polkadot-v0.9.30"
 
 [dependencies.scale-info]

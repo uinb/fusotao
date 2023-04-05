@@ -15,21 +15,21 @@ codec = { package = "parity-scale-codec", version = "3.0.0", default-features = 
 scale-info = { version = "2.0.1", default-features = false, features = ["derive"] }
 hex = { version = "0.4", default-features = false, features = ["alloc"] }
 log = { version = "0.4.14", default-features = false }
-frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
-frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
-sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
-sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
-sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
-sp-arithmetic = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
-sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+frame-support = { git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+frame-system = { git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+sp-io = { git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+sp-runtime = { git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+sp-std = { git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+sp-arithmetic = { git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+sp-core = { git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
 pallet-chainbridge = { path = "../chainbridge", default-features = false }
 fuso-support = { path = "../fuso-support", default-features = false }
 pallet-fuso-verifier = { path = "../verifier", default-features = false }
 
 [dev-dependencies]
-sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
-sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
-pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+sp-keyring = { git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-core = { git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-balances = { git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
 pallet-fuso-indicator = { path = "../indicator", default-features = false }
 pallet-fuso-token = { path = "../token" }
 hex-literal = { version = "0.3.4" }
