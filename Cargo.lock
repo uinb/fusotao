@@ -5267,10 +5267,12 @@ dependencies = [
 name = "pallet-fuso-foundation"
 version = "4.0.2"
 dependencies = [
+ "beefy-primitives",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "fuso-support",
+ "hex",
  "pallet-balances",
  "parity-scale-codec",
  "scale-info",

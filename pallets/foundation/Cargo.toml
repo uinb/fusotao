@@ -28,7 +28,8 @@ fuso-support = { path = "../fuso-support", default-features = false }
 [dev-dependencies]
 sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
-
+beefy-primitives = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+hex = "0.4.3"
 [features]
 default = ['std']
 std = [
