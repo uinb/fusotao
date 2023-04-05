@@ -23,3 +23,29 @@ members = [
     'pallets/chainbridge-handler',
 	'pallets/mapobridge'
 ]
+[patch.'https://github.com/paritytech/substrate.git']
+sp-api = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-io = { version = "6.0.0", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-session = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-runtime = { version = "6.0.0", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-runtime-interface = { version = "6.0.0", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-staking = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+frame-benchmarking = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-authorship = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-std = { version = "4.0.0", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-core = { version = "6.0.0", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-inherents = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-externalities = { version = "0.12.0", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-tracing = { version = "5.0.0", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-version = { version = "5.0.0", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-uniques = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-transaction-payment = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-session = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-assets = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-authorship = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+
+frame-support = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+frame-system = { version = "4.0.0-dev", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-application-crypto = { version = "6.0.0", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
+sp-storage = { version = "6.0.0", git = "https://github.com/uinb/substrate.git", branch = "polkadot-v0.9.30" }
