@@ -154,6 +154,7 @@ impl pallet_fuso_indicator::Config for Test {
 
 impl pallet_fuso_verifier::Config for Test {
     type Asset = TokenModule;
+    type BrokerBeneficiary = ();
     type Callback = RuntimeCall;
     type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
     type DominatorOnlineThreshold = DominatorOnlineThreshold;

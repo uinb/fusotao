@@ -194,6 +194,7 @@ parameter_types! {
 
 impl pallet_fuso_verifier::Config for Test {
     type Asset = Assets;
+    type BrokerBeneficiary = ();
     type Callback = RuntimeCall;
     type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
     type DominatorOnlineThreshold = DominatorOnlineThreshold;

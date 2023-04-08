@@ -782,6 +782,7 @@ const_assert!(DAYS % 20 == 0);
 
 impl pallet_fuso_verifier::Config for Runtime {
     type Asset = Token;
+    type BrokerBeneficiary = Market;
     type Callback = RuntimeCall;
     type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
     type DominatorOnlineThreshold = DominatorOnlineThreshold;
