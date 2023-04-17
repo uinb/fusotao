@@ -153,11 +153,15 @@ where
             return None;
         }
         let rpc = rpc.expect("qed;");
-        WsClientBuilder::default()
-            .set_headers(headers)
-            .build(rpc)
-            .await
-            .ok()
+        tokio::select! {
+            conn = WsClientBuilder::default().set_headers(headers).build(rpc) => {
+                conn.inspect_err(|e| log::error!("Failed to connect to prover: {:?}.", e)).ok()
+            }
+            _ = tokio::time::sleep(std::time::Duration::from_secs(5)) => {
+                log::error!("Timeout to connect prover.");
+                None
+            }
+        }
     }
 
     #[async_recursion::async_recursion]
