@@ -421,7 +421,13 @@ pub mod pallet {
         fn create(mut token_info: XToken<BalanceOf<T>>) -> Result<Self::TokenId, DispatchError> {
             let id = Self::next_token_id();
             match token_info {
-                XToken::NEP141(ref symbol, ref contract, ref mut total, _, decimals) => {
+                XToken::NEP141(
+                    ref symbol,
+                    ref contract,
+                    ref mut total,
+                    ref mut stable,
+                    decimals,
+                ) => {
                     ensure!(decimals <= MAX_DECIMALS, Error::<T>::InvalidDecimals);
                     let name = AsciiStr::from_ascii(&symbol);
                     ensure!(name.is_ok(), Error::<T>::InvalidTokenName);
@@ -439,10 +445,23 @@ pub mod pallet {
                         Error::<T>::ContractError
                     );
                     *total = Zero::zero();
+                    *stable = false;
                     TokenByName::<T>::insert(contract.clone(), id);
                 }
-                XToken::ERC20(ref symbol, ref contract, ref mut total, _, decimals)
-                | XToken::BEP20(ref symbol, ref contract, ref mut total, _, decimals) => {
+                XToken::ERC20(
+                    ref symbol,
+                    ref contract,
+                    ref mut total,
+                    ref mut stable,
+                    decimals,
+                )
+                | XToken::BEP20(
+                    ref symbol,
+                    ref contract,
+                    ref mut total,
+                    ref mut stable,
+                    decimals,
+                ) => {
                     ensure!(decimals <= MAX_DECIMALS, Error::<T>::InvalidDecimals);
                     let name = AsciiStr::from_ascii(&symbol);
                     ensure!(name.is_ok(), Error::<T>::InvalidTokenName);
@@ -453,6 +472,7 @@ pub mod pallet {
                     );
                     ensure!(contract.len() == 20, Error::<T>::ContractError);
                     *total = Zero::zero();
+                    *stable = false;
                 }
                 XToken::FND10(ref symbol, ref mut total) => {
                     let name = AsciiStr::from_ascii(&symbol);
