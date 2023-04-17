@@ -639,6 +639,7 @@ fn transfer_out_charge_stable_non_native() {
             true,
             18,
         );
+
         let resource_id = derive_resource_id(
             dest_chain,
             0,
@@ -659,6 +660,7 @@ fn transfer_out_charge_stable_non_native() {
             resource
         ));
         assert_ok!(Assets::issue(RuntimeOrigin::signed(TREASURY), denom));
+        assert_ok!(Assets::mark_stable(RawOrigin::Root.into(), 1));
         let amount: Balance = 5 * DOLLARS;
         assert_ok!(Assets::do_mint(1, &ferdie, amount, None));
         assert_ok!(Bridge::whitelist_chain(

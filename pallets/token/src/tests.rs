@@ -27,6 +27,7 @@ fn issuing_token_and_transfer_should_work() {
     );
     new_test_ext().execute_with(|| {
         assert_ok!(Token::issue(RuntimeOrigin::signed(TREASURY), usdt,));
+        assert_ok!(Token::mark_stable(RawOrigin::Root.into(), 1));
         let id = 1u32;
         assert_eq!(
             Token::get_token_info(&id),
@@ -205,7 +206,13 @@ fn test_xtoken_should_work() {
         let token_info: XToken<u128> = Token::get_token_info(1).unwrap();
         assert_eq!(
             token_info,
-            XToken::NEP141(br#"USDT"#.to_vec(), br#"usdt.testnet"#.to_vec(), 0, true, 6)
+            XToken::NEP141(
+                br#"USDT"#.to_vec(),
+                br#"usdt.testnet"#.to_vec(),
+                0,
+                false,
+                6
+            )
         );
         assert_noop!(
             Token::do_mint(3, &alice, 100000000000, Option::None),
@@ -228,7 +235,7 @@ fn test_xtoken_should_work() {
                 br#"USDT"#.to_vec(),
                 br#"usdt.testnet"#.to_vec(),
                 ONE * 1000,
-                true,
+                false,
                 6,
             )
         );
@@ -249,7 +256,7 @@ fn test_xtoken_should_work() {
                 br#"USDT"#.to_vec(),
                 br#"usdt.testnet"#.to_vec(),
                 ONE * 2000,
-                true,
+                false,
                 6
             )
         );
@@ -274,7 +281,7 @@ fn test_xtoken_should_work() {
                 br#"USDT"#.to_vec(),
                 br#"usdt.testnet"#.to_vec(),
                 ONE * 1000,
-                true,
+                false,
                 6
             )
         );
