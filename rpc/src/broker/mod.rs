@@ -12,20 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod backend;
+// mod backend;
+mod relay;
 
 use crate::{error_msg, rpc_error};
 use async_trait::async_trait;
-use backend::BackendSession;
 use codec::{Decode, Encode};
 use dashmap::DashMap;
 use futures::future::{BoxFuture, FutureExt};
 use jsonrpsee::{
-    core::{client::SubscriptionClientT, RpcResult},
-    proc_macros::rpc,
-    types::error::SubscriptionResult,
+    core::RpcResult, proc_macros::rpc, types::error::SubscriptionResult,
     ws_server::SubscriptionSink,
 };
+use relay::BackendSession;
 use sc_client_api::{Backend, StorageProvider};
 use serde_json::json;
 use sp_api::ProvideRuntimeApi;
@@ -148,7 +147,7 @@ where
 
     fn try_use_sync_session<T, E, F>(&self, prover: AccountId, f: F) -> Result<T, E>
     where
-        F: FnOnce(Arc<backend::BackendSession>) -> Result<T, E>,
+        F: FnOnce(Arc<BackendSession>) -> Result<T, E>,
         E: From<jsonrpsee::types::error::SubscriptionEmptyError>,
     {
         let session = match self.backend_sessions.get(&prover) {
@@ -162,20 +161,14 @@ where
                 ));
                 self.backend_sessions.insert(prover.clone(), new.clone());
                 new
-                // TODO re-register from asscoc, otherwise `drop` all the subscriptions
             }
         };
-        if session.is_initialized() {
-            f(session)
-        } else {
-            self.backend_sessions.remove(&prover);
-            Err(rpc_error!(sub => "prover not available").into())
-        }
+        f(session)
     }
 
     async fn try_use_async_session<T, E, F>(&self, prover: AccountId, f: F) -> Result<T, E>
     where
-        F: FnOnce(Arc<backend::BackendSession>) -> BoxFuture<'static, Result<T, E>>,
+        F: FnOnce(Arc<BackendSession>) -> BoxFuture<'static, Result<T, E>>,
         T: Send + 'static,
         E: From<jsonrpsee::core::Error>,
     {
@@ -190,15 +183,9 @@ where
                 ));
                 self.backend_sessions.insert(prover.clone(), new.clone());
                 new
-                // TODO re-register from asscoc, otherwise `drop` all the subscriptions
             }
         };
-        if session.is_initialized() {
-            f(session).await
-        } else {
-            self.backend_sessions.remove(&prover);
-            Err(rpc_error!(req => "prover not available").into())
-        }
+        f(session).await
     }
 }
 
@@ -292,15 +279,9 @@ where
                     .inspect_err(|e| log::error!("{:?}", e))
                     .map_err(|_| rpc_error!(req => "The broker key is not registered."))?;
                 let r = session
-                    .request(
+                    .relay(
                         "trade",
-                        vec![
-                            json!(account_id),
-                            json!(cmd),
-                            json!(signature),
-                            json!(nonce),
-                            json!(key.to_ss58check()),
-                        ],
+                        json!([account_id, cmd, signature, nonce, key.to_ss58check()]),
                     )
                     .await?;
                 r.as_str()
@@ -323,14 +304,9 @@ where
         self.try_use_async_session(prover, |session| {
             async move {
                 let r = session
-                    .request(
+                    .relay(
                         "query_pending_orders",
-                        vec![
-                            json!(account_id),
-                            json!(symbol),
-                            json!(signature),
-                            json!(nonce),
-                        ],
+                        json!([account_id, symbol, signature, nonce]),
                     )
                     .await?;
                 let v = r
@@ -361,10 +337,7 @@ where
         self.try_use_async_session(prover, |session| {
             async move {
                 let r = session
-                    .request(
-                        "query_account",
-                        vec![json!(account_id), json!(signature), json!(nonce)],
-                    )
+                    .relay("query_account", json!([account_id, signature, nonce]))
                     .await?;
                 let v = r
                     .as_array()
@@ -395,10 +368,7 @@ where
             {
                 async move {
                     let r = session
-                        .request(
-                            "register_trading_key",
-                            vec![json!(account_id), json!(x25519), json!(sr25519)],
-                        )
+                        .relay("register_trading_key", json!([account_id, x25519, sr25519]))
                         .await?;
                     r.as_str()
                         .ok_or(rpc_error!(req => "The prover didn't reply correctly."))
@@ -413,9 +383,7 @@ where
     async fn get_nonce(&self, prover: AccountId, account_id: String) -> RpcResult<String> {
         self.try_use_async_session(prover, |session| {
             async move {
-                let r = session
-                    .request("get_nonce", vec![json!(account_id)])
-                    .await?;
+                let r = session.relay("get_nonce", json!([account_id])).await?;
                 r.as_str()
                     .ok_or(rpc_error!(req => "The prover didn't reply correctly."))
                     .map(|s| s.to_string())
@@ -434,13 +402,14 @@ where
         nonce: String,
     ) -> SubscriptionResult {
         self.try_use_sync_session(prover.clone(), |session| {
-            session.subscribe_until_fail_n_times(
-                sink,
-                "sub_trading".to_string(),
-                vec![json!(account_id), json!(signature), json!(nonce)],
-                "unsub_trading".to_string(),
-                10,
-            )
+            Ok(())
+            // session.subscribe_until_fail_n_times(
+            //     sink,
+            //     "sub_trading".to_string(),
+            //     vec![json!(account_id), json!(signature), json!(nonce)],
+            //     "unsub_trading".to_string(),
+            //     10,
+            // )
         })
     }
 }
