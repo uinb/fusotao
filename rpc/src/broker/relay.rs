@@ -218,7 +218,7 @@ impl BackendSession {
                                                     // request with id
                                                     (Some(id), None) => {
                                                         if let Some((_, tx)) = reqs.remove(&id) {
-                                                            let _ = tx.send(rsp["result"].clone());
+                                                            let _ = tx.send(rsp["result"].clone()).await;
                                                         }
                                                     },
                                                     // subscribe on multiplex
