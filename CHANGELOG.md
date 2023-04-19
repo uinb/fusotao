@@ -1,3 +1,7 @@
+# v0.9.30-devnode.158
+
+- applying multiplex on subscription
+
 # v0.9.30-mainnet.158
 
 - fix bug about issue token
