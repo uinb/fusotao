@@ -48,16 +48,19 @@ macro_rules! error_msg {
             None::<String>,
         )
     };
+    ($code:expr, $msg:expr) => {
+        jsonrpsee::types::error::ErrorObject::owned($code, $msg, None::<String>)
+    };
 }
 
 #[macro_export]
 macro_rules! rpc_error {
-    (req=>$msg:expr) => {
+    ($msg:expr) => {
         jsonrpsee::core::Error::Call(jsonrpsee::types::error::CallError::Custom(error_msg!($msg)))
     };
-    (sub=>$msg:expr) => {
-        jsonrpsee::types::error::SubscriptionEmptyError::from(
-            jsonrpsee::types::error::CallError::Custom(error_msg!($msg)),
-        )
+    ($code:expr, $msg:expr) => {
+        jsonrpsee::core::Error::Call(jsonrpsee::types::error::CallError::Custom(error_msg!(
+            $code, $msg
+        )))
     };
 }

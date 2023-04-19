@@ -60,7 +60,7 @@ impl BackendSession {
         let subs = Arc::new(DashMap::new());
         let id = Arc::new(AtomicU64::new(1));
         Self::start_inner(
-            executor.clone(),
+            executor,
             prover,
             storage,
             keystore,
@@ -105,7 +105,46 @@ impl BackendSession {
         }
     }
 
-    pub async fn multiplex(&self) -> anyhow::Result<()> {
+    pub async fn multiplex(
+        &self,
+        user: String,
+        signature: String,
+        nonce: String,
+        relayer: String,
+        sink: SubscriptionSink,
+    ) -> anyhow::Result<()> {
+        let id = self.id.fetch_add(1, Ordering::Relaxed);
+        let key = super::try_into_ss58(user.clone())?;
+        let (tx, mut rx) = mpsc::channel(1);
+        self.reqs.insert(id, tx);
+        let payload = json!({
+            "jsonrpc": "2.0",
+            "id": id,
+            "method": "append_user",
+            "params": [user, signature, nonce, relayer],
+        });
+        tokio::select! {
+            _ = self.to_back.send(payload) => {
+                tokio::select! {
+                    rsp = rx.recv() => {
+                        log::debug!("received response of sub request: {:?}", rsp);
+                        if let Some(rsp) = rsp {
+                            if rsp["error"].is_null() {
+                                self.subs.insert(key, sink);
+                            } else {
+                                sink.close(rpc_error!(-32101, "illegal signature"));
+                            }
+                        }
+                    }
+                    _ = tokio::time::sleep(std::time::Duration::from_secs(5)) => {
+                        sink.close(rpc_error!("prover timeout"));
+                    }
+                }
+            }
+            _ = tokio::time::sleep(std::time::Duration::from_secs(2)) => {
+                sink.close(rpc_error!("prover timeout"));
+            }
+        }
         Ok(())
     }
 
@@ -176,28 +215,26 @@ impl BackendSession {
                                                     }
                                                 };
                                                 match (rsp["id"].as_u64(), rsp["params"]["subscription"].as_str()) {
+                                                    // request with id
                                                     (Some(id), None) => {
                                                         if let Some((_, tx)) = reqs.remove(&id) {
                                                             let _ = tx.send(rsp["result"].clone());
                                                         }
                                                     },
+                                                    // subscribe on multiplex
                                                     (None, Some(_)) => {
                                                         let r = rsp["params"]["result"].take();
-                                                        match r["user"].as_str() {
+                                                        match r["user_id"].as_str() {
                                                             Some(user) => {
                                                                 // TODO `send` is not async, so we can't use `await` here
                                                                 subs.remove_if_mut(user, |_, sink| {
                                                                     !sink.send(&r).unwrap_or(true)
                                                                 });
                                                             }
-                                                            None => {
-                                                                // handle this in the future
-                                                            }
+                                                            None => {}
                                                         }
                                                     },
-                                                    _ => {
-                                                        log::error!("invalid response: {:?}", rsp);
-                                                    }
+                                                    _ => log::error!("invalid response: {:?}", rsp),
                                                 }
                                             }
                                             Message::Ping(h) => {
@@ -246,7 +283,7 @@ impl BackendSession {
             .await
             .map_err(|_| anyhow::anyhow!("broker key not configured correctly"))?;
         let rpc = super::get_prover_rpc(storage.clone(), prover)
-            .ok_or(anyhow::anyhow!("Prover rpc endpoint {} not found.", prover))?;
+            .ok_or(anyhow::anyhow!("prover rpc endpoint {} not found.", prover))?;
         let request = Request::builder()
             .uri(rpc)
             .method("GET")
@@ -262,19 +299,12 @@ impl BackendSession {
                 let payload = json!({
                     "jsonrpc": "2.0",
                     "id": id.fetch_add(1, Ordering::Relaxed),
-                    "method": "init_subscribe",
-                    "params": json!([]),
+                    "method": "sub_trading",
+                    "params": json!([super::get_broker_public(keystore.clone()).to_ss58check()]),
                 });
                 ready.send(Message::Text(payload.to_string())).await?;
-                for r in subs.iter() {
-                    let payload = json!({
-                        "jsonrpc": "2.0",
-                        "id": id.fetch_add(1, Ordering::Relaxed),
-                        "method": "append_user",
-                        "params": json!([r.key().clone()]),
-                    });
-                    ready.send(Message::Text(payload.to_string())).await?;
-                }
+                // TODO we want to auto-resub for all users but we don't have the signatures
+                subs.clear();
                 Ok(ready)
             }
             _ = tokio::time::sleep(std::time::Duration::from_secs(5)) => {

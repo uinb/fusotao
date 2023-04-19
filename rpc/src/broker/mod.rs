@@ -145,10 +145,9 @@ where
         }
     }
 
-    fn try_use_sync_session<T, E, F>(&self, prover: AccountId, f: F) -> Result<T, E>
+    fn try_use_sync_session<F>(&self, prover: AccountId, f: F)
     where
-        F: FnOnce(Arc<BackendSession>) -> Result<T, E>,
-        E: From<jsonrpsee::types::error::SubscriptionEmptyError>,
+        F: FnOnce(Arc<BackendSession>),
     {
         let session = match self.backend_sessions.get(&prover) {
             Some(v) => v.value().clone(),
@@ -277,7 +276,7 @@ where
                 let key = get_broker_public(keystore)
                     .await
                     .inspect_err(|e| log::error!("{:?}", e))
-                    .map_err(|_| rpc_error!(req => "The broker key is not registered."))?;
+                    .map_err(|_| rpc_error!(-32102, "The broker key is not registered."))?;
                 let r = session
                     .relay(
                         "trade",
@@ -285,7 +284,7 @@ where
                     )
                     .await?;
                 r.as_str()
-                    .ok_or(rpc_error!(req => "The prover didn't reply correctly."))
+                    .ok_or(rpc_error!("The prover didn't reply correctly."))
                     .map(|s| s.to_owned())
             }
             .boxed()
@@ -311,12 +310,12 @@ where
                     .await?;
                 let v = r
                     .as_array()
-                    .ok_or(rpc_error!(req => "The prover didn't reply correctly."))?;
+                    .ok_or(rpc_error!("The prover didn't reply correctly."))?;
                 let mut orders = Vec::new();
                 for order in v {
                     let order = order
                         .as_str()
-                        .ok_or(rpc_error!(req => "The prover didn't reply correctly."))?
+                        .ok_or(rpc_error!("The prover didn't reply correctly."))?
                         .to_string();
                     orders.push(order.to_string());
                 }
@@ -341,12 +340,12 @@ where
                     .await?;
                 let v = r
                     .as_array()
-                    .ok_or(rpc_error!(req => "The prover didn't reply correctly."))?;
+                    .ok_or(rpc_error!("The prover didn't reply correctly."))?;
                 let mut balances = Vec::new();
                 for balance in v {
                     let balance = balance
                         .as_str()
-                        .ok_or(rpc_error!(req => "The prover didn't reply correctly."))?
+                        .ok_or(rpc_error!("The prover didn't reply correctly."))?
                         .to_string();
                     balances.push(balance.to_string());
                 }
@@ -371,7 +370,7 @@ where
                         .relay("register_trading_key", json!([account_id, x25519, sr25519]))
                         .await?;
                     r.as_str()
-                        .ok_or(rpc_error!(req => "The prover didn't reply correctly."))
+                        .ok_or(rpc_error!("The prover didn't reply correctly."))
                         .map(|s| s.to_string())
                 }
             }
@@ -385,7 +384,7 @@ where
             async move {
                 let r = session.relay("get_nonce", json!([account_id])).await?;
                 r.as_str()
-                    .ok_or(rpc_error!(req => "The prover didn't reply correctly."))
+                    .ok_or(rpc_error!("The prover didn't reply correctly."))
                     .map(|s| s.to_string())
             }
             .boxed()
@@ -402,14 +401,62 @@ where
         nonce: String,
     ) -> SubscriptionResult {
         self.try_use_sync_session(prover.clone(), |session| {
-            Ok(())
-            // session.subscribe_until_fail_n_times(
-            //     sink,
-            //     "sub_trading".to_string(),
-            //     vec![json!(account_id), json!(signature), json!(nonce)],
-            //     "unsub_trading".to_string(),
-            //     10,
-            // )
-        })
+            let keystore = self.keystore.clone();
+            self.executor.spawn(
+                "broker-prover-connector",
+                Some("fusotao-rpc"),
+                async move {
+                    if let Ok(relayer) = get_broker_public(keystore)
+                        .await
+                        .inspect_err(|e| log::error!("{:?}", e))
+                    {
+                        let _ = session.multiplex(
+                            account_id,
+                            signature,
+                            nonce,
+                            relayer.to_ss58check(),
+                            sink,
+                        );
+                    }
+                }
+                .boxed(),
+            );
+        });
+        Ok(())
     }
+}
+
+#[cfg(feature = "testenv")]
+const LEGACY_MAPPING_CODE: u16 = 5;
+#[cfg(not(feature = "testenv"))]
+const LEGACY_MAPPING_CODE: u16 = 1;
+
+pub fn try_into_ss58(addr: String) -> anyhow::Result<String> {
+    if addr.starts_with("0x") {
+        let addr = hexstr_to_vec(&addr)?;
+        match addr.len() {
+            32 => {
+                let addr = AccountId32::decode(&mut &addr[..])
+                    .map_err(|_| anyhow::anyhow!("Invalid address"))?;
+                Ok(addr.to_ss58check())
+            }
+            20 => {
+                let addr = to_mapping_address(addr);
+                Ok(addr.to_ss58check())
+            }
+            _ => Err(anyhow::anyhow!("Invalid address")),
+        }
+    } else {
+        Ok(addr)
+    }
+}
+
+pub fn to_mapping_address(address: Vec<u8>) -> AccountId32 {
+    let h = (b"-*-#fusotao#-*-", LEGACY_MAPPING_CODE, address)
+        .using_encoded(sp_core::hashing::blake2_256);
+    Decode::decode(&mut h.as_ref()).expect("32 bytes; qed")
+}
+
+pub fn hexstr_to_vec(h: impl AsRef<str>) -> anyhow::Result<Vec<u8>> {
+    hex::decode(h.as_ref().trim_start_matches("0x")).map_err(|_| anyhow::anyhow!("invalid hex str"))
 }
