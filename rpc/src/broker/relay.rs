@@ -15,7 +15,7 @@
 use super::*;
 use dashmap::DashMap;
 use futures::{stream::StreamExt, SinkExt};
-use http::Request;
+use http::{Request, Uri};
 use jsonrpsee::core::server::rpc_module::SubscriptionSink;
 use sc_client_api::{Backend, StorageProvider};
 use serde_json::{json, Value};
@@ -284,12 +284,24 @@ impl BackendSession {
             .map_err(|_| anyhow::anyhow!("broker key not configured correctly"))?;
         let rpc = super::get_prover_rpc(storage.clone(), prover)
             .ok_or(anyhow::anyhow!("prover rpc endpoint {} not found.", prover))?;
+        let uri = rpc
+            .parse::<Uri>()
+            .map_err(|_| anyhow::anyhow!("invalid rpc uri"))?;
+        let host = uri
+            .host()
+            .map(|h| h.to_string())
+            .ok_or(anyhow::anyhow!("invalid rpc uri"))?;
         let request = Request::builder()
-            .uri(rpc)
+            .uri(uri)
             .method("GET")
             .header("X-Broker-Account", account.to_ss58check())
             .header("X-Broker-Nonce", format!("{}", block_number))
             .header("X-Broker-Signature", format!("0x{}", hex::encode(sig)))
+            .header("Host", host)
+            .header("Connection", "Upgrade")
+            .header("Upgrade", "websocket")
+            .header("Sec-WebSocket-Version", "13")
+            .header("Sec-WebSocket-Key", generate_key())
             .body(())
             .map_err(|_| anyhow::anyhow!("invalid request"))?;
         tokio::select! {
@@ -312,4 +324,11 @@ impl BackendSession {
             }
         }
     }
+}
+
+fn generate_key() -> String {
+    // a base64-encoded (see Section 4 of [RFC4648]) value that,
+    // when decoded, is 16 bytes in length (RFC 6455)
+    let r: [u8; 16] = rand::random();
+    base64::encode(&r)
 }

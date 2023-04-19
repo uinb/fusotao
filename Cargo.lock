@@ -2450,6 +2450,7 @@ dependencies = [
  "anyhow",
  "async-recursion",
  "async-trait",
+ "base64 0.13.1",
  "dashmap",
  "fuso-runtime-api",
  "futures 0.3.26",
