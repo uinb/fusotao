@@ -300,7 +300,7 @@ impl BackendSession {
                     "jsonrpc": "2.0",
                     "id": id.fetch_add(1, Ordering::Relaxed),
                     "method": "sub_trading",
-                    "params": json!([super::get_broker_public(keystore.clone()).to_ss58check()]),
+                    "params": json!([super::get_broker_public(keystore.clone()).await?.to_ss58check()]),
                 });
                 ready.send(Message::Text(payload.to_string())).await?;
                 // TODO we want to auto-resub for all users but we don't have the signatures

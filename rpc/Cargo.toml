@@ -8,6 +8,10 @@ homepage = "https://www.fusotao.org"
 repository = "https://github.com/uinb/fusotao"
 description = "Fusotao RPC service"
 
+[features]
+default = []
+testenv = []
+
 [dependencies]
 codec = { package = "parity-scale-codec", version = "3.0.0" }
 jsonrpc-core = "18.0.0"
