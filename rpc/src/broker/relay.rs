@@ -16,7 +16,7 @@ use super::*;
 use dashmap::DashMap;
 use futures::{stream::StreamExt, SinkExt};
 use http::{Request, Uri};
-use jsonrpsee::core::server::rpc_module::SubscriptionSink;
+use jsonrpsee::core::{error::Error as RpcError, server::rpc_module::SubscriptionSink};
 use sc_client_api::{Backend, StorageProvider};
 use serde_json::{json, Value};
 use sp_application_crypto::Ss58Codec;
@@ -36,7 +36,7 @@ type WsConnection = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
 #[derive(Clone)]
 pub struct BackendSession {
-    reqs: Arc<DashMap<u64, Sender<Value>>>,
+    reqs: Arc<DashMap<u64, Sender<Result<Value, RpcError>>>>,
     subs: Arc<DashMap<String, SubscriptionSink>>,
     to_back: Sender<Value>,
     id: Arc<AtomicU64>,
@@ -77,7 +77,7 @@ impl BackendSession {
         }
     }
 
-    pub async fn relay(&self, method: &str, params: Value) -> anyhow::Result<Value> {
+    pub async fn relay(&self, method: &str, params: Value) -> Result<Value, RpcError> {
         let id = self.id.fetch_add(1, Ordering::Relaxed);
         let (tx, mut rx) = mpsc::channel(1);
         self.reqs.insert(id, tx);
@@ -91,16 +91,16 @@ impl BackendSession {
             _ = self.to_back.send(payload) => {
                 tokio::select! {
                     rsp = rx.recv() => {
-                        rsp.ok_or(anyhow::anyhow!("internal error"))
+                        rsp.ok_or(rpc_error!("internal error"))?
                     }
                     _ = tokio::time::sleep(std::time::Duration::from_secs(2)) => {
-                        Err(anyhow::anyhow!("request timeout"))
+                        Err(rpc_error!("request timeout"))
                     }
                 }
             }
             _ = tokio::time::sleep(std::time::Duration::from_secs(2)) => {
                 self.reqs.remove(&id);
-                Err(anyhow::anyhow!("request timeout"))
+                Err(rpc_error!("request timeout"))
             }
         }
     }
@@ -128,11 +128,15 @@ impl BackendSession {
                 tokio::select! {
                     rsp = rx.recv() => {
                         log::debug!("received response of sub request: {:?}", rsp);
-                        if let Some(rsp) = rsp {
-                            if rsp["error"].is_null() {
+                        match rsp {
+                            Some(Ok(_)) => {
                                 self.subs.insert(key, sink);
-                            } else {
-                                sink.close(rpc_error!(-32101, "illegal signature"));
+                            }
+                            Some(Err(e)) => {
+                                sink.close(e);
+                            }
+                            None => {
+                                sink.close(rpc_error!("internal error"));
                             }
                         }
                     }
@@ -153,7 +157,7 @@ impl BackendSession {
         prover: AccountId,
         storage: Arc<BS>,
         keystore: Arc<dyn CryptoStore>,
-        reqs: Arc<DashMap<u64, Sender<Value>>>,
+        reqs: Arc<DashMap<u64, Sender<Result<Value, RpcError>>>>,
         subs: Arc<DashMap<String, SubscriptionSink>>,
         rx: Receiver<Value>,
         id: Arc<AtomicU64>,
@@ -218,7 +222,15 @@ impl BackendSession {
                                                     // request with id
                                                     (Some(id), None) => {
                                                         if let Some((_, tx)) = reqs.remove(&id) {
-                                                            let _ = tx.send(rsp["result"].clone()).await;
+                                                            let r = if rsp["error"].is_null() {
+                                                                Ok(rsp["result"].take())
+                                                            } else {
+                                                                Err(rpc_error!(
+                                                                    rsp["error"]["code"].as_i64().unwrap_or(-32099) as i32,
+                                                                    rsp["error"]["message"].as_str().unwrap_or("the prover didn't reply").to_string()
+                                                                ))
+                                                            };
+                                                            let _ = tx.send(r).await;
                                                         }
                                                     },
                                                     // subscribe on multiplex
