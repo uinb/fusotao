@@ -26,6 +26,7 @@ use jsonrpsee::{
 };
 use relay::BackendSession;
 use sc_client_api::{Backend, StorageProvider};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
@@ -43,7 +44,7 @@ use std::sync::Arc;
 type TaskExecutor = Arc<dyn sp_core::traits::SpawnNamed>;
 type Sr25519Public = sp_core::sr25519::Public;
 type AccountId = AccountId32;
-
+type Symbol = (u32, u32);
 pub const RELAYER_KEY_TYPE: KeyTypeId = KeyTypeId(*b"rely");
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq)]
@@ -461,4 +462,20 @@ pub fn to_mapping_address(address: Vec<u8>) -> AccountId32 {
 
 pub fn hexstr_to_vec(h: impl AsRef<str>) -> anyhow::Result<Vec<u8>> {
     hex::decode(h.as_ref().trim_start_matches("0x")).map_err(|_| anyhow::anyhow!("invalid hex str"))
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Encode, Decode)]
+pub struct Order {
+    order_id: u64,
+    user_id: String,
+    symbol: Symbol,
+    direction: u8,
+    create_timestamp: u64,
+    amount: String,
+    price: String,
+    status: u16,
+    matched_quote_amount: String,
+    matched_base_amount: String,
+    base_fee: String,
+    quote_fee: String,
 }
