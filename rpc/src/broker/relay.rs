@@ -111,7 +111,7 @@ impl BackendSession {
         signature: String,
         nonce: String,
         relayer: String,
-        sink: SubscriptionSink,
+        mut sink: SubscriptionSink,
     ) -> anyhow::Result<()> {
         let id = self.id.fetch_add(1, Ordering::Relaxed);
         let key = super::try_into_ss58(user.clone())?;
@@ -130,23 +130,24 @@ impl BackendSession {
                         log::debug!("received response of sub request: {:?}", rsp);
                         match rsp {
                             Some(Ok(_)) => {
+                                sink.accept().map_err(|_| anyhow::anyhow!("accept error"))?;
                                 self.subs.insert(key, sink);
                             }
                             Some(Err(e)) => {
-                                sink.close(e);
+                                sink.reject(e).map_err(|_| anyhow::anyhow!("reject error"))?;
                             }
                             None => {
-                                sink.close(rpc_error!("internal error"));
+                                sink.reject(rpc_error!("internal error")).map_err(|_| anyhow::anyhow!("reject error"))?;
                             }
                         }
                     }
                     _ = tokio::time::sleep(std::time::Duration::from_secs(5)) => {
-                        sink.close(rpc_error!("prover timeout"));
+                        sink.reject(rpc_error!("prover timeout")).map_err(|_| anyhow::anyhow!("reject error"))?;
                     }
                 }
             }
             _ = tokio::time::sleep(std::time::Duration::from_secs(2)) => {
-                sink.close(rpc_error!("prover timeout"));
+                sink.reject(rpc_error!("prover timeout")).map_err(|_| anyhow::anyhow!("reject error"))?;
             }
         }
         Ok(())
