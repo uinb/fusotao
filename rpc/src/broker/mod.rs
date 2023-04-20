@@ -145,21 +145,25 @@ where
         }
     }
 
-    fn try_use_sync_session<F>(&self, prover: AccountId, f: F)
+    fn try_use_sync_session<F>(&self, prover: AccountId, f: F) -> SubscriptionResult
     where
-        F: FnOnce(Arc<BackendSession>),
+        F: FnOnce(Arc<BackendSession>) -> SubscriptionResult,
     {
         let session = match self.backend_sessions.get(&prover) {
             Some(v) => v.value().clone(),
             None => {
-                let new = Arc::new(BackendSession::init(
-                    self.executor.clone(),
-                    prover.clone(),
-                    self.client.clone(),
-                    self.keystore.clone(),
-                ));
-                self.backend_sessions.insert(prover.clone(), new.clone());
-                new
+                if get_prover_rpc(self.client.clone(), &prover).is_none() {
+                    return Err(error_msg!(-32102, "prover not found").into());
+                } else {
+                    let new = Arc::new(BackendSession::init(
+                        self.executor.clone(),
+                        prover.clone(),
+                        self.client.clone(),
+                        self.keystore.clone(),
+                    ));
+                    self.backend_sessions.insert(prover.clone(), new.clone());
+                    new
+                }
             }
         };
         f(session)
@@ -174,6 +178,8 @@ where
         let session = match self.backend_sessions.get(&prover) {
             Some(v) => v.value().clone(),
             None => {
+                let _rpc = get_prover_rpc(self.client.clone(), &prover)
+                    .ok_or(rpc_error!(-32102, "prover not found."))?;
                 let new = Arc::new(BackendSession::init(
                     self.executor.clone(),
                     prover.clone(),
@@ -410,19 +416,15 @@ where
                         .await
                         .inspect_err(|e| log::error!("{:?}", e))
                     {
-                        let _ = session.multiplex(
-                            account_id,
-                            signature,
-                            nonce,
-                            relayer.to_ss58check(),
-                            sink,
-                        );
+                        let _ = session
+                            .multiplex(account_id, signature, nonce, relayer.to_ss58check(), sink)
+                            .await;
                     }
                 }
                 .boxed(),
             );
-        });
-        Ok(())
+            Ok(())
+        })
     }
 }
 
