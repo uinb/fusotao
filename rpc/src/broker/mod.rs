@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// mod backend;
 mod relay;
 
 use crate::{error_msg, rpc_error};
@@ -467,7 +466,6 @@ pub fn hexstr_to_vec(h: impl AsRef<str>) -> anyhow::Result<Vec<u8>> {
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Encode, Decode)]
 pub struct Order {
     order_id: u64,
-    user_id: String,
     symbol: Symbol,
     direction: u8,
     create_timestamp: u64,

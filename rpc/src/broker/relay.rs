@@ -22,7 +22,7 @@ use serde_json::{json, Value};
 use sp_application_crypto::Ss58Codec;
 use sp_blockchain::HeaderBackend;
 use sp_keystore::CryptoStore;
-use sp_runtime::traits::{Block, TrailingZeroInput};
+use sp_runtime::traits::Block;
 use std::sync::{
     atomic::{AtomicU64, Ordering},
     Arc,
@@ -219,6 +219,7 @@ impl BackendSession {
                                                         continue;
                                                     }
                                                 };
+                                                // TODO handle the id in the future if we want to support marketing data on node
                                                 match (rsp["id"].as_u64(), rsp["params"]["subscription"].as_u64()) {
                                                     // request with id
                                                     (Some(id), None) => {
@@ -236,20 +237,14 @@ impl BackendSession {
                                                     },
                                                     // subscribe on multiplex
                                                     (None, Some(_)) => {
-                                                        let r = rsp["params"]["result"].as_str();
-														if let Some(r) = r {
-															let b = hex::decode(&r);
-															if let Ok(v) = b {
-																let order: Result<Order,_> = Decode::decode(&mut TrailingZeroInput::new(v.as_ref()));
-																if let Ok(order) = order {
-																	let user = order.user_id;
-																	subs.remove_if_mut(&user, |_, sink| {
-																			!sink.send(&r).unwrap_or(true)
-																	});
-																}
-
-															}
-														}
+                                                        match (rsp["params"]["result"]["user_id"].as_str(), rsp["params"]["result"]["order"].as_str()) {
+                                                            (Some(user), Some(order)) => {
+                                                                subs.remove_if_mut(user, |_, sink| {
+                                                                    !sink.send(&order).unwrap_or(true)
+                                                                });
+                                                            }
+                                                            _ => log::error!("invalid response: {:?}", rsp),
+                                                        }
                                                     },
                                                     _ => log::error!("invalid response: {:?}", rsp),
                                                 }
