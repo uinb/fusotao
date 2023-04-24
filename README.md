@@ -3,6 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache2.0-orange.svg)](#LICENSE)
 [![Unlicense](https://img.shields.io/badge/License-Unlicense-purple.svg)](#LICENSE)
 [![GitHub Workflow Status (branch)](https://github.com/uinb/fusotao/actions/workflows/check.yml/badge.svg)](https://github.com/uinb/fusotao/actions?query=branch%3Amaster)
+[![](https://dcbadge.vercel.app/api/server/nvHnm3sXfM?style=flat&theme=clean&compact=true&logoColor=pink)](https://discord.gg/nvHnm3sXfM)
 
 <p align="center">
   <img src="/fusotao.png">
