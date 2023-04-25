@@ -1,3 +1,7 @@
+# v0.9.30-node.158
+
+- release-sidecar
+
 # v0.9.30-mainnet.158
 
 - fix bug about issue token
