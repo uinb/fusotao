@@ -21,5 +21,5 @@
 #![warn(missing_docs)]
 
 fn main() -> sc_cli::Result<()> {
-	fuso_cli::run()
+    fuso_cli::run()
 }

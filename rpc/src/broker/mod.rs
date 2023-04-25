@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod backend;
+mod relay;
 
 use crate::{error_msg, rpc_error};
 use async_trait::async_trait;
-use backend::BackendSession;
 use codec::{Decode, Encode};
 use dashmap::DashMap;
 use futures::future::{BoxFuture, FutureExt};
 use jsonrpsee::{
-    core::{client::SubscriptionClientT, RpcResult},
-    proc_macros::rpc,
-    types::error::SubscriptionResult,
+    core::RpcResult, proc_macros::rpc, types::error::SubscriptionResult,
     ws_server::SubscriptionSink,
 };
+use relay::BackendSession;
 use sc_client_api::{Backend, StorageProvider};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sp_api::ProvideRuntimeApi;
 use sp_blockchain::HeaderBackend;
@@ -44,7 +43,7 @@ use std::sync::Arc;
 type TaskExecutor = Arc<dyn sp_core::traits::SpawnNamed>;
 type Sr25519Public = sp_core::sr25519::Public;
 type AccountId = AccountId32;
-
+type Symbol = (u32, u32);
 pub const RELAYER_KEY_TYPE: KeyTypeId = KeyTypeId(*b"rely");
 
 #[derive(Clone, Encode, Decode, Eq, PartialEq)]
@@ -146,42 +145,41 @@ where
         }
     }
 
-    fn try_use_sync_session<T, E, F>(&self, prover: AccountId, f: F) -> Result<T, E>
+    fn try_use_sync_session<F>(&self, prover: AccountId, f: F) -> SubscriptionResult
     where
-        F: FnOnce(Arc<backend::BackendSession>) -> Result<T, E>,
-        E: From<jsonrpsee::types::error::SubscriptionEmptyError>,
+        F: FnOnce(Arc<BackendSession>) -> SubscriptionResult,
     {
         let session = match self.backend_sessions.get(&prover) {
             Some(v) => v.value().clone(),
             None => {
-                let new = Arc::new(BackendSession::init(
-                    self.executor.clone(),
-                    prover.clone(),
-                    self.client.clone(),
-                    self.keystore.clone(),
-                ));
-                self.backend_sessions.insert(prover.clone(), new.clone());
-                new
-                // TODO re-register from asscoc, otherwise `drop` all the subscriptions
+                if get_prover_rpc(self.client.clone(), &prover).is_none() {
+                    return Err(error_msg!(-32102, "prover not found").into());
+                } else {
+                    let new = Arc::new(BackendSession::init(
+                        self.executor.clone(),
+                        prover.clone(),
+                        self.client.clone(),
+                        self.keystore.clone(),
+                    ));
+                    self.backend_sessions.insert(prover.clone(), new.clone());
+                    new
+                }
             }
         };
-        if session.is_initialized() {
-            f(session)
-        } else {
-            self.backend_sessions.remove(&prover);
-            Err(rpc_error!(sub => "prover not available").into())
-        }
+        f(session)
     }
 
     async fn try_use_async_session<T, E, F>(&self, prover: AccountId, f: F) -> Result<T, E>
     where
-        F: FnOnce(Arc<backend::BackendSession>) -> BoxFuture<'static, Result<T, E>>,
+        F: FnOnce(Arc<BackendSession>) -> BoxFuture<'static, Result<T, E>>,
         T: Send + 'static,
         E: From<jsonrpsee::core::Error>,
     {
         let session = match self.backend_sessions.get(&prover) {
             Some(v) => v.value().clone(),
             None => {
+                let _rpc = get_prover_rpc(self.client.clone(), &prover)
+                    .ok_or(rpc_error!(-32102, "prover not found."))?;
                 let new = Arc::new(BackendSession::init(
                     self.executor.clone(),
                     prover.clone(),
@@ -190,15 +188,9 @@ where
                 ));
                 self.backend_sessions.insert(prover.clone(), new.clone());
                 new
-                // TODO re-register from asscoc, otherwise `drop` all the subscriptions
             }
         };
-        if session.is_initialized() {
-            f(session).await
-        } else {
-            self.backend_sessions.remove(&prover);
-            Err(rpc_error!(req => "prover not available").into())
-        }
+        f(session).await
     }
 }
 
@@ -290,21 +282,15 @@ where
                 let key = get_broker_public(keystore)
                     .await
                     .inspect_err(|e| log::error!("{:?}", e))
-                    .map_err(|_| rpc_error!(req => "The broker key is not registered."))?;
+                    .map_err(|_| rpc_error!(-32102, "The broker key is not registered."))?;
                 let r = session
-                    .request(
+                    .relay(
                         "trade",
-                        vec![
-                            json!(account_id),
-                            json!(cmd),
-                            json!(signature),
-                            json!(nonce),
-                            json!(key.to_ss58check()),
-                        ],
+                        json!([account_id, cmd, signature, nonce, key.to_ss58check()]),
                     )
                     .await?;
                 r.as_str()
-                    .ok_or(rpc_error!(req => "The prover didn't reply correctly."))
+                    .ok_or(rpc_error!("The prover didn't reply correctly."))
                     .map(|s| s.to_owned())
             }
             .boxed()
@@ -323,24 +309,19 @@ where
         self.try_use_async_session(prover, |session| {
             async move {
                 let r = session
-                    .request(
+                    .relay(
                         "query_pending_orders",
-                        vec![
-                            json!(account_id),
-                            json!(symbol),
-                            json!(signature),
-                            json!(nonce),
-                        ],
+                        json!([account_id, symbol, signature, nonce]),
                     )
                     .await?;
                 let v = r
                     .as_array()
-                    .ok_or(rpc_error!(req => "The prover didn't reply correctly."))?;
+                    .ok_or(rpc_error!("The prover didn't reply correctly."))?;
                 let mut orders = Vec::new();
                 for order in v {
                     let order = order
                         .as_str()
-                        .ok_or(rpc_error!(req => "The prover didn't reply correctly."))?
+                        .ok_or(rpc_error!("The prover didn't reply correctly."))?
                         .to_string();
                     orders.push(order.to_string());
                 }
@@ -361,19 +342,16 @@ where
         self.try_use_async_session(prover, |session| {
             async move {
                 let r = session
-                    .request(
-                        "query_account",
-                        vec![json!(account_id), json!(signature), json!(nonce)],
-                    )
+                    .relay("query_account", json!([account_id, signature, nonce]))
                     .await?;
                 let v = r
                     .as_array()
-                    .ok_or(rpc_error!(req => "The prover didn't reply correctly."))?;
+                    .ok_or(rpc_error!("The prover didn't reply correctly."))?;
                 let mut balances = Vec::new();
                 for balance in v {
                     let balance = balance
                         .as_str()
-                        .ok_or(rpc_error!(req => "The prover didn't reply correctly."))?
+                        .ok_or(rpc_error!("The prover didn't reply correctly."))?
                         .to_string();
                     balances.push(balance.to_string());
                 }
@@ -395,13 +373,10 @@ where
             {
                 async move {
                     let r = session
-                        .request(
-                            "register_trading_key",
-                            vec![json!(account_id), json!(x25519), json!(sr25519)],
-                        )
+                        .relay("register_trading_key", json!([account_id, x25519, sr25519]))
                         .await?;
                     r.as_str()
-                        .ok_or(rpc_error!(req => "The prover didn't reply correctly."))
+                        .ok_or(rpc_error!("The prover didn't reply correctly."))
                         .map(|s| s.to_string())
                 }
             }
@@ -413,11 +388,9 @@ where
     async fn get_nonce(&self, prover: AccountId, account_id: String) -> RpcResult<String> {
         self.try_use_async_session(prover, |session| {
             async move {
-                let r = session
-                    .request("get_nonce", vec![json!(account_id)])
-                    .await?;
+                let r = session.relay("get_nonce", json!([account_id])).await?;
                 r.as_str()
-                    .ok_or(rpc_error!(req => "The prover didn't reply correctly."))
+                    .ok_or(rpc_error!("The prover didn't reply correctly."))
                     .map(|s| s.to_string())
             }
             .boxed()
@@ -434,13 +407,73 @@ where
         nonce: String,
     ) -> SubscriptionResult {
         self.try_use_sync_session(prover.clone(), |session| {
-            session.subscribe_until_fail_n_times(
-                sink,
-                "sub_trading".to_string(),
-                vec![json!(account_id), json!(signature), json!(nonce)],
-                "unsub_trading".to_string(),
-                10,
-            )
+            let keystore = self.keystore.clone();
+            self.executor.spawn(
+                "broker-prover-connector",
+                Some("fusotao-rpc"),
+                async move {
+                    if let Ok(relayer) = get_broker_public(keystore)
+                        .await
+                        .inspect_err(|e| log::error!("{:?}", e))
+                    {
+                        let _ = session
+                            .multiplex(account_id, signature, nonce, relayer.to_ss58check(), sink)
+                            .await;
+                    }
+                }
+                .boxed(),
+            );
+            Ok(())
         })
     }
+}
+
+#[cfg(feature = "testenv")]
+const LEGACY_MAPPING_CODE: u16 = 5;
+#[cfg(not(feature = "testenv"))]
+const LEGACY_MAPPING_CODE: u16 = 1;
+
+pub fn try_into_ss58(addr: String) -> anyhow::Result<String> {
+    if addr.starts_with("0x") {
+        let addr = hexstr_to_vec(&addr)?;
+        match addr.len() {
+            32 => {
+                let addr = AccountId32::decode(&mut &addr[..])
+                    .map_err(|_| anyhow::anyhow!("Invalid address"))?;
+                Ok(addr.to_ss58check())
+            }
+            20 => {
+                let addr = to_mapping_address(addr);
+                Ok(addr.to_ss58check())
+            }
+            _ => Err(anyhow::anyhow!("Invalid address")),
+        }
+    } else {
+        Ok(addr)
+    }
+}
+
+pub fn to_mapping_address(address: Vec<u8>) -> AccountId32 {
+    let h = (b"-*-#fusotao#-*-", LEGACY_MAPPING_CODE, address)
+        .using_encoded(sp_core::hashing::blake2_256);
+    Decode::decode(&mut h.as_ref()).expect("32 bytes; qed")
+}
+
+pub fn hexstr_to_vec(h: impl AsRef<str>) -> anyhow::Result<Vec<u8>> {
+    hex::decode(h.as_ref().trim_start_matches("0x")).map_err(|_| anyhow::anyhow!("invalid hex str"))
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Encode, Decode)]
+pub struct Order {
+    order_id: u64,
+    symbol: Symbol,
+    direction: u8,
+    create_timestamp: u64,
+    amount: String,
+    price: String,
+    status: u16,
+    matched_quote_amount: String,
+    matched_base_amount: String,
+    base_fee: String,
+    quote_fee: String,
 }
