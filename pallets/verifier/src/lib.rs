@@ -990,7 +990,9 @@ pub mod pallet {
 
     #[derive(Clone)]
     struct ClearingResult<T: Config> {
-        pub users_mutation: Vec<TokenMutation<T::AccountId, Balance<T>>>,
+        // pub users_mutation: Vec<TokenMutation<T::AccountId, Balance<T>>>,
+        pub makers: Vec<TokenMutation<T::AccountId, Balance<T>>>,
+        pub taker: TokenMutation<T::AccountId, Balance<T>>,
         pub base_fee: Balance<T>,
         pub quote_fee: Balance<T>,
     }
@@ -1254,19 +1256,30 @@ pub mod pallet {
                         dominator_id,
                         &proof.leaves,
                     )?;
-                    if cr.users_mutation.len() > 1 {
-                        for d in cr.users_mutation.iter() {
-                            Self::clear(&d.who, dominator_id, base.into(), d.base_value)?;
-                            Self::clear(&d.who, dominator_id, quote.into(), d.quote_value)?;
-                            T::Rewarding::save_trading(&d.who, d.matched_volume, current_block)?;
-                        }
-                        if let Some(t) = cr.users_mutation.last() {
-                            trade.token_id = base.into();
-                            trade.amount += t.matched_amount;
-                            trade.vol += t.matched_volume;
-                        }
+                    for d in cr.makers.iter() {
+                        Self::clear(&d.who, dominator_id, base.into(), d.base_value)?;
+                        Self::clear(&d.who, dominator_id, quote.into(), d.quote_value)?;
+                        T::Rewarding::save_trading(&d.who, d.matched_volume, current_block)?;
                     }
+                    Self::clear(
+                        &cr.taker.who,
+                        dominator_id,
+                        base.into(),
+                        cr.taker.base_value,
+                    )?;
+                    Self::clear(
+                        &cr.taker.who,
+                        dominator_id,
+                        quote.into(),
+                        cr.taker.quote_value,
+                    )?;
+
+                    trade.token_id = base.into();
+                    trade.amount += cr.taker.matched_amount;
+                    trade.vol += cr.taker.matched_volume;
+
                     Self::put_profit(dominator_id, current_season, quote.into(), cr.quote_fee)?;
+                    // 50% to broker if exists
                     if cr.base_fee != Zero::zero() {
                         let base_fee = if let Some(broker) = broker {
                             let near_half = Permill::from_percent(50).mul_ceil(cr.base_fee);
@@ -1327,19 +1340,29 @@ pub mod pallet {
                         dominator_id,
                         &proof.leaves,
                     )?;
-                    if cr.users_mutation.len() > 1 {
-                        for d in cr.users_mutation.iter() {
-                            Self::clear(&d.who, dominator_id, base.into(), d.base_value)?;
-                            Self::clear(&d.who, dominator_id, quote.into(), d.quote_value)?;
-                            T::Rewarding::save_trading(&d.who, d.matched_volume, current_block)?;
-                            trade.token_id = base.into();
-                        }
-                        if let Some(t) = cr.users_mutation.last() {
-                            trade.token_id = base.into();
-                            trade.amount += t.matched_amount;
-                            trade.vol += t.matched_volume;
-                        }
+                    for d in cr.makers.iter() {
+                        Self::clear(&d.who, dominator_id, base.into(), d.base_value)?;
+                        Self::clear(&d.who, dominator_id, quote.into(), d.quote_value)?;
+                        T::Rewarding::save_trading(&d.who, d.matched_volume, current_block)?;
                     }
+
+                    Self::clear(
+                        &cr.taker.who,
+                        dominator_id,
+                        base.into(),
+                        cr.taker.base_value,
+                    )?;
+                    Self::clear(
+                        &cr.taker.who,
+                        dominator_id,
+                        quote.into(),
+                        cr.taker.quote_value,
+                    )?;
+
+                    trade.token_id = base.into();
+                    trade.amount += cr.taker.matched_amount;
+                    trade.vol += cr.taker.matched_volume;
+
                     Self::put_profit(dominator_id, current_season, quote.into(), cr.quote_fee)?;
                     if cr.base_fee != Zero::zero() {
                         let base_fee = if let Some(broker) = broker {
@@ -1554,7 +1577,7 @@ pub mod pallet {
             ensure!(bid_delta == tb_delta, Error::<T>::ProofsUnsatisfied);
             let mut mb_delta = 0u128;
             let mut mq_delta = 0u128;
-            let mut delta = Vec::new();
+            let mut maker_mutation = Vec::new();
             for i in 0..maker_accounts as usize / 2 {
                 // base first
                 let maker_base = &leaves[i * 2 + 1];
@@ -1591,7 +1614,7 @@ pub mod pallet {
                 mq_delta += quote_decr;
                 // the accounts should be owned by same user
                 ensure!(maker_b_id == maker_q_id, Error::<T>::ProofsUnsatisfied);
-                delta.push(TokenMutation {
+                maker_mutation.push(TokenMutation {
                     who: maker_q_id,
                     matched_volume: quote_decr.into(),
                     matched_amount: base_incr.into(),
@@ -1614,13 +1637,13 @@ pub mod pallet {
                         .ok_or(Error::<T>::Overflow)?,
                 Error::<T>::ProofsUnsatisfied
             );
-            delta.push(TokenMutation {
+            let taker_mutation = TokenMutation {
                 who: taker_b_id,
                 matched_volume: mq_delta.into(),
                 matched_amount: tb_delta.into(),
                 base_value: (tba1 + tbf1).into(),
                 quote_value: (tqa1 + tqf1).into(),
-            });
+            };
             let best_price = &leaves[maker_accounts as usize + 3];
             let (b, q) = best_price.try_get_symbol::<T>()?;
             ensure!(b == base && q == quote, Error::<T>::ProofsUnsatisfied);
@@ -1702,7 +1725,8 @@ pub mod pallet {
                 }
             }
             Ok(ClearingResult {
-                users_mutation: delta,
+                makers: maker_mutation,
+                taker: taker_mutation,
                 base_fee: base_charged.into(),
                 quote_fee: quote_charged.into(),
             })
@@ -1765,7 +1789,7 @@ pub mod pallet {
             ensure!(taker_b_id == taker_q_id, Error::<T>::ProofsUnsatisfied);
             let mut mb_delta = 0u128;
             let mut mq_delta = 0u128;
-            let mut delta = Vec::new();
+            let mut maker_mutation = Vec::new();
             for i in 0..maker_accounts as usize / 2 {
                 // base first
                 let maker_base = &leaves[i * 2 + 1];
@@ -1803,7 +1827,7 @@ pub mod pallet {
                 mq_delta = mq_delta
                     .checked_add(quote_incr)
                     .ok_or(Error::<T>::Overflow)?;
-                delta.push(TokenMutation {
+                maker_mutation.push(TokenMutation {
                     who: maker_b_id,
                     matched_volume: quote_incr.into(),
                     matched_amount: base_decr.into(),
@@ -1836,13 +1860,13 @@ pub mod pallet {
                     Error::<T>::ProofsUnsatisfied
                 );
             }
-            delta.push(TokenMutation {
+            let taker_mutation = TokenMutation {
                 who: taker_b_id,
                 matched_volume: tq_delta.into(),
                 matched_amount: mb_delta.into(),
                 base_value: (tba1.checked_add(tbf1).ok_or(Error::<T>::Overflow)?).into(),
                 quote_value: (tqa1.checked_add(tqf1).ok_or(Error::<T>::Overflow)?).into(),
-            });
+            };
             let best_price = &leaves[maker_accounts as usize + 3];
             let (b, q) = best_price.try_get_symbol::<T>()?;
             ensure!(b == base && q == quote, Error::<T>::ProofsUnsatisfied);
@@ -1922,7 +1946,8 @@ pub mod pallet {
                 }
             }
             Ok(ClearingResult {
-                users_mutation: delta,
+                makers: maker_mutation,
+                taker: taker_mutation,
                 base_fee: base_charged.into(),
                 quote_fee: quote_charged.into(),
             })

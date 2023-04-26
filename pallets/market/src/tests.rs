@@ -25,13 +25,14 @@ pub fn register_broker_should_work() {
             b"test-broker".to_vec(),
         ));
         assert_eq!(Balances::free_balance(&ferdie), 90000 * DOLLARS);
-        assert_eq!(Market::beneficiary(ferdie.clone()), charlie.clone().into());
+        assert_eq!(Market::beneficiary(charlie.clone()), ferdie.clone().into());
         assert_ok!(Market::broker_set_rpc_endpoint(
             RuntimeOrigin::signed(ferdie.clone()),
+            charlie.clone().into(),
             b"192.168.1.1".to_vec(),
         ));
         assert_eq!(
-            crate::Brokers::<Test>::get(ferdie).unwrap().rpc_endpoint,
+            crate::Brokers::<Test>::get(charlie).unwrap().rpc_endpoint,
             b"192.168.1.1"
         );
     });
