@@ -112,7 +112,7 @@ pub mod pallet {
         Volume<T>: Into<u128>,
         Balance<T>: From<u128>,
     {
-        #[pallet::weight(10000000)]
+        #[pallet::weight(1_000_000_000_000_000)]
         pub fn take_reward(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let at = frame_system::Pallet::<T>::block_number();
@@ -245,5 +245,30 @@ pub mod pallet {
             Self::rotate_reward(at, vol, trader)?;
             Ok(())
         }
+
+        /// add liquidity `at` block number with `price`.
+        /// NOTE: if the `maker` has already added liquidity at the same price, then the block number will be updated to `at`.
+        fn add_liquidity(
+            maker: &AccountId,
+            price: Volume,
+            vol: Volume,
+            at: BlockNumber,
+        ) -> DispatchResult {
+        }
+
+        /// when liquidity is took out, the liquidity provider will get the reward.
+        /// the rewards are calculated in the formula below:
+        /// contribution ƒi = vol * min(current - from, era_duration) / 720
+        /// rewards of contribution ∂ = ƒi / ∑ƒi * era_rewards
+        fn confirm_liquidity_rewards(
+            maker: &AccountId,
+            price: Volume,
+            vol: Volume,
+            current: BlockNumber,
+        ) -> DispatchResult {
+        }
+
+        /// remove liquidity
+        fn remove_liquidity(maker: &AccountId, price: Volume, vol: Volume) -> DispatchResult {}
     }
 }

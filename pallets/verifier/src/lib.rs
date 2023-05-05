@@ -15,11 +15,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 pub use pallet::*;
+mod proof;
 pub mod weights;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
-
 #[cfg(test)]
 pub mod mock;
 #[cfg(test)]
@@ -990,7 +990,6 @@ pub mod pallet {
 
     #[derive(Clone)]
     struct ClearingResult<T: Config> {
-        // pub users_mutation: Vec<TokenMutation<T::AccountId, Balance<T>>>,
         pub makers: Vec<TokenMutation<T::AccountId, Balance<T>>>,
         pub taker: TokenMutation<T::AccountId, Balance<T>>,
         pub base_fee: Balance<T>,
@@ -1259,7 +1258,11 @@ pub mod pallet {
                     for d in cr.makers.iter() {
                         Self::clear(&d.who, dominator_id, base.into(), d.base_value)?;
                         Self::clear(&d.who, dominator_id, quote.into(), d.quote_value)?;
-                        T::Rewarding::save_trading(&d.who, d.matched_volume, current_block)?;
+                        T::Rewarding::confirm_liquidity_rewards(
+                            &d.who,
+                            amount: Volume,
+                            current_block,
+                        );
                     }
                     Self::clear(
                         &cr.taker.who,
@@ -1273,6 +1276,8 @@ pub mod pallet {
                         quote.into(),
                         cr.taker.quote_value,
                     )?;
+                    // TODO
+                    T::Rewarding::add_liquidity(&cr.taker.who, amount: Volume, current_block);
 
                     trade.token_id = base.into();
                     trade.amount += cr.taker.matched_amount;

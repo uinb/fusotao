@@ -200,7 +200,31 @@ pub trait Rewarding<AccountId, Volume: Copy, BlockNumber> {
 
     fn acked_reward(who: &AccountId) -> Self::Balance;
 
+    // DEPRECATED
     fn save_trading(trader: &AccountId, amount: Volume, at: BlockNumber) -> DispatchResult;
+
+    /// add liquidity `at` block number with `price`.
+    /// NOTE: if the `maker` has already added liquidity at the same price, then the block number will be updated to `at`.
+    fn add_liquidity(
+        maker: &AccountId,
+        price: Volume,
+        vol: Volume,
+        at: BlockNumber,
+    ) -> DispatchResult;
+
+    /// when liquidity is took out, the liquidity provider will get the reward.
+    /// the rewards are calculated in the formula below:
+    /// contribution ƒi = vol * min(current - from, era_duration) / 720
+    /// rewards of contribution ∂ = ƒi / ∑ƒi * era_rewards
+    fn confirm_liquidity_rewards(
+        maker: &AccountId,
+        price: Volume,
+        vol: Volume,
+        current: BlockNumber,
+    ) -> DispatchResult;
+
+    /// remove liquidity
+    fn remove_liquidity(maker: &AccountId, price: Volume, vol: Volume) -> DispatchResult;
 }
 
 pub trait Agent<AccountId> {
