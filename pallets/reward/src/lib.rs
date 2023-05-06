@@ -29,7 +29,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use fuso_support::traits::{Rewarding, Token};
     use sp_runtime::{
-        traits::{CheckedAdd, Zero},
+        traits::{CheckedAdd, CheckedSub, Zero},
         DispatchError, DispatchResult, Perquintill,
     };
     use sp_std::result::Result;
@@ -71,6 +71,8 @@ pub mod pallet {
         Overflow,
         DivideByZero,
         RewardNotFound,
+        InsufficientLiquidity,
+        LiquidityNotFound,
     }
 
     #[pallet::hooks]
@@ -82,6 +84,24 @@ pub mod pallet {
         pub pending_vol: Volume,
         pub last_modify: Era,
     }
+
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo, Default)]
+    pub struct LiquidityProvider<Volume, BlockNumber> {
+        pub amount: Volume,
+        pub start_from: BlockNumber,
+    }
+
+    #[pallet::storage]
+    #[pallet::getter(fn liquidity_pool)]
+    pub type LiquidityPool<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        T::AccountId,
+        Blake2_128Concat,
+        (u32, u32),
+        LiquidityProvider<Volume<T>, T::BlockNumber>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn rewards)]
@@ -210,7 +230,7 @@ pub mod pallet {
         }
     }
 
-    impl<T: Config> Rewarding<T::AccountId, Volume<T>, T::BlockNumber> for Pallet<T>
+    impl<T: Config> Rewarding<T::AccountId, Volume<T>, (u32, u32), T::BlockNumber> for Pallet<T>
     where
         Volume<T>: Into<u128>,
         Balance<T>: From<u128>,
@@ -246,29 +266,59 @@ pub mod pallet {
             Ok(())
         }
 
-        /// add liquidity `at` block number with `price`.
-        /// NOTE: if the `maker` has already added liquidity at the same price, then the block number will be updated to `at`.
+        /// add liquidity `amt` into `symbol`, `at` block number.
+        /// NOTE: if the `maker` has already added liquidity at the same `symbol`, then the block number will be updated to `at`.
         fn add_liquidity(
-            maker: &AccountId,
-            price: Volume,
-            vol: Volume,
-            at: BlockNumber,
+            maker: &T::AccountId,
+            symbol: (u32, u32),
+            amt: Volume<T>,
+            at: T::BlockNumber,
         ) -> DispatchResult {
+            if amt.is_zero() {
+                return Ok(());
+            }
+            LiquidityPool::<T>::try_mutate(maker, &symbol, |l| -> DispatchResult {
+                l.amount = l.amount.checked_add(&amt).ok_or(Error::<T>::Overflow)?;
+                l.start_from = at;
+                Ok(())
+            })?;
+            Ok(())
         }
 
         /// when liquidity is took out, the liquidity provider will get the reward.
         /// the rewards are calculated in the formula below:
         /// contribution ƒi = vol * min(current - from, era_duration) / 720
         /// rewards of contribution ∂ = ƒi / ∑ƒi * era_rewards
-        fn confirm_liquidity_rewards(
-            maker: &AccountId,
-            price: Volume,
-            vol: Volume,
-            current: BlockNumber,
+        /// NOTE: `vol` should be volume rather than amount
+        fn consume_liquidity(
+            maker: &T::AccountId,
+            _symbol: (u32, u32),
+            vol: Volume<T>,
+            current: T::BlockNumber,
         ) -> DispatchResult {
+            Self::save_trading(maker, vol, current)
         }
 
         /// remove liquidity
-        fn remove_liquidity(maker: &AccountId, price: Volume, vol: Volume) -> DispatchResult {}
+        fn remove_liquidity(
+            maker: &T::AccountId,
+            symbol: (u32, u32),
+            amt: Volume<T>,
+        ) -> DispatchResult {
+            LiquidityPool::<T>::try_mutate_exists(maker, &symbol, |l| -> DispatchResult {
+                let liquidity = l.take();
+                ensure!(liquidity.is_some(), Error::<T>::LiquidityNotFound);
+                let mut liquidity = liquidity.unwrap();
+                liquidity.amount = liquidity
+                    .amount
+                    .checked_sub(&amt)
+                    .ok_or(Error::<T>::InsufficientLiquidity)?;
+                if liquidity.amount > Zero::zero() {
+                    l.replace(liquidity);
+                }
+                Ok(())
+            })?;
+            Ok(())
+        }
     }
 }

@@ -184,7 +184,7 @@ pub trait NamedReservableToken<AccountId>: Token<AccountId> {
     ) -> sp_std::result::Result<Self::Balance, DispatchError>;
 }
 
-pub trait Rewarding<AccountId, Volume: Copy, BlockNumber> {
+pub trait Rewarding<AccountId, Volume, Symbol, BlockNumber> {
     /// $TAO
     type Balance: Member
         + Parameter
@@ -203,12 +203,12 @@ pub trait Rewarding<AccountId, Volume: Copy, BlockNumber> {
     // DEPRECATED
     fn save_trading(trader: &AccountId, amount: Volume, at: BlockNumber) -> DispatchResult;
 
-    /// add liquidity `at` block number with `price`.
-    /// NOTE: if the `maker` has already added liquidity at the same price, then the block number will be updated to `at`.
+    /// add liquidity `amt` into `symbol`, `at` block number.
+    /// NOTE: if the `maker` has already added liquidity at the same `symbol`, then the block number will be updated to `at`.
     fn add_liquidity(
         maker: &AccountId,
-        price: Volume,
-        vol: Volume,
+        symbol: Symbol,
+        amt: Volume,
         at: BlockNumber,
     ) -> DispatchResult;
 
@@ -216,15 +216,16 @@ pub trait Rewarding<AccountId, Volume: Copy, BlockNumber> {
     /// the rewards are calculated in the formula below:
     /// contribution ƒi = vol * min(current - from, era_duration) / 720
     /// rewards of contribution ∂ = ƒi / ∑ƒi * era_rewards
-    fn confirm_liquidity_rewards(
+    /// NOTE: `vol` should be volume rather than amount
+    fn consume_liquidity(
         maker: &AccountId,
-        price: Volume,
+        symbol: Symbol,
         vol: Volume,
         current: BlockNumber,
     ) -> DispatchResult;
 
     /// remove liquidity
-    fn remove_liquidity(maker: &AccountId, price: Volume, vol: Volume) -> DispatchResult;
+    fn remove_liquidity(maker: &AccountId, symbol: Symbol, amt: Volume) -> DispatchResult;
 }
 
 pub trait Agent<AccountId> {

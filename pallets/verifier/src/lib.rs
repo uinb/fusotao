@@ -15,7 +15,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 pub use pallet::*;
-mod proof;
+//mod proof;
 pub mod weights;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -225,6 +225,7 @@ pub mod pallet {
         Cancel {
             base: Compact<u32>,
             quote: Compact<u32>,
+            remove_liquidity: bool,
         },
         TransferOut {
             currency: Compact<u32>,
@@ -266,7 +267,11 @@ pub mod pallet {
                         broker: None,
                     }
                 }
-                Command::Cancel(base, quote) => CommandV2::Cancel { base, quote },
+                Command::Cancel(base, quote) => CommandV2::Cancel {
+                    base,
+                    quote,
+                    remove_liquidity: false,
+                },
                 Command::TransferOut(currency, amount) => {
                     CommandV2::TransferOut { currency, amount }
                 }
@@ -329,7 +334,7 @@ pub mod pallet {
     pub struct Dominator<Balance, BlockNumber> {
         pub name: Vec<u8>,
         pub staked: Balance,
-        pub merkle_root: [u8; 32],
+        pub merkle_root: MerkleHash,
         pub start_from: BlockNumber,
         pub sequence: (u64, BlockNumber),
         pub status: u8,
@@ -367,7 +372,7 @@ pub mod pallet {
 
         type Asset: ReservableToken<Self::AccountId>;
 
-        type Rewarding: Rewarding<Self::AccountId, Balance<Self>, Self::BlockNumber>;
+        type Rewarding: Rewarding<Self::AccountId, Balance<Self>, (u32, u32), Self::BlockNumber>;
 
         type WeightInfo: WeightInfo;
 
@@ -990,19 +995,29 @@ pub mod pallet {
 
     #[derive(Clone)]
     struct ClearingResult<T: Config> {
-        pub makers: Vec<TokenMutation<T::AccountId, Balance<T>>>,
-        pub taker: TokenMutation<T::AccountId, Balance<T>>,
+        pub makers: Vec<MakerMutation<T::AccountId, Balance<T>>>,
+        pub taker: TakerMutation<T::AccountId, Balance<T>>,
         pub base_fee: Balance<T>,
         pub quote_fee: Balance<T>,
     }
 
     #[derive(Clone)]
-    struct TokenMutation<AccountId, Balance: Copy> {
+    struct TakerMutation<AccountId, Balance> {
         pub who: AccountId,
-        pub matched_volume: Balance,
-        pub matched_amount: Balance,
-        pub base_value: Balance,
-        pub quote_value: Balance,
+        pub unfilled_amount: Balance,
+        pub filled_volume: Balance,
+        pub filled_amount: Balance,
+        pub base_balance: Balance,
+        pub quote_balance: Balance,
+    }
+
+    #[derive(Clone)]
+    struct MakerMutation<AccountId, Balance> {
+        pub who: AccountId,
+        pub filled_amount: Balance,
+        pub filled_volume: Balance,
+        pub base_balance: Balance,
+        pub quote_balance: Balance,
     }
 
     impl<T: Config> Pallet<T>
@@ -1256,32 +1271,37 @@ pub mod pallet {
                         &proof.leaves,
                     )?;
                     for d in cr.makers.iter() {
-                        Self::clear(&d.who, dominator_id, base.into(), d.base_value)?;
-                        Self::clear(&d.who, dominator_id, quote.into(), d.quote_value)?;
-                        T::Rewarding::confirm_liquidity_rewards(
+                        Self::clear(&d.who, dominator_id, base.into(), d.base_balance)?;
+                        Self::clear(&d.who, dominator_id, quote.into(), d.quote_balance)?;
+                        T::Rewarding::consume_liquidity(
                             &d.who,
-                            amount: Volume,
+                            (base, quote),
+                            d.filled_volume,
                             current_block,
-                        );
+                        )?;
                     }
                     Self::clear(
                         &cr.taker.who,
                         dominator_id,
                         base.into(),
-                        cr.taker.base_value,
+                        cr.taker.base_balance,
                     )?;
                     Self::clear(
                         &cr.taker.who,
                         dominator_id,
                         quote.into(),
-                        cr.taker.quote_value,
+                        cr.taker.quote_balance,
                     )?;
-                    // TODO
-                    T::Rewarding::add_liquidity(&cr.taker.who, amount: Volume, current_block);
+                    T::Rewarding::add_liquidity(
+                        &cr.taker.who,
+                        (base, quote),
+                        cr.taker.unfilled_amount,
+                        current_block,
+                    )?;
 
                     trade.token_id = base.into();
-                    trade.amount += cr.taker.matched_amount;
-                    trade.vol += cr.taker.matched_volume;
+                    trade.amount += cr.taker.filled_amount;
+                    trade.vol += cr.taker.filled_volume;
 
                     Self::put_profit(dominator_id, current_season, quote.into(), cr.quote_fee)?;
                     // 50% to broker if exists
@@ -1346,27 +1366,38 @@ pub mod pallet {
                         &proof.leaves,
                     )?;
                     for d in cr.makers.iter() {
-                        Self::clear(&d.who, dominator_id, base.into(), d.base_value)?;
-                        Self::clear(&d.who, dominator_id, quote.into(), d.quote_value)?;
-                        T::Rewarding::save_trading(&d.who, d.matched_volume, current_block)?;
+                        Self::clear(&d.who, dominator_id, base.into(), d.base_balance)?;
+                        Self::clear(&d.who, dominator_id, quote.into(), d.quote_balance)?;
+                        T::Rewarding::consume_liquidity(
+                            &d.who,
+                            (base, quote),
+                            d.filled_volume,
+                            current_block,
+                        )?;
                     }
 
                     Self::clear(
                         &cr.taker.who,
                         dominator_id,
                         base.into(),
-                        cr.taker.base_value,
+                        cr.taker.base_balance,
                     )?;
                     Self::clear(
                         &cr.taker.who,
                         dominator_id,
                         quote.into(),
-                        cr.taker.quote_value,
+                        cr.taker.quote_balance,
+                    )?;
+                    T::Rewarding::add_liquidity(
+                        &cr.taker.who,
+                        (base, quote),
+                        cr.taker.unfilled_amount,
+                        current_block,
                     )?;
 
                     trade.token_id = base.into();
-                    trade.amount += cr.taker.matched_amount;
-                    trade.vol += cr.taker.matched_volume;
+                    trade.amount += cr.taker.filled_amount;
+                    trade.vol += cr.taker.filled_volume;
 
                     Self::put_profit(dominator_id, current_season, quote.into(), cr.quote_fee)?;
                     if cr.base_fee != Zero::zero() {
@@ -1388,9 +1419,20 @@ pub mod pallet {
                         })?;
                     }
                 }
-                CommandV2::Cancel { base, quote } => {
+                CommandV2::Cancel {
+                    base,
+                    quote,
+                    remove_liquidity,
+                } => {
                     let (base, quote): (u32, u32) = (base.into(), quote.into());
-                    Self::verify_cancel(base, quote, &proof.user_id, &proof.leaves)?;
+                    let unfilled = Self::verify_cancel(base, quote, &proof.user_id, &proof.leaves)?;
+                    if remove_liquidity {
+                        T::Rewarding::remove_liquidity(
+                            &proof.user_id,
+                            (base, quote),
+                            unfilled.into(),
+                        )?;
+                    }
                 }
                 CommandV2::TransferOut { currency, amount } => {
                     let (currency, amount) = (currency.into(), amount.into());
@@ -1600,6 +1642,12 @@ pub mod pallet {
                 let mb1 = maker_base.split_new_to_sum();
                 let base_incr = mb1 - mb0;
                 mb_delta += base_incr;
+                // FIXME unit tests
+                let filled_amount = Permill::one()
+                    .checked_sub(&maker_fee)
+                    .ok_or(Error::<T>::Overflow)?
+                    .saturating_reciprocal_mul_ceil(base_incr);
+
                 // then quote account
                 let maker_quote = &leaves[i * 2 + 2];
                 let (qk, maker_q_id) = maker_quote.try_get_account::<T>()?;
@@ -1619,35 +1667,32 @@ pub mod pallet {
                 mq_delta += quote_decr;
                 // the accounts should be owned by same user
                 ensure!(maker_b_id == maker_q_id, Error::<T>::ProofsUnsatisfied);
-                maker_mutation.push(TokenMutation {
+                maker_mutation.push(MakerMutation {
                     who: maker_q_id,
-                    matched_volume: quote_decr.into(),
-                    matched_amount: base_incr.into(),
-                    base_value: mb1.into(),
-                    quote_value: mq1.into(),
+                    // this includes the maker fee
+                    filled_volume: quote_decr.into(),
+                    filled_amount: filled_amount.into(),
+                    base_balance: mb1.into(),
+                    quote_balance: mq1.into(),
                 });
             }
-            // FIXME ceil
             let base_charged = maker_fee.mul_ceil(tb_delta);
             ensure!(
                 mb_delta + base_charged == tb_delta,
                 Error::<T>::ProofsUnsatisfied
             );
-            // FIXME ceil
             let quote_charged = taker_fee.mul_ceil(mq_delta);
             ensure!(
-                mq_delta
-                    == tq_delta
-                        .checked_add(quote_charged)
-                        .ok_or(Error::<T>::Overflow)?,
+                tq_delta + quote_charged == mq_delta,
                 Error::<T>::ProofsUnsatisfied
             );
-            let taker_mutation = TokenMutation {
+            let taker_mutation = TakerMutation {
                 who: taker_b_id,
-                matched_volume: mq_delta.into(),
-                matched_amount: tb_delta.into(),
-                base_value: (tba1 + tbf1).into(),
-                quote_value: (tqa1 + tqf1).into(),
+                unfilled_amount: ask_delta.into(),
+                filled_volume: mq_delta.into(),
+                filled_amount: tb_delta.into(),
+                base_balance: (tba1 + tbf1).into(),
+                quote_balance: (tqa1 + tqf1).into(),
             };
             let best_price = &leaves[maker_accounts as usize + 3];
             let (b, q) = best_price.try_get_symbol::<T>()?;
@@ -1694,7 +1739,7 @@ pub mod pallet {
                         Error::<T>::ProofsUnsatisfied
                     );
                 } else {
-                    // filled or conditional_canceled
+                    // filled or conditionally_canceled
                     let vanity_maker = leaves.last().unwrap();
                     let (b, q, p) = vanity_maker.try_get_orderpage::<T>()?;
                     ensure!(b == base && q == quote, Error::<T>::ProofsUnsatisfied);
@@ -1832,15 +1877,19 @@ pub mod pallet {
                 mq_delta = mq_delta
                     .checked_add(quote_incr)
                     .ok_or(Error::<T>::Overflow)?;
-                maker_mutation.push(TokenMutation {
+                // FIXME unit test
+                let filled_vol = Permill::one()
+                    .checked_sub(&maker_fee)
+                    .ok_or(Error::<T>::Overflow)?
+                    .saturating_reciprocal_mul_ceil(quote_incr);
+                maker_mutation.push(MakerMutation {
                     who: maker_b_id,
-                    matched_volume: quote_incr.into(),
-                    matched_amount: base_decr.into(),
-                    base_value: mb1.into(),
-                    quote_value: mq1.into(),
+                    filled_amount: base_decr.into(),
+                    filled_volume: filled_vol.into(),
+                    base_balance: mb1.into(),
+                    quote_balance: mq1.into(),
                 });
             }
-            // FIXME ceil
             let quote_charged = maker_fee.mul_ceil(tq_delta);
             ensure!(
                 mq_delta
@@ -1849,7 +1898,6 @@ pub mod pallet {
                     == tq_delta,
                 Error::<T>::ProofsUnsatisfied
             );
-            // FIXME ceil
             let base_charged = taker_fee.mul_ceil(mb_delta);
             ensure!(
                 tb_delta
@@ -1865,12 +1913,13 @@ pub mod pallet {
                     Error::<T>::ProofsUnsatisfied
                 );
             }
-            let taker_mutation = TokenMutation {
+            let taker_mutation = TakerMutation {
                 who: taker_b_id,
-                matched_volume: tq_delta.into(),
-                matched_amount: mb_delta.into(),
-                base_value: (tba1.checked_add(tbf1).ok_or(Error::<T>::Overflow)?).into(),
-                quote_value: (tqa1.checked_add(tqf1).ok_or(Error::<T>::Overflow)?).into(),
+                unfilled_amount: bid_delta.into(),
+                filled_volume: tq_delta.into(),
+                filled_amount: mb_delta.into(),
+                base_balance: (tba1.checked_add(tbf1).ok_or(Error::<T>::Overflow)?).into(),
+                quote_balance: (tqa1.checked_add(tqf1).ok_or(Error::<T>::Overflow)?).into(),
             };
             let best_price = &leaves[maker_accounts as usize + 3];
             let (b, q) = best_price.try_get_symbol::<T>()?;
@@ -2026,7 +2075,7 @@ pub mod pallet {
             quote: u32,
             account: &T::AccountId,
             leaves: &[MerkleLeaf],
-        ) -> Result<(), DispatchError> {
+        ) -> Result<u128, DispatchError> {
             ensure!(leaves.len() == 5, Error::<T>::ProofsUnsatisfied);
             let (b, q) = leaves[0].try_get_symbol::<T>()?;
             ensure!(b == base && q == quote, Error::<T>::ProofsUnsatisfied);
@@ -2059,18 +2108,13 @@ pub mod pallet {
             );
             let before_cancel = leaves[4].split_old_to_sum();
             let after_cancel = leaves[4].split_new_to_sum();
+            let delta = before_cancel - after_cancel;
             if cancel_at >= best_ask0 && best_ask0 != 0 {
-                ensure!(
-                    ask_delta == before_cancel - after_cancel,
-                    Error::<T>::ProofsUnsatisfied
-                );
+                ensure!(ask_delta == delta, Error::<T>::ProofsUnsatisfied);
             } else {
-                ensure!(
-                    bid_delta == before_cancel - after_cancel,
-                    Error::<T>::ProofsUnsatisfied
-                );
+                ensure!(bid_delta == delta, Error::<T>::ProofsUnsatisfied);
             }
-            Ok(())
+            Ok(delta)
         }
 
         fn has_authorized_morethan(

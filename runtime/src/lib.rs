@@ -286,7 +286,6 @@ impl pallet_balances::Config for Runtime {
     type ReserveIdentifier = [u8; 8];
     /// The ubiquitous event type.
     type RuntimeEvent = RuntimeEvent;
-    //TODO
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
