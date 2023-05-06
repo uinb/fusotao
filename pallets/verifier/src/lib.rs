@@ -372,7 +372,7 @@ pub mod pallet {
 
         type Asset: ReservableToken<Self::AccountId>;
 
-        type Rewarding: Rewarding<Self::AccountId, Balance<Self>, (u32, u32), Self::BlockNumber>;
+        type Rewarding: Rewarding<Self::AccountId, Balance<Self>, Symbol<Self>, Self::BlockNumber>;
 
         type WeightInfo: WeightInfo;
 
@@ -1004,7 +1004,7 @@ pub mod pallet {
     #[derive(Clone)]
     struct TakerMutation<AccountId, Balance> {
         pub who: AccountId,
-        pub unfilled_amount: Balance,
+        pub unfilled_volume: Balance,
         pub filled_volume: Balance,
         pub filled_amount: Balance,
         pub base_balance: Balance,
@@ -1014,7 +1014,6 @@ pub mod pallet {
     #[derive(Clone)]
     struct MakerMutation<AccountId, Balance> {
         pub who: AccountId,
-        pub filled_amount: Balance,
         pub filled_volume: Balance,
         pub base_balance: Balance,
         pub quote_balance: Balance,
@@ -1275,7 +1274,7 @@ pub mod pallet {
                         Self::clear(&d.who, dominator_id, quote.into(), d.quote_balance)?;
                         T::Rewarding::consume_liquidity(
                             &d.who,
-                            (base, quote),
+                            (base.into(), quote.into()),
                             d.filled_volume,
                             current_block,
                         )?;
@@ -1292,12 +1291,12 @@ pub mod pallet {
                         quote.into(),
                         cr.taker.quote_balance,
                     )?;
-                    T::Rewarding::add_liquidity(
+                    T::Rewarding::put_liquidity(
                         &cr.taker.who,
-                        (base, quote),
-                        cr.taker.unfilled_amount,
+                        (base.into(), quote.into()),
+                        cr.taker.unfilled_volume,
                         current_block,
-                    )?;
+                    );
 
                     trade.token_id = base.into();
                     trade.amount += cr.taker.filled_amount;
@@ -1370,7 +1369,7 @@ pub mod pallet {
                         Self::clear(&d.who, dominator_id, quote.into(), d.quote_balance)?;
                         T::Rewarding::consume_liquidity(
                             &d.who,
-                            (base, quote),
+                            (base.into(), quote.into()),
                             d.filled_volume,
                             current_block,
                         )?;
@@ -1388,12 +1387,12 @@ pub mod pallet {
                         quote.into(),
                         cr.taker.quote_balance,
                     )?;
-                    T::Rewarding::add_liquidity(
+                    T::Rewarding::put_liquidity(
                         &cr.taker.who,
-                        (base, quote),
-                        cr.taker.unfilled_amount,
+                        (base.into(), quote.into()),
+                        cr.taker.unfilled_volume,
                         current_block,
-                    )?;
+                    );
 
                     trade.token_id = base.into();
                     trade.amount += cr.taker.filled_amount;
@@ -1427,11 +1426,12 @@ pub mod pallet {
                     let (base, quote): (u32, u32) = (base.into(), quote.into());
                     let unfilled = Self::verify_cancel(base, quote, &proof.user_id, &proof.leaves)?;
                     if remove_liquidity {
-                        T::Rewarding::remove_liquidity(
+                        // TODO
+                        let _ = T::Rewarding::remove_liquidity(
                             &proof.user_id,
-                            (base, quote),
+                            (base.into(), quote.into()),
                             unfilled.into(),
-                        )?;
+                        );
                     }
                 }
                 CommandV2::TransferOut { currency, amount } => {
@@ -1642,12 +1642,6 @@ pub mod pallet {
                 let mb1 = maker_base.split_new_to_sum();
                 let base_incr = mb1 - mb0;
                 mb_delta += base_incr;
-                // FIXME unit tests
-                let filled_amount = Permill::one()
-                    .checked_sub(&maker_fee)
-                    .ok_or(Error::<T>::Overflow)?
-                    .saturating_reciprocal_mul_ceil(base_incr);
-
                 // then quote account
                 let maker_quote = &leaves[i * 2 + 2];
                 let (qk, maker_q_id) = maker_quote.try_get_account::<T>()?;
@@ -1671,7 +1665,6 @@ pub mod pallet {
                     who: maker_q_id,
                     // this includes the maker fee
                     filled_volume: quote_decr.into(),
-                    filled_amount: filled_amount.into(),
                     base_balance: mb1.into(),
                     quote_balance: mq1.into(),
                 });
@@ -1688,7 +1681,7 @@ pub mod pallet {
             );
             let taker_mutation = TakerMutation {
                 who: taker_b_id,
-                unfilled_amount: ask_delta.into(),
+                unfilled_volume: tqf1.into(),
                 filled_volume: mq_delta.into(),
                 filled_amount: tb_delta.into(),
                 base_balance: (tba1 + tbf1).into(),
@@ -1884,7 +1877,6 @@ pub mod pallet {
                     .saturating_reciprocal_mul_ceil(quote_incr);
                 maker_mutation.push(MakerMutation {
                     who: maker_b_id,
-                    filled_amount: base_decr.into(),
                     filled_volume: filled_vol.into(),
                     base_balance: mb1.into(),
                     quote_balance: mq1.into(),
@@ -1915,7 +1907,7 @@ pub mod pallet {
             }
             let taker_mutation = TakerMutation {
                 who: taker_b_id,
-                unfilled_amount: bid_delta.into(),
+                unfilled_volume: tqf1.into(),
                 filled_volume: tq_delta.into(),
                 filled_amount: mb_delta.into(),
                 base_balance: (tba1.checked_add(tbf1).ok_or(Error::<T>::Overflow)?).into(),

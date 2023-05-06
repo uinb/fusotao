@@ -159,7 +159,7 @@ parameter_types! {
 
 pub struct PhantomData;
 
-impl fuso_support::traits::Rewarding<AccountId, Balance, BlockNumber> for PhantomData {
+impl fuso_support::traits::Rewarding<AccountId, Balance, (u32, u32), BlockNumber> for PhantomData {
     type Balance = Balance;
 
     fn era_duration() -> BlockNumber {
@@ -178,6 +178,31 @@ impl fuso_support::traits::Rewarding<AccountId, Balance, BlockNumber> for Phanto
         _trader: &AccountId,
         _amount: Balance,
         _at: BlockNumber,
+    ) -> frame_support::pallet_prelude::DispatchResult {
+        Ok(())
+    }
+
+    fn put_liquidity(_maker: &AccountId, _symbol: (u32, u32), _vol: Balance, _at: BlockNumber) {}
+
+    /// when liquidity is took out, the liquidity provider will get the reward.
+    /// the rewards are calculated in the formula below:
+    /// contribution ƒi = vol * min(current - from, era_duration) / 720
+    /// rewards of contribution ∂ = ƒi / ∑ƒi * era_rewards
+    /// NOTE: `vol` should be volume rather than amount
+    fn consume_liquidity(
+        _maker: &AccountId,
+        _symbol: (u32, u32),
+        _vol: Balance,
+        _current: BlockNumber,
+    ) -> frame_support::pallet_prelude::DispatchResult {
+        Ok(())
+    }
+
+    /// remove liquidity
+    fn remove_liquidity(
+        _maker: &AccountId,
+        _symbol: (u32, u32),
+        _vol: Balance,
     ) -> frame_support::pallet_prelude::DispatchResult {
         Ok(())
     }

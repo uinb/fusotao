@@ -203,14 +203,9 @@ pub trait Rewarding<AccountId, Volume, Symbol, BlockNumber> {
     // DEPRECATED
     fn save_trading(trader: &AccountId, amount: Volume, at: BlockNumber) -> DispatchResult;
 
-    /// add liquidity `amt` into `symbol`, `at` block number.
+    /// put liquidity `vol` into `symbol`(override the previous value) `at` block number.
     /// NOTE: if the `maker` has already added liquidity at the same `symbol`, then the block number will be updated to `at`.
-    fn add_liquidity(
-        maker: &AccountId,
-        symbol: Symbol,
-        amt: Volume,
-        at: BlockNumber,
-    ) -> DispatchResult;
+    fn put_liquidity(maker: &AccountId, symbol: Symbol, vol: Volume, at: BlockNumber);
 
     /// when liquidity is took out, the liquidity provider will get the reward.
     /// the rewards are calculated in the formula below:
@@ -225,7 +220,7 @@ pub trait Rewarding<AccountId, Volume, Symbol, BlockNumber> {
     ) -> DispatchResult;
 
     /// remove liquidity
-    fn remove_liquidity(maker: &AccountId, symbol: Symbol, amt: Volume) -> DispatchResult;
+    fn remove_liquidity(maker: &AccountId, symbol: Symbol, vol: Volume) -> DispatchResult;
 }
 
 pub trait Agent<AccountId> {
