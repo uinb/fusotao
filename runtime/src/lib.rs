@@ -644,7 +644,7 @@ parameter_types! {
     pub const EthChainId: ChainId = 5;
     pub const BnbChainId: ChainId = 97;
     pub const NativeChainId: ChainId = 42;
-    pub const PolygonChainId: ChainId = 65535;
+    pub const PolygonChainId: ChainId = 255;
     pub const BurnTAOwhenIssue: Balance = 10 * TAO;
 }
 
