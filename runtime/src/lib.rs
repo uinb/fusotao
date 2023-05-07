@@ -124,7 +124,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 158,
+    spec_version: 159,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 3,
@@ -644,6 +644,7 @@ parameter_types! {
     pub const EthChainId: ChainId = 1;
     pub const BnbChainId: ChainId = 56;
     pub const NativeChainId: ChainId = 42;
+    pub const PolygonChainId: ChainId = 137;
     pub const BurnTAOwhenIssue: Balance = 10 * TAO;
 }
 
@@ -657,6 +658,7 @@ impl pallet_fuso_token::Config for Runtime {
     type NativeChainId = NativeChainId;
     type NativeTokenId = NativeTokenId;
     type NearChainId = NearChainId;
+    type PolygonChainId = PolygonChainId;
     type RuntimeEvent = RuntimeEvent;
     type TokenId = TokenId;
     type Weight = pallet_fuso_token::weights::SubstrateWeight<Runtime>;

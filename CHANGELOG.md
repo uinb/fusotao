@@ -1,3 +1,8 @@
+# v0.9.30-mainnet.159
+
+- enable polygon chain bridge
+- fix node rpc compile error
+
 # v0.9.30-node.158
 
 - release-sidecar

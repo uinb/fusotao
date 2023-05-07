@@ -88,6 +88,7 @@ parameter_types! {
     pub const NearChainId: ChainId = 255;
     pub const EthChainId: ChainId = 1;
     pub const BnbChainId: ChainId = 2;
+    pub const PolygonChainId: ChainId =3;
     pub const NativeChainId: ChainId = 42;
     pub const BurnTAOwhenIssue: Balance = 10000000000000000;
 }
@@ -108,6 +109,7 @@ impl pallet_fuso_token::Config for Test {
     type NativeChainId = NativeChainId;
     type NativeTokenId = NativeTokenId;
     type NearChainId = NearChainId;
+    type PolygonChainId = PolygonChainId;
     type RuntimeEvent = RuntimeEvent;
     type TokenId = u32;
     type Weight = ();

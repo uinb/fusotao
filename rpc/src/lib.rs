@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(result_option_inspect)]
-#![feature(result_flattening)]
 pub mod broker;
 pub mod token;
 pub mod verifier;
