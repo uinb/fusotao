@@ -94,6 +94,9 @@ pub mod pallet {
         #[pallet::constant]
         type NativeTokenId: Get<Self::TokenId>;
 
+        #[pallet::constant]
+        type PolygonChainId: Get<ChainId>;
+
         type Weight: WeightInfo;
 
         #[pallet::constant]
@@ -196,6 +199,7 @@ pub mod pallet {
                 match token_info {
                     XToken::NEP141(_, _, _, ref mut stable, _) => *stable = true,
                     XToken::ERC20(_, _, _, ref mut stable, _) => *stable = true,
+                    XToken::POLYGON(_, _, _, ref mut stable, _) => *stable = true,
                     XToken::BEP20(_, _, _, ref mut stable, _) => *stable = true,
                     XToken::FND10(_, _) => return Err(Error::<T>::TokenNotFound.into()),
                 }
@@ -254,6 +258,7 @@ pub mod pallet {
                 let unified_amount = match info {
                     XToken::NEP141(_, _, ref mut total, _, decimals)
                     | XToken::ERC20(_, _, ref mut total, _, decimals)
+                    | XToken::POLYGON(_, _, ref mut total, _, decimals)
                     | XToken::BEP20(_, _, ref mut total, _, decimals) => {
                         let unified_amount = Self::transform_decimals_to_standard(amount, decimals);
                         *total = total
@@ -300,6 +305,7 @@ pub mod pallet {
                 let unified_amount = match info {
                     XToken::NEP141(_, _, ref mut total, _, decimals)
                     | XToken::ERC20(_, _, ref mut total, _, decimals)
+                    | XToken::POLYGON(_, _, ref mut total, _, decimals)
                     | XToken::BEP20(_, _, ref mut total, _, decimals) => {
                         let unified_amount = Self::transform_decimals_to_standard(amount, decimals);
                         *total = total
@@ -449,6 +455,13 @@ pub mod pallet {
                     TokenByName::<T>::insert(contract.clone(), id);
                 }
                 XToken::ERC20(
+                    ref symbol,
+                    ref contract,
+                    ref mut total,
+                    ref mut stable,
+                    decimals,
+                )
+                | XToken::POLYGON(
                     ref symbol,
                     ref contract,
                     ref mut total,
@@ -625,6 +638,7 @@ pub mod pallet {
                 match token {
                     XToken::NEP141(_, _, total, _, _)
                     | XToken::ERC20(_, _, total, _, _)
+                    | XToken::POLYGON(_, _, total, _, _)
                     | XToken::BEP20(_, _, total, _, _) => total,
                     XToken::FND10(_, total) => total,
                 }
@@ -643,6 +657,7 @@ pub mod pallet {
                 match token {
                     XToken::NEP141(_, _, _, _, decimals)
                     | XToken::ERC20(_, _, _, _, decimals)
+                    | XToken::POLYGON(_, _, _, _, decimals)
                     | XToken::BEP20(_, _, _, _, decimals) => Ok(decimals),
                     XToken::FND10(_, _) => Err(Error::<T>::TokenNotFound.into()),
                 }
@@ -895,6 +910,7 @@ pub mod pallet {
                 .map(|info| match info {
                     XToken::NEP141(_, _, _, _, decimals)
                     | XToken::ERC20(_, _, _, _, decimals)
+                    | XToken::POLYGON(_, _, _, _, decimals)
                     | XToken::BEP20(_, _, _, _, decimals) => {
                         Self::transform_decimals_to_standard(balance, decimals)
                     }
@@ -910,6 +926,7 @@ pub mod pallet {
             match token_info {
                 XToken::NEP141(..) => T::NearChainId::get(),
                 XToken::ERC20(..) => T::EthChainId::get(),
+                XToken::POLYGON(..) => T::PolygonChainId::get(),
                 XToken::BEP20(..) => T::BnbChainId::get(),
                 XToken::FND10(..) => T::NativeChainId::get(),
             }

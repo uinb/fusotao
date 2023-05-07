@@ -26,6 +26,7 @@ pub enum XToken<Balance> {
     BEP20(Vec<u8>, Vec<u8>, Balance, bool, u8),
     // symbol, total
     FND10(Vec<u8>, Balance),
+    POLYGON(Vec<u8>, Vec<u8>, Balance, bool, u8),
 }
 
 impl<Balance> XToken<Balance> {
@@ -33,6 +34,7 @@ impl<Balance> XToken<Balance> {
         match self {
             XToken::NEP141(_, _, _, stable, _)
             | XToken::ERC20(_, _, _, stable, _)
+            | XToken::POLYGON(_, _, _, stable, _)
             | XToken::BEP20(_, _, _, stable, _) => *stable,
             XToken::FND10(_, _) => false,
         }
@@ -42,6 +44,7 @@ impl<Balance> XToken<Balance> {
         match self {
             XToken::NEP141(symbol, _, _, _, _)
             | XToken::ERC20(symbol, _, _, _, _)
+            | XToken::POLYGON(symbol, _, _, _, _)
             | XToken::BEP20(symbol, _, _, _, _)
             | XToken::FND10(symbol, _) => symbol.clone(),
         }
@@ -51,6 +54,7 @@ impl<Balance> XToken<Balance> {
         match self {
             XToken::NEP141(_, contract, _, _, _)
             | XToken::ERC20(_, contract, _, _, _)
+            | XToken::POLYGON(_, contract, _, _, _)
             | XToken::BEP20(_, contract, _, _, _) => contract.clone(),
             XToken::FND10(_, _) => Vec::new(),
         }

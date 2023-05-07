@@ -281,7 +281,6 @@ where
             async move {
                 let key = get_broker_public(keystore)
                     .await
-                    .inspect_err(|e| log::error!("{:?}", e))
                     .map_err(|_| rpc_error!(-32102, "The broker key is not registered."))?;
                 let r = session
                     .relay(
@@ -412,10 +411,7 @@ where
                 "broker-prover-connector",
                 Some("fusotao-rpc"),
                 async move {
-                    if let Ok(relayer) = get_broker_public(keystore)
-                        .await
-                        .inspect_err(|e| log::error!("{:?}", e))
-                    {
+                    if let Ok(relayer) = get_broker_public(keystore).await {
                         let _ = session
                             .multiplex(account_id, signature, nonce, relayer.to_ss58check(), sink)
                             .await;

@@ -93,6 +93,7 @@ parameter_types! {
     pub const NearChainId: ChainId = 255;
     pub const EthChainId: ChainId = 1;
     pub const BnbChainId: ChainId = 2;
+    pub const PolygonChainId: ChainId = 3;
     pub const NativeChainId: ChainId = 42;
     pub NativeResourceId: ResourceId = derive_resource_id(42, 0, b"TAO").unwrap(); // native token id
     pub const TreasuryAccount: AccountId = AccountId::new([5u8; 32]);
@@ -113,6 +114,7 @@ impl pallet_fuso_token::Config for Test {
     type NativeChainId = NativeChainId;
     type NativeTokenId = NativeTokenId;
     type NearChainId = NearChainId;
+    type PolygonChainId = PolygonChainId;
     type RuntimeEvent = RuntimeEvent;
     type TokenId = u32;
     type Weight = ();
