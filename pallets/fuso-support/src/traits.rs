@@ -200,9 +200,6 @@ pub trait Rewarding<AccountId, Volume, Symbol, BlockNumber> {
 
     fn acked_reward(who: &AccountId) -> Self::Balance;
 
-    // DEPRECATED
-    fn save_trading(trader: &AccountId, amount: Volume, at: BlockNumber) -> DispatchResult;
-
     /// put liquidity `vol` into `symbol`(override the previous value) `at` block number.
     /// NOTE: if the `maker` has already added liquidity at the same `symbol`, then the block number will be updated to `at`.
     fn put_liquidity(maker: &AccountId, symbol: Symbol, vol: Volume, at: BlockNumber);
@@ -220,7 +217,11 @@ pub trait Rewarding<AccountId, Volume, Symbol, BlockNumber> {
     ) -> DispatchResult;
 
     /// remove liquidity
-    fn remove_liquidity(maker: &AccountId, symbol: Symbol, vol: Volume) -> DispatchResult;
+    fn remove_liquidity(
+        maker: &AccountId,
+        symbol: Symbol,
+        vol: Volume,
+    ) -> Result<BlockNumber, DispatchError>;
 }
 
 pub trait Agent<AccountId> {

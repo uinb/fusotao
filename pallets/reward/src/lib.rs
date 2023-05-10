@@ -47,6 +47,8 @@ pub mod pallet {
 
     pub type Era<T> = <T as frame_system::Config>::BlockNumber;
 
+    const MAX_ZOOM: u128 = 720;
+
     #[pallet::config]
     pub trait Config: frame_system::Config {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -108,6 +110,12 @@ pub mod pallet {
         OptionQuery,
     >;
 
+    /// constant
+    #[pallet::storage]
+    #[pallet::getter(fn era_rewards)]
+    pub type EraRewards<T: Config> = StorageValue<_, Balance<T>, ValueQuery, T::RewardsPerEra>;
+
+    /// deprecated, use `MarketingRewards` after v160
     #[pallet::storage]
     #[pallet::getter(fn rewards)]
     pub type Rewards<T: Config> = StorageMap<
@@ -118,13 +126,30 @@ pub mod pallet {
         ValueQuery,
     >;
 
-    #[pallet::storage]
-    #[pallet::getter(fn era_rewards)]
-    pub type EraRewards<T: Config> = StorageValue<_, Balance<T>, ValueQuery, T::RewardsPerEra>;
-
+    /// deprecated, use `TradingVolumes` after v160
     #[pallet::storage]
     #[pallet::getter(fn volumes)]
     pub type Volumes<T: Config> = StorageMap<_, Blake2_128Concat, Era<T>, Volume<T>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn taken_liquidity)]
+    pub type TakenLiquidity<T: Config> =
+        StorageMap<_, Blake2_128Concat, Era<T>, Volume<T>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn marketing_rewards)]
+    pub type MarketingRewards<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        T::AccountId,
+        Reward<Balance<T>, Volume<T>, Era<T>>,
+        ValueQuery,
+    >;
+
+    #[pallet::storage]
+    #[pallet::getter(fn trading_volumes)]
+    pub type TradingVolumes<T: Config> =
+        StorageMap<_, Blake2_128Concat, Era<T>, Volume<T>, ValueQuery>;
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -136,12 +161,17 @@ pub mod pallet {
     where
         Volume<T>: Into<u128>,
         Balance<T>: From<u128>,
+        T::BlockNumber: Into<u32>,
     {
         #[pallet::weight(1_000_000_000_000_000)]
         pub fn take_reward(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let at = frame_system::Pallet::<T>::block_number();
+            let legacy_reward = Self::claim_legacy_reward(&who, at)?;
             let reward = Self::claim_reward(&who, at)?;
+            let reward = reward
+                .checked_add(&legacy_reward)
+                .ok_or(Error::<T>::Overflow)?;
             Self::deposit_event(Event::RewardClaimed(who, reward));
             Ok(().into())
         }
@@ -162,14 +192,15 @@ pub mod pallet {
     where
         Volume<T>: Into<u128>,
         Balance<T>: From<u128>,
+        T::BlockNumber: Into<u32>,
     {
         #[transactional]
-        fn claim_reward(
+        fn claim_legacy_reward(
             who: &T::AccountId,
             at: T::BlockNumber,
         ) -> Result<Balance<T>, DispatchError> {
             let at = at - at % Self::era_duration();
-            let confirmed = Self::rotate_reward(at, Zero::zero(), &who)?;
+            let confirmed = Self::rotate_legacy_reward(at, Zero::zero(), &who)?;
             if confirmed == Zero::zero() {
                 return Ok(Zero::zero());
             }
@@ -194,8 +225,9 @@ pub mod pallet {
             })
         }
 
+        /// legacy rewards rotation
         #[transactional]
-        fn rotate_reward(
+        fn rotate_legacy_reward(
             at: T::BlockNumber,
             vol: Volume<T>,
             account: &T::AccountId,
@@ -233,12 +265,87 @@ pub mod pallet {
                 }
             })
         }
+
+        #[transactional]
+        fn claim_reward(
+            who: &T::AccountId,
+            at: T::BlockNumber,
+        ) -> Result<Balance<T>, DispatchError> {
+            let at = at - at % Self::era_duration();
+            let confirmed = Self::rotate_reward(at, Zero::zero(), &who)?;
+            if confirmed == Zero::zero() {
+                return Ok(Zero::zero());
+            }
+            MarketingRewards::<T>::try_mutate_exists(
+                who,
+                |r| -> Result<Balance<T>, DispatchError> {
+                    ensure!(r.is_some(), Error::<T>::RewardNotFound);
+                    let mut reward: Reward<Balance<T>, Volume<T>, Era<T>> = r.take().unwrap();
+                    let confirmed = reward.confirmed;
+                    reward.confirmed = Zero::zero();
+                    if reward.pending_vol > Zero::zero() {
+                        r.replace(reward);
+                    }
+                    if confirmed > Zero::zero() {
+                        T::Asset::try_mutate_account(&T::Asset::native_token_id(), &who, |b| {
+                            T::Asset::try_mutate_issuance(&T::Asset::native_token_id(), |v| {
+                                *v = v.checked_add(&confirmed).ok_or(Error::<T>::Overflow)?;
+                                Ok(())
+                            })?;
+                            Ok(b.0 += confirmed)
+                        })?;
+                    }
+                    Ok(confirmed)
+                },
+            )
+        }
+
+        #[transactional]
+        fn rotate_reward(
+            begin_of_era: T::BlockNumber,
+            contribution: Volume<T>,
+            account: &T::AccountId,
+        ) -> Result<Balance<T>, DispatchError> {
+            MarketingRewards::<T>::try_mutate(account, |r| -> Result<Balance<T>, DispatchError> {
+                if begin_of_era == r.last_modify {
+                    r.pending_vol = r
+                        .pending_vol
+                        .checked_add(&contribution)
+                        .ok_or(Error::<T>::Overflow)?;
+                    Ok(r.confirmed)
+                } else {
+                    if r.pending_vol == Zero::zero() {
+                        r.pending_vol = contribution;
+                        r.last_modify = begin_of_era;
+                    } else {
+                        let pending_vol: u128 = r.pending_vol.into();
+                        let total_vol: u128 = TakenLiquidity::<T>::get(r.last_modify).into();
+                        ensure!(total_vol > 0, Error::<T>::DivideByZero);
+                        let p: Perquintill = Perquintill::from_rational(pending_vol, total_vol);
+                        let mut era_reward: u128 = EraRewards::<T>::get().into();
+                        let now = frame_system::Pallet::<T>::block_number();
+                        if now > T::RewardTerminateAt::get() {
+                            era_reward = 0u128;
+                        }
+                        let a = p * era_reward;
+                        r.confirmed = r
+                            .confirmed
+                            .checked_add(&a.into())
+                            .ok_or(Error::<T>::Overflow)?;
+                        r.pending_vol = contribution;
+                        r.last_modify = begin_of_era;
+                    }
+                    Ok(r.confirmed)
+                }
+            })
+        }
     }
 
     impl<T: Config> Rewarding<T::AccountId, Volume<T>, Symbol<T>, T::BlockNumber> for Pallet<T>
     where
         Volume<T>: Into<u128>,
         Balance<T>: From<u128>,
+        T::BlockNumber: Into<u32>,
     {
         type Balance = Balance<T>;
 
@@ -247,28 +354,11 @@ pub mod pallet {
         }
 
         fn total_volume(at: T::BlockNumber) -> Volume<T> {
-            Self::volumes(at - at % Self::era_duration())
+            Self::trading_volumes(at - at % Self::era_duration())
         }
 
         fn acked_reward(who: &T::AccountId) -> Self::Balance {
-            Self::rewards(who).confirmed
-        }
-
-        #[transactional]
-        fn save_trading(
-            trader: &T::AccountId,
-            vol: Volume<T>,
-            at: T::BlockNumber,
-        ) -> DispatchResult {
-            if vol == Zero::zero() {
-                return Ok(());
-            }
-            let at = at - at % Self::era_duration();
-            Volumes::<T>::try_mutate(&at, |v| -> DispatchResult {
-                Ok(*v = v.checked_add(&vol).ok_or(Error::<T>::Overflow)?)
-            })?;
-            Self::rotate_reward(at, vol, trader)?;
-            Ok(())
+            Self::marketing_rewards(who).confirmed
         }
 
         /// put liquidity `vol` into `symbol`(override the previous value) `at` block number.
@@ -303,11 +393,25 @@ pub mod pallet {
             vol: Volume<T>,
             current: T::BlockNumber,
         ) -> DispatchResult {
-            if Self::remove_liquidity(maker, symbol, vol).is_err() {
-                return Ok(());
+            // exclude v1 orders
+            if let Ok(start_from) = Self::remove_liquidity(maker, symbol, vol) {
+                let begin_of_era = current - current % Self::era_duration();
+                let duration: u32 = (current - start_from).into();
+                let era = Self::era_duration().into();
+                // remove magic number
+                let coefficient = u128::min(duration.into(), era.into()) / MAX_ZOOM;
+                let contribution = coefficient * vol.into();
+                TakenLiquidity::<T>::try_mutate(&begin_of_era, |v| -> DispatchResult {
+                    Ok(*v = v
+                        .checked_add(&contribution.into())
+                        .ok_or(Error::<T>::Overflow)?)
+                })?;
+                TradingVolumes::<T>::try_mutate(&begin_of_era, |v| -> DispatchResult {
+                    Ok(*v = v.checked_add(&vol).ok_or(Error::<T>::Overflow)?)
+                })?;
+                Self::rotate_reward(begin_of_era, contribution.into(), maker)?;
             }
-            // TODO
-            Self::save_trading(maker, vol, current)
+            Ok(())
         }
 
         /// remove liquidity
@@ -315,24 +419,28 @@ pub mod pallet {
             maker: &T::AccountId,
             symbol: Symbol<T>,
             vol: Volume<T>,
-        ) -> DispatchResult {
+        ) -> Result<T::BlockNumber, DispatchError> {
             if vol.is_zero() {
-                return Ok(());
+                return Ok(Zero::zero());
             }
-            LiquidityPool::<T>::try_mutate_exists(maker, &symbol, |l| -> DispatchResult {
-                let liquidity = l.take();
-                ensure!(liquidity.is_some(), Error::<T>::LiquidityNotFound);
-                let mut liquidity = liquidity.unwrap();
-                liquidity.volume = liquidity
-                    .volume
-                    .checked_sub(&vol)
-                    .ok_or(Error::<T>::InsufficientLiquidity)?;
-                if liquidity.volume > Zero::zero() {
-                    l.replace(liquidity);
-                }
-                Ok(())
-            })?;
-            Ok(())
+            LiquidityPool::<T>::try_mutate_exists(
+                maker,
+                &symbol,
+                |l| -> Result<T::BlockNumber, DispatchError> {
+                    let liquidity = l.take();
+                    ensure!(liquidity.is_some(), Error::<T>::LiquidityNotFound);
+                    let mut liquidity = liquidity.unwrap();
+                    liquidity.volume = liquidity
+                        .volume
+                        .checked_sub(&vol)
+                        .ok_or(Error::<T>::InsufficientLiquidity)?;
+                    let start_from = liquidity.start_from;
+                    if liquidity.volume > Zero::zero() {
+                        l.replace(liquidity);
+                    }
+                    Ok(start_from)
+                },
+            )
         }
     }
 }

@@ -15,15 +15,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 pub use pallet::*;
-//mod proof;
-pub mod weights;
-
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 #[cfg(test)]
 pub mod mock;
 #[cfg(test)]
 pub mod tests;
+pub mod weights;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -61,6 +59,7 @@ pub mod pallet {
     pub type Season = u32;
     pub type Amount = u128;
     pub type MerkleHash = [u8; 32];
+
     pub const PALLET_ID: frame_support::PalletId = frame_support::PalletId(*b"fuso/vrf");
     const UNSTAKE_DELAY_BLOCKS: u32 = 14400 * 4u32;
     const MAX_PROOF_SIZE: usize = 10 * 1024 * 1024usize;
