@@ -757,6 +757,7 @@ parameter_types! {
     pub const EraDuration: BlockNumber = DAYS;
     // TODO move this to storage and automatically calculate by the $tao price
     pub const RewardsPerEra: Balance = 6575 * DOLLARS;
+    pub const TimeCoefficientZoom: u32 = 720;
     pub const RewardTerminateAt: BlockNumber = 1825 * DAYS;
 }
 
@@ -766,6 +767,7 @@ impl pallet_fuso_reward::Config for Runtime {
     type RewardTerminateAt = RewardTerminateAt;
     type RewardsPerEra = RewardsPerEra;
     type RuntimeEvent = RuntimeEvent;
+    type TimeCoefficientZoom = TimeCoefficientZoom;
 }
 
 parameter_types! {

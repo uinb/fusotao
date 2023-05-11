@@ -224,7 +224,6 @@ pub mod pallet {
         Cancel {
             base: Compact<u32>,
             quote: Compact<u32>,
-            remove_liquidity: bool,
         },
         TransferOut {
             currency: Compact<u32>,
@@ -266,11 +265,7 @@ pub mod pallet {
                         broker: None,
                     }
                 }
-                Command::Cancel(base, quote) => CommandV2::Cancel {
-                    base,
-                    quote,
-                    remove_liquidity: false,
-                },
+                Command::Cancel(base, quote) => CommandV2::Cancel { base, quote },
                 Command::TransferOut(currency, amount) => {
                     CommandV2::TransferOut { currency, amount }
                 }
@@ -1417,21 +1412,14 @@ pub mod pallet {
                         })?;
                     }
                 }
-                CommandV2::Cancel {
-                    base,
-                    quote,
-                    remove_liquidity,
-                } => {
+                CommandV2::Cancel { base, quote } => {
                     let (base, quote): (u32, u32) = (base.into(), quote.into());
                     let unfilled = Self::verify_cancel(base, quote, &proof.user_id, &proof.leaves)?;
-                    if remove_liquidity {
-                        // TODO
-                        let _ = T::Rewarding::remove_liquidity(
-                            &proof.user_id,
-                            (base.into(), quote.into()),
-                            unfilled.into(),
-                        );
-                    }
+                    let _ = T::Rewarding::remove_liquidity(
+                        &proof.user_id,
+                        (base.into(), quote.into()),
+                        unfilled.into(),
+                    );
                 }
                 CommandV2::TransferOut { currency, amount } => {
                     let (currency, amount) = (currency.into(), amount.into());

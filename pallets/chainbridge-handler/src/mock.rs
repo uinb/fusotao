@@ -174,14 +174,6 @@ impl fuso_support::traits::Rewarding<AccountId, Balance, (u32, u32), BlockNumber
         0
     }
 
-    fn save_trading(
-        _trader: &AccountId,
-        _amount: Balance,
-        _at: BlockNumber,
-    ) -> frame_support::pallet_prelude::DispatchResult {
-        Ok(())
-    }
-
     fn put_liquidity(_maker: &AccountId, _symbol: (u32, u32), _vol: Balance, _at: BlockNumber) {}
 
     /// when liquidity is took out, the liquidity provider will get the reward.
@@ -203,8 +195,8 @@ impl fuso_support::traits::Rewarding<AccountId, Balance, (u32, u32), BlockNumber
         _maker: &AccountId,
         _symbol: (u32, u32),
         _vol: Balance,
-    ) -> frame_support::pallet_prelude::DispatchResult {
-        Ok(())
+    ) -> Result<BlockNumber, frame_support::pallet_prelude::DispatchError> {
+        Ok(1)
     }
 }
 

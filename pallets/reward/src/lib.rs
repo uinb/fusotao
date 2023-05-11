@@ -47,8 +47,6 @@ pub mod pallet {
 
     pub type Era<T> = <T as frame_system::Config>::BlockNumber;
 
-    const MAX_ZOOM: u128 = 720;
-
     #[pallet::config]
     pub trait Config: frame_system::Config {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -57,6 +55,9 @@ pub mod pallet {
 
         #[pallet::constant]
         type EraDuration: Get<Self::BlockNumber>;
+
+        #[pallet::constant]
+        type TimeCoefficientZoom: Get<u32>;
 
         // DEPRECATED
         #[pallet::constant]
@@ -223,6 +224,24 @@ pub mod pallet {
                 }
                 Ok(confirmed)
             })
+        }
+
+        /// deprecated
+        #[transactional]
+        pub(crate) fn save_trading(
+            trader: &T::AccountId,
+            vol: Volume<T>,
+            at: T::BlockNumber,
+        ) -> DispatchResult {
+            if vol == Zero::zero() {
+                return Ok(());
+            }
+            let at = at - at % Self::era_duration();
+            Volumes::<T>::try_mutate(&at, |v| -> DispatchResult {
+                Ok(*v = v.checked_add(&vol).ok_or(Error::<T>::Overflow)?)
+            })?;
+            Self::rotate_legacy_reward(at, vol, trader)?;
+            Ok(())
         }
 
         /// legacy rewards rotation
@@ -397,9 +416,11 @@ pub mod pallet {
             if let Ok(start_from) = Self::remove_liquidity(maker, symbol, vol) {
                 let begin_of_era = current - current % Self::era_duration();
                 let duration: u32 = (current - start_from).into();
-                let era = Self::era_duration().into();
+                let era: u32 = Self::era_duration().into();
+                let zoom = T::TimeCoefficientZoom::get();
                 // remove magic number
-                let coefficient = u128::min(duration.into(), era.into()) / MAX_ZOOM;
+                let coefficient = u128::min(duration.into(), era.into()) / zoom as u128;
+                let coefficient = u128::max(coefficient, 1);
                 let contribution = coefficient * vol.into();
                 TakenLiquidity::<T>::try_mutate(&begin_of_era, |v| -> DispatchResult {
                     Ok(*v = v
