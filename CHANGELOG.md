@@ -2,7 +2,7 @@
 
 - migrate trading rewards to marketing rewards
 - distribute transaction fees to broker
-- update: it should the beneficiary manager to invoke `register_broker`
+- update: it should be the beneficiary manager to invoke `register_broker`
 
 # v0.9.30-mainnet.159
 
