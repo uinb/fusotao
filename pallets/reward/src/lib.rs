@@ -164,7 +164,7 @@ pub mod pallet {
         Balance<T>: From<u128>,
         T::BlockNumber: Into<u32>,
     {
-        #[pallet::weight(1_000_000_000_000_000)]
+        #[pallet::weight(100_000_000_000)]
         pub fn take_reward(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let at = frame_system::Pallet::<T>::block_number();
