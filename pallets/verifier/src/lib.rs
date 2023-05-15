@@ -1857,7 +1857,6 @@ pub mod pallet {
                 mq_delta = mq_delta
                     .checked_add(quote_incr)
                     .ok_or(Error::<T>::Overflow)?;
-                // FIXME unit test
                 let filled_vol = Permill::one()
                     .checked_sub(&maker_fee)
                     .ok_or(Error::<T>::Overflow)?
