@@ -1,3 +1,9 @@
+# v0.9.30-testnet.162
+
+- migrate trading rewards to marketing rewards
+- distribute transaction fees to broker
+- change the caller of `register_broker` to broker beneficiary
+
 # v0.9.30-mainnet.161
 
 - migrate trading rewards to marketing rewards
