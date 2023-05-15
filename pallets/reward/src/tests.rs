@@ -129,5 +129,10 @@ fn test_marketing_reward_should_work() {
         frame_system::Pallet::<Test>::set_block_number(501);
         RewardModule::take_reward(frame_system::RawOrigin::Signed(alice.clone()).into()).unwrap();
         assert_eq!(3500000000000000000000000, Balances::free_balance(&alice));
+        RewardModule::put_liquidity(&alice, (0, 1), 1000, 301);
+        assert_noop!(
+            RewardModule::remove_liquidity(&alice, (0, 1), 1100),
+            Error::<Test>::InsufficientLiquidity
+        );
     });
 }

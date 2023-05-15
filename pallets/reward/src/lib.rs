@@ -418,7 +418,6 @@ pub mod pallet {
                 let duration: u32 = (current - start_from).into();
                 let era: u32 = Self::era_duration().into();
                 let zoom = T::TimeCoefficientZoom::get();
-                // remove magic number
                 let coefficient = u128::min(duration.into(), era.into()) / zoom as u128;
                 let coefficient = u128::max(coefficient, 1);
                 let contribution = coefficient * vol.into();
