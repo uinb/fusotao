@@ -134,15 +134,15 @@ pub mod pallet {
         #[pallet::weight(8_790_000_000)]
         pub fn register_broker(
             origin: OriginFor<T>,
-            beneficiary: T::AccountId,
+            broker: T::AccountId,
             rpc_endpoint: Vec<u8>,
             name: Vec<u8>,
         ) -> DispatchResultWithPostInfo {
-            let broker = ensure_signed(origin)?;
+            let beneficiary = ensure_signed(origin)?;
             ensure!(name.len() <= 20, Error::<T>::BrokerNameTooLong);
             let requires = T::BrokerStakingThreshold::get();
             T::Assets::transfer_token(
-                &broker,
+                &beneficiary,
                 T::Assets::native_token_id(),
                 requires,
                 &Self::system_account(),
@@ -164,17 +164,44 @@ pub mod pallet {
         }
 
         #[pallet::weight(8_790_000_000)]
+        pub fn deregister_broker(
+            origin: OriginFor<T>,
+            broker: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
+            let beneficiary = ensure_signed(origin)?;
+            Brokers::<T>::try_mutate_exists(&broker, |b| -> DispatchResult {
+                ensure!(b.is_some(), Error::<T>::BrokerNotFound);
+                let broker = b.take().unwrap();
+                ensure!(
+                    broker.beneficiary == beneficiary,
+                    Error::<T>::BrokerNotFound
+                );
+                T::Assets::transfer_token(
+                    &Self::system_account(),
+                    T::Assets::native_token_id(),
+                    broker.staked,
+                    &broker.beneficiary,
+                )?;
+                Ok(())
+            })?;
+            Self::deposit_event(Event::BrokerDeregistered(broker));
+            Ok(().into())
+        }
+
+        #[pallet::weight(8_790_000_000)]
         pub fn broker_set_rpc_endpoint(
             origin: OriginFor<T>,
+            broker: T::AccountId,
             rpc_endpoint: Vec<u8>,
         ) -> DispatchResultWithPostInfo {
-            let broker = ensure_signed(origin)?;
+            let admin = ensure_signed(origin)?;
             Brokers::<T>::try_mutate_exists(&broker, |b| -> DispatchResult {
-                if let Some(broker) = b {
-                    broker.rpc_endpoint = rpc_endpoint;
-                    Ok(())
-                } else {
-                    Err(Error::<T>::BrokerNotFound.into())
+                match b {
+                    Some(broker) if broker.beneficiary == admin => {
+                        broker.rpc_endpoint = rpc_endpoint;
+                        Ok(())
+                    }
+                    _ => Err(Error::<T>::BrokerNotFound.into()),
                 }
             })?;
             Ok(().into())

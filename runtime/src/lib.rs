@@ -124,7 +124,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 159,
+    spec_version: 161,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 3,
@@ -286,7 +286,6 @@ impl pallet_balances::Config for Runtime {
     type ReserveIdentifier = [u8; 8];
     /// The ubiquitous event type.
     type RuntimeEvent = RuntimeEvent;
-    //TODO
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
@@ -758,6 +757,7 @@ parameter_types! {
     pub const EraDuration: BlockNumber = DAYS;
     // TODO move this to storage and automatically calculate by the $tao price
     pub const RewardsPerEra: Balance = 6575 * DOLLARS;
+    pub const TimeCoefficientZoom: u32 = 720;
     pub const RewardTerminateAt: BlockNumber = 1825 * DAYS;
 }
 
@@ -767,6 +767,7 @@ impl pallet_fuso_reward::Config for Runtime {
     type RewardTerminateAt = RewardTerminateAt;
     type RewardsPerEra = RewardsPerEra;
     type RuntimeEvent = RuntimeEvent;
+    type TimeCoefficientZoom = TimeCoefficientZoom;
 }
 
 parameter_types! {
@@ -782,6 +783,7 @@ const_assert!(DAYS % 20 == 0);
 
 impl pallet_fuso_verifier::Config for Runtime {
     type Asset = Token;
+    type BrokerBeneficiary = Market;
     type Callback = RuntimeCall;
     type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
     type DominatorOnlineThreshold = DominatorOnlineThreshold;

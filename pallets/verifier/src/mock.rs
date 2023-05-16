@@ -1,4 +1,5 @@
 use crate as pallet_fuso_verifier;
+use frame_support::pallet_prelude::DispatchResult;
 use frame_support::traits::{ConstU32, SortedMembers};
 use frame_support::{construct_runtime, parameter_types};
 use frame_system as system;
@@ -123,7 +124,7 @@ parameter_types! {
 
 pub struct PhantomData;
 
-impl fuso_support::traits::Rewarding<AccountId, Balance, BlockNumber> for PhantomData {
+impl fuso_support::traits::Rewarding<AccountId, Balance, (u32, u32), BlockNumber> for PhantomData {
     type Balance = Balance;
 
     fn era_duration() -> BlockNumber {
@@ -138,12 +139,29 @@ impl fuso_support::traits::Rewarding<AccountId, Balance, BlockNumber> for Phanto
         0
     }
 
-    fn save_trading(
-        _trader: &AccountId,
-        _amount: Balance,
-        _at: BlockNumber,
-    ) -> frame_support::pallet_prelude::DispatchResult {
+    fn put_liquidity(_maker: &AccountId, _symbol: (u32, u32), _vol: Balance, _at: BlockNumber) {}
+
+    /// when liquidity is took out, the liquidity provider will get the reward.
+    /// the rewards are calculated in the formula below:
+    /// contribution ƒi = vol * min(current - from, era_duration) / 720
+    /// rewards of contribution ∂ = ƒi / ∑ƒi * era_rewards
+    /// NOTE: `vol` should be volume rather than amount
+    fn consume_liquidity(
+        _maker: &AccountId,
+        _symbol: (u32, u32),
+        _vol: Balance,
+        _current: BlockNumber,
+    ) -> DispatchResult {
         Ok(())
+    }
+
+    /// remove liquidity
+    fn remove_liquidity(
+        _maker: &AccountId,
+        _symbol: (u32, u32),
+        _vol: Balance,
+    ) -> Result<BlockNumber, frame_support::pallet_prelude::DispatchError> {
+        Ok(1)
     }
 }
 
@@ -154,6 +172,7 @@ impl pallet_fuso_indicator::Config for Test {
 
 impl pallet_fuso_verifier::Config for Test {
     type Asset = TokenModule;
+    type BrokerBeneficiary = ();
     type Callback = RuntimeCall;
     type DominatorCheckGracePeriod = DominatorCheckGracePeriod;
     type DominatorOnlineThreshold = DominatorOnlineThreshold;

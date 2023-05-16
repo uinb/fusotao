@@ -549,3 +549,15 @@ fn run_to_block(n: u32) {
         Verifier::on_initialize(System::block_number());
     }
 }
+
+#[test]
+pub fn decimal_scale_check() {
+    use sp_runtime::traits::CheckedSub;
+    use sp_runtime::Permill;
+    let fee = Permill::from_parts(1000);
+    let filled_vol = Permill::one()
+        .checked_sub(&fee)
+        .unwrap()
+        .saturating_reciprocal_mul_ceil(999_000_000000000u128);
+    assert_eq!(1_000000_000000000u128, filled_vol);
+}

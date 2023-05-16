@@ -15,15 +15,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
 pub use pallet::*;
-pub mod weights;
-
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
-
 #[cfg(test)]
 pub mod mock;
 #[cfg(test)]
 pub mod tests;
+pub mod weights;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -38,7 +36,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use fuso_support::{
         constants::*,
-        traits::{MarketManager, PriceOracle, ReservableToken, Rewarding, Token},
+        traits::{FeeBeneficiary, MarketManager, PriceOracle, ReservableToken, Rewarding, Token},
     };
     use scale_info::TypeInfo;
     use sp_core::sr25519::{Public as Sr25519Public, Signature as Sr25519Signature};
@@ -61,6 +59,7 @@ pub mod pallet {
     pub type Season = u32;
     pub type Amount = u128;
     pub type MerkleHash = [u8; 32];
+
     pub const PALLET_ID: frame_support::PalletId = frame_support::PalletId(*b"fuso/vrf");
     const UNSTAKE_DELAY_BLOCKS: u32 = 14400 * 4u32;
     const MAX_PROOF_SIZE: usize = 10 * 1024 * 1024usize;
@@ -203,6 +202,83 @@ pub mod pallet {
     }
 
     #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+    pub enum CommandV2<AccountId> {
+        AskLimit {
+            price: Compact<u128>,
+            amount: Compact<u128>,
+            maker_fee: Compact<u32>,
+            taker_fee: Compact<u32>,
+            base: Compact<u32>,
+            quote: Compact<u32>,
+            broker: Option<AccountId>,
+        },
+        BidLimit {
+            price: Compact<u128>,
+            amount: Compact<u128>,
+            maker_fee: Compact<u32>,
+            taker_fee: Compact<u32>,
+            base: Compact<u32>,
+            quote: Compact<u32>,
+            broker: Option<AccountId>,
+        },
+        Cancel {
+            base: Compact<u32>,
+            quote: Compact<u32>,
+        },
+        TransferOut {
+            currency: Compact<u32>,
+            amount: Compact<u128>,
+        },
+        TransferIn {
+            currency: Compact<u32>,
+            amount: Compact<u128>,
+        },
+        RejectTransferOut {
+            currency: Compact<u32>,
+            amount: Compact<u128>,
+        },
+        RejectTransferIn,
+    }
+
+    impl<AccountId> From<Command> for CommandV2<AccountId> {
+        fn from(cmd: Command) -> Self {
+            match cmd {
+                Command::AskLimit(price, amount, maker_fee, taker_fee, base, quote) => {
+                    CommandV2::AskLimit {
+                        price,
+                        amount,
+                        maker_fee,
+                        taker_fee,
+                        base,
+                        quote,
+                        broker: None,
+                    }
+                }
+                Command::BidLimit(price, amount, maker_fee, taker_fee, base, quote) => {
+                    CommandV2::BidLimit {
+                        price,
+                        amount,
+                        maker_fee,
+                        taker_fee,
+                        base,
+                        quote,
+                        broker: None,
+                    }
+                }
+                Command::Cancel(base, quote) => CommandV2::Cancel { base, quote },
+                Command::TransferOut(currency, amount) => {
+                    CommandV2::TransferOut { currency, amount }
+                }
+                Command::TransferIn(currency, amount) => CommandV2::TransferIn { currency, amount },
+                Command::RejectTransferOut(currency, amount) => {
+                    CommandV2::RejectTransferOut { currency, amount }
+                }
+                Command::RejectTransferIn => CommandV2::RejectTransferIn,
+            }
+        }
+    }
+
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
     pub struct Proof<AccountId> {
         pub event_id: u64,
         pub user_id: AccountId,
@@ -212,6 +288,33 @@ pub mod pallet {
         pub maker_account_delta: u8,
         pub merkle_proof: Vec<u8>,
         pub root: MerkleHash,
+    }
+
+    #[derive(Clone, Encode, Decode, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+    pub struct ProofV2<AccountId> {
+        pub event_id: u64,
+        pub user_id: AccountId,
+        pub cmd: CommandV2<AccountId>,
+        pub leaves: Vec<MerkleLeaf>,
+        pub maker_page_delta: u8,
+        pub maker_account_delta: u8,
+        pub merkle_proof: Vec<u8>,
+        pub root: MerkleHash,
+    }
+
+    impl<AccountId> From<Proof<AccountId>> for ProofV2<AccountId> {
+        fn from(proof: Proof<AccountId>) -> Self {
+            Self {
+                event_id: proof.event_id,
+                user_id: proof.user_id,
+                cmd: proof.cmd.into(),
+                leaves: proof.leaves,
+                maker_page_delta: proof.maker_page_delta,
+                maker_account_delta: proof.maker_account_delta,
+                merkle_proof: proof.merkle_proof,
+                root: proof.root,
+            }
+        }
     }
 
     #[derive(Clone, Encode, Decode, RuntimeDebug, Eq, PartialEq, TypeInfo)]
@@ -225,7 +328,7 @@ pub mod pallet {
     pub struct Dominator<Balance, BlockNumber> {
         pub name: Vec<u8>,
         pub staked: Balance,
-        pub merkle_root: [u8; 32],
+        pub merkle_root: MerkleHash,
         pub start_from: BlockNumber,
         pub sequence: (u64, BlockNumber),
         pub status: u8,
@@ -263,7 +366,7 @@ pub mod pallet {
 
         type Asset: ReservableToken<Self::AccountId>;
 
-        type Rewarding: Rewarding<Self::AccountId, Balance<Self>, Self::BlockNumber>;
+        type Rewarding: Rewarding<Self::AccountId, Balance<Self>, Symbol<Self>, Self::BlockNumber>;
 
         type WeightInfo: WeightInfo;
 
@@ -280,6 +383,8 @@ pub mod pallet {
             Balance<Self>,
             Self::BlockNumber,
         >;
+
+        type BrokerBeneficiary: FeeBeneficiary<Self::AccountId>;
 
         #[pallet::constant]
         type DominatorOnlineThreshold: Get<Balance<Self>>;
@@ -681,7 +786,13 @@ pub mod pallet {
             let proofs: Vec<Proof<T::AccountId>> =
                 Decode::decode(&mut TrailingZeroInput::new(uncompress_proofs.as_ref()))
                     .map_err(|_| Error::<T>::ProofFormatError)?;
-            Self::verify_batch(dominator_id, &dominator, proofs)
+            let proofs: Vec<ProofV2<T::AccountId>> =
+                proofs.into_iter().map(|p| p.into()).collect::<Vec<_>>();
+            let beneficiary: T::AccountId = Self::dominator_settings(&dominator_id)
+                .map(|setting| setting.beneficiary)
+                .flatten()
+                .unwrap_or(dominator_id.clone());
+            Self::verify_batch(dominator_id, beneficiary, &dominator, proofs)
         }
 
         #[pallet::weight((<T as Config>::WeightInfo::verify(), DispatchClass::Normal, Pays::No))]
@@ -696,7 +807,60 @@ pub mod pallet {
                 dominator.status == DOMINATOR_ACTIVE,
                 Error::<T>::DominatorInactive
             );
-            Self::verify_batch(dominator_id, &dominator, proofs)
+            let proofs: Vec<ProofV2<T::AccountId>> =
+                proofs.into_iter().map(|p| p.into()).collect::<Vec<_>>();
+            let beneficiary: T::AccountId = Self::dominator_settings(&dominator_id)
+                .map(|setting| setting.beneficiary)
+                .flatten()
+                .unwrap_or(dominator_id.clone());
+            Self::verify_batch(dominator_id, beneficiary, &dominator, proofs)
+        }
+
+        #[pallet::weight((<T as Config>::WeightInfo::verify(), DispatchClass::Normal, Pays::No))]
+        pub fn verify_compress_v2(
+            origin: OriginFor<T>,
+            compressed_proofs: Vec<u8>,
+        ) -> DispatchResultWithPostInfo {
+            let dominator_id = ensure_signed(origin)?;
+            let dominator = Dominators::<T>::try_get(&dominator_id)
+                .map_err(|_| Error::<T>::DominatorNotFound)?;
+            ensure!(
+                dominator.status == DOMINATOR_ACTIVE,
+                Error::<T>::DominatorInactive
+            );
+            let (uncompress_size, input) =
+                lz4_flex::block::uncompressed_size(compressed_proofs.as_ref())
+                    .map_err(|_| Error::<T>::ProofDecompressError)?;
+            ensure!(uncompress_size < MAX_PROOF_SIZE, Error::<T>::ProofTooLarge);
+            let uncompress_proofs = lz4_flex::decompress(input, uncompress_size)
+                .map_err(|_| Error::<T>::ProofDecompressError)?;
+            let proofs: Vec<ProofV2<T::AccountId>> =
+                Decode::decode(&mut TrailingZeroInput::new(uncompress_proofs.as_ref()))
+                    .map_err(|_| Error::<T>::ProofFormatError)?;
+            let beneficiary: T::AccountId = Self::dominator_settings(&dominator_id)
+                .map(|setting| setting.beneficiary)
+                .flatten()
+                .unwrap_or(dominator_id.clone());
+            Self::verify_batch(dominator_id, beneficiary, &dominator, proofs)
+        }
+
+        #[pallet::weight((<T as Config>::WeightInfo::verify(), DispatchClass::Normal, Pays::No))]
+        pub fn verify_v2(
+            origin: OriginFor<T>,
+            proofs: Vec<ProofV2<T::AccountId>>,
+        ) -> DispatchResultWithPostInfo {
+            let dominator_id = ensure_signed(origin)?;
+            let dominator = Dominators::<T>::try_get(&dominator_id)
+                .map_err(|_| Error::<T>::DominatorNotFound)?;
+            ensure!(
+                dominator.status == DOMINATOR_ACTIVE,
+                Error::<T>::DominatorInactive
+            );
+            let beneficiary: T::AccountId = Self::dominator_settings(&dominator_id)
+                .map(|setting| setting.beneficiary)
+                .flatten()
+                .unwrap_or(dominator_id.clone());
+            Self::verify_batch(dominator_id, beneficiary, &dominator, proofs)
         }
 
         #[transactional]
@@ -825,18 +989,28 @@ pub mod pallet {
 
     #[derive(Clone)]
     struct ClearingResult<T: Config> {
-        pub users_mutation: Vec<TokenMutation<T::AccountId, Balance<T>>>,
+        pub makers: Vec<MakerMutation<T::AccountId, Balance<T>>>,
+        pub taker: TakerMutation<T::AccountId, Balance<T>>,
         pub base_fee: Balance<T>,
         pub quote_fee: Balance<T>,
     }
 
     #[derive(Clone)]
-    struct TokenMutation<AccountId, Balance: Copy> {
+    struct TakerMutation<AccountId, Balance> {
         pub who: AccountId,
-        pub matched_volume: Balance,
-        pub matched_amount: Balance,
-        pub base_value: Balance,
-        pub quote_value: Balance,
+        pub unfilled_volume: Balance,
+        pub filled_volume: Balance,
+        pub filled_amount: Balance,
+        pub base_balance: Balance,
+        pub quote_balance: Balance,
+    }
+
+    #[derive(Clone)]
+    struct MakerMutation<AccountId, Balance> {
+        pub who: AccountId,
+        pub filled_volume: Balance,
+        pub base_balance: Balance,
+        pub quote_balance: Balance,
     }
 
     impl<T: Config> Pallet<T>
@@ -983,14 +1157,16 @@ pub mod pallet {
 
         fn verify_batch(
             dominator_id: T::AccountId,
+            beneficiary: T::AccountId,
             dominator: &Dominator<Balance<T>, BlockNumberFor<T>>,
-            proofs: Vec<Proof<T::AccountId>>,
+            proofs: Vec<ProofV2<T::AccountId>>,
         ) -> DispatchResultWithPostInfo {
             let mut known_root = dominator.merkle_root;
             let mut incr: BTreeMap<TokenId<T>, (Balance<T>, Balance<T>)> = BTreeMap::new();
             for proof in proofs.into_iter() {
                 let trade = Self::verify_and_update(
                     &dominator_id,
+                    &beneficiary,
                     known_root,
                     dominator.start_from.clone(),
                     proof,
@@ -1015,9 +1191,10 @@ pub mod pallet {
         #[transactional]
         fn verify_and_update(
             dominator_id: &T::AccountId,
+            beneficiary: &T::AccountId,
             known_root: MerkleHash,
             claim_at: T::BlockNumber,
-            proof: Proof<T::AccountId>,
+            proof: ProofV2<T::AccountId>,
         ) -> Result<Trade<TokenId<T>, Balance<T>>, DispatchError> {
             let mp = smt::CompiledMerkleProof(proof.merkle_proof.clone());
             let (old, new): (Vec<_>, Vec<_>) = proof
@@ -1045,7 +1222,15 @@ pub mod pallet {
                 vol: Zero::zero(),
             };
             match proof.cmd {
-                Command::AskLimit(price, amount, maker_fee, taker_fee, base, quote) => {
+                CommandV2::AskLimit {
+                    price,
+                    amount,
+                    maker_fee,
+                    taker_fee,
+                    base,
+                    quote,
+                    broker,
+                } => {
                     Self::check_fee(taker_fee.into(), maker_fee.into())?;
                     let (price, amount, maker_fee, taker_fee, base, quote): (
                         u128,
@@ -1078,26 +1263,69 @@ pub mod pallet {
                         dominator_id,
                         &proof.leaves,
                     )?;
-                    if cr.users_mutation.len() > 1 {
-                        for d in cr.users_mutation.iter() {
-                            Self::clear(&d.who, dominator_id, base.into(), d.base_value)?;
-                            Self::clear(&d.who, dominator_id, quote.into(), d.quote_value)?;
-                            T::Rewarding::save_trading(&d.who, d.matched_volume, current_block)?;
-                        }
-                        if let Some(t) = cr.users_mutation.last() {
-                            trade.token_id = base.into();
-                            trade.amount += t.matched_amount;
-                            trade.vol += t.matched_volume;
-                        }
+                    for d in cr.makers.iter() {
+                        Self::clear(&d.who, dominator_id, base.into(), d.base_balance)?;
+                        Self::clear(&d.who, dominator_id, quote.into(), d.quote_balance)?;
+                        T::Rewarding::consume_liquidity(
+                            &d.who,
+                            (base.into(), quote.into()),
+                            d.filled_volume,
+                            current_block,
+                        )?;
                     }
+                    Self::clear(
+                        &cr.taker.who,
+                        dominator_id,
+                        base.into(),
+                        cr.taker.base_balance,
+                    )?;
+                    Self::clear(
+                        &cr.taker.who,
+                        dominator_id,
+                        quote.into(),
+                        cr.taker.quote_balance,
+                    )?;
+                    T::Rewarding::put_liquidity(
+                        &cr.taker.who,
+                        (base.into(), quote.into()),
+                        cr.taker.unfilled_volume,
+                        current_block,
+                    );
+
+                    trade.token_id = base.into();
+                    trade.amount += cr.taker.filled_amount;
+                    trade.vol += cr.taker.filled_volume;
+
                     Self::put_profit(dominator_id, current_season, quote.into(), cr.quote_fee)?;
+                    // 50% to broker if exists
                     if cr.base_fee != Zero::zero() {
-                        T::Asset::try_mutate_account(&base.into(), dominator_id, |b| {
-                            Ok(b.0 += cr.base_fee)
+                        let base_fee = if let Some(broker) = broker {
+                            let near_half = Permill::from_percent(50).mul_ceil(cr.base_fee);
+                            T::Asset::try_mutate_account(
+                                &base.into(),
+                                &T::BrokerBeneficiary::beneficiary(broker),
+                                |b| Ok(b.0 += near_half),
+                            )?;
+                            cr.base_fee
+                                .checked_sub(&near_half)
+                                .ok_or(Error::<T>::Overflow)?
+                        } else {
+                            cr.base_fee
+                        };
+                        T::Asset::try_mutate_account(&base.into(), beneficiary, |b| {
+                            Ok(b.0 += base_fee)
                         })?;
                     }
                 }
-                Command::BidLimit(price, amount, maker_fee, taker_fee, base, quote) => {
+                CommandV2::BidLimit {
+                    price,
+                    amount,
+                    maker_fee,
+                    taker_fee,
+                    base,
+                    quote,
+                    broker,
+                } => {
                     Self::check_fee(taker_fee.into(), maker_fee.into())?;
                     let (price, amount, maker_fee, taker_fee, base, quote): (
                         u128,
@@ -1130,31 +1358,70 @@ pub mod pallet {
                         dominator_id,
                         &proof.leaves,
                     )?;
-                    if cr.users_mutation.len() > 1 {
-                        for d in cr.users_mutation.iter() {
-                            Self::clear(&d.who, dominator_id, base.into(), d.base_value)?;
-                            Self::clear(&d.who, dominator_id, quote.into(), d.quote_value)?;
-                            T::Rewarding::save_trading(&d.who, d.matched_volume, current_block)?;
-                            trade.token_id = base.into();
-                        }
-                        if let Some(t) = cr.users_mutation.last() {
-                            trade.token_id = base.into();
-                            trade.amount += t.matched_amount;
-                            trade.vol += t.matched_volume;
-                        }
+                    for d in cr.makers.iter() {
+                        Self::clear(&d.who, dominator_id, base.into(), d.base_balance)?;
+                        Self::clear(&d.who, dominator_id, quote.into(), d.quote_balance)?;
+                        T::Rewarding::consume_liquidity(
+                            &d.who,
+                            (base.into(), quote.into()),
+                            d.filled_volume,
+                            current_block,
+                        )?;
                     }
+
+                    Self::clear(
+                        &cr.taker.who,
+                        dominator_id,
+                        base.into(),
+                        cr.taker.base_balance,
+                    )?;
+                    Self::clear(
+                        &cr.taker.who,
+                        dominator_id,
+                        quote.into(),
+                        cr.taker.quote_balance,
+                    )?;
+                    T::Rewarding::put_liquidity(
+                        &cr.taker.who,
+                        (base.into(), quote.into()),
+                        cr.taker.unfilled_volume,
+                        current_block,
+                    );
+
+                    trade.token_id = base.into();
+                    trade.amount += cr.taker.filled_amount;
+                    trade.vol += cr.taker.filled_volume;
+
                     Self::put_profit(dominator_id, current_season, quote.into(), cr.quote_fee)?;
                     if cr.base_fee != Zero::zero() {
-                        T::Asset::try_mutate_account(&base.into(), dominator_id, |b| {
-                            Ok(b.0 += cr.base_fee)
+                        let base_fee = if let Some(broker) = broker {
+                            let near_half = Permill::from_percent(50).mul_ceil(cr.base_fee);
+                            T::Asset::try_mutate_account(
+                                &base.into(),
+                                &T::BrokerBeneficiary::beneficiary(broker),
+                                |b| Ok(b.0 += near_half),
+                            )?;
+                            cr.base_fee
+                                .checked_sub(&near_half)
+                                .ok_or(Error::<T>::Overflow)?
+                        } else {
+                            cr.base_fee
+                        };
+                        T::Asset::try_mutate_account(&base.into(), beneficiary, |b| {
+                            Ok(b.0 += base_fee)
                         })?;
                     }
                 }
-                Command::Cancel(base, quote) => {
+                CommandV2::Cancel { base, quote } => {
                     let (base, quote): (u32, u32) = (base.into(), quote.into());
-                    Self::verify_cancel(base, quote, &proof.user_id, &proof.leaves)?;
+                    let unfilled = Self::verify_cancel(base, quote, &proof.user_id, &proof.leaves)?;
+                    let _ = T::Rewarding::remove_liquidity(
+                        &proof.user_id,
+                        (base.into(), quote.into()),
+                        unfilled.into(),
+                    );
                 }
-                Command::TransferOut(currency, amount) => {
+                CommandV2::TransferOut { currency, amount } => {
                     let (currency, amount) = (currency.into(), amount.into());
                     let r = Receipts::<T>::get(dominator_id, &proof.user_id)
                         .ok_or(Error::<T>::ReceiptNotExists)?;
@@ -1195,7 +1462,7 @@ pub mod pallet {
                         _ => {}
                     }
                 }
-                Command::TransferIn(currency, amount) => {
+                CommandV2::TransferIn { currency, amount } => {
                     let (currency, amount) = (currency.into(), amount.into());
                     let r = Receipts::<T>::get(dominator_id, &proof.user_id)
                         .ok_or(Error::<T>::ReceiptNotExists)?;
@@ -1229,7 +1496,7 @@ pub mod pallet {
                     )?;
                     Receipts::<T>::remove(dominator_id, &proof.user_id);
                 }
-                Command::RejectTransferOut(currency, amount) => {
+                CommandV2::RejectTransferOut { currency, amount } => {
                     let (currency, amount): (u32, u128) = (currency.into(), amount.into());
                     let r = Receipts::<T>::get(&dominator_id, &proof.user_id)
                         .ok_or(Error::<T>::ReceiptNotExists)?;
@@ -1253,7 +1520,7 @@ pub mod pallet {
                     // needn't step forward
                     return Ok(trade);
                 }
-                Command::RejectTransferIn => {
+                CommandV2::RejectTransferIn => {
                     let r = Receipts::<T>::get(&dominator_id, &proof.user_id);
                     if r.is_none() {
                         return Ok(trade);
@@ -1344,7 +1611,7 @@ pub mod pallet {
             ensure!(bid_delta == tb_delta, Error::<T>::ProofsUnsatisfied);
             let mut mb_delta = 0u128;
             let mut mq_delta = 0u128;
-            let mut delta = Vec::new();
+            let mut maker_mutation = Vec::new();
             for i in 0..maker_accounts as usize / 2 {
                 // base first
                 let maker_base = &leaves[i * 2 + 1];
@@ -1381,36 +1648,32 @@ pub mod pallet {
                 mq_delta += quote_decr;
                 // the accounts should be owned by same user
                 ensure!(maker_b_id == maker_q_id, Error::<T>::ProofsUnsatisfied);
-                delta.push(TokenMutation {
+                maker_mutation.push(MakerMutation {
                     who: maker_q_id,
-                    matched_volume: quote_decr.into(),
-                    matched_amount: base_incr.into(),
-                    base_value: mb1.into(),
-                    quote_value: mq1.into(),
+                    // this includes the maker fee
+                    filled_volume: quote_decr.into(),
+                    base_balance: mb1.into(),
+                    quote_balance: mq1.into(),
                 });
             }
-            // FIXME ceil
             let base_charged = maker_fee.mul_ceil(tb_delta);
             ensure!(
                 mb_delta + base_charged == tb_delta,
                 Error::<T>::ProofsUnsatisfied
             );
-            // FIXME ceil
             let quote_charged = taker_fee.mul_ceil(mq_delta);
             ensure!(
-                mq_delta
-                    == tq_delta
-                        .checked_add(quote_charged)
-                        .ok_or(Error::<T>::Overflow)?,
+                tq_delta + quote_charged == mq_delta,
                 Error::<T>::ProofsUnsatisfied
             );
-            delta.push(TokenMutation {
+            let taker_mutation = TakerMutation {
                 who: taker_b_id,
-                matched_volume: mq_delta.into(),
-                matched_amount: tb_delta.into(),
-                base_value: (tba1 + tbf1).into(),
-                quote_value: (tqa1 + tqf1).into(),
-            });
+                unfilled_volume: tqf1.into(),
+                filled_volume: mq_delta.into(),
+                filled_amount: tb_delta.into(),
+                base_balance: (tba1 + tbf1).into(),
+                quote_balance: (tqa1 + tqf1).into(),
+            };
             let best_price = &leaves[maker_accounts as usize + 3];
             let (b, q) = best_price.try_get_symbol::<T>()?;
             ensure!(b == base && q == quote, Error::<T>::ProofsUnsatisfied);
@@ -1456,7 +1719,7 @@ pub mod pallet {
                         Error::<T>::ProofsUnsatisfied
                     );
                 } else {
-                    // filled or conditional_canceled
+                    // filled or conditionally_canceled
                     let vanity_maker = leaves.last().unwrap();
                     let (b, q, p) = vanity_maker.try_get_orderpage::<T>()?;
                     ensure!(b == base && q == quote, Error::<T>::ProofsUnsatisfied);
@@ -1492,7 +1755,8 @@ pub mod pallet {
                 }
             }
             Ok(ClearingResult {
-                users_mutation: delta,
+                makers: maker_mutation,
+                taker: taker_mutation,
                 base_fee: base_charged.into(),
                 quote_fee: quote_charged.into(),
             })
@@ -1555,7 +1819,7 @@ pub mod pallet {
             ensure!(taker_b_id == taker_q_id, Error::<T>::ProofsUnsatisfied);
             let mut mb_delta = 0u128;
             let mut mq_delta = 0u128;
-            let mut delta = Vec::new();
+            let mut maker_mutation = Vec::new();
             for i in 0..maker_accounts as usize / 2 {
                 // base first
                 let maker_base = &leaves[i * 2 + 1];
@@ -1593,15 +1857,17 @@ pub mod pallet {
                 mq_delta = mq_delta
                     .checked_add(quote_incr)
                     .ok_or(Error::<T>::Overflow)?;
-                delta.push(TokenMutation {
+                let filled_vol = Permill::one()
+                    .checked_sub(&maker_fee)
+                    .ok_or(Error::<T>::Overflow)?
+                    .saturating_reciprocal_mul_ceil(quote_incr);
+                maker_mutation.push(MakerMutation {
                     who: maker_b_id,
-                    matched_volume: quote_incr.into(),
-                    matched_amount: base_decr.into(),
-                    base_value: mb1.into(),
-                    quote_value: mq1.into(),
+                    filled_volume: filled_vol.into(),
+                    base_balance: mb1.into(),
+                    quote_balance: mq1.into(),
                 });
             }
-            // FIXME ceil
             let quote_charged = maker_fee.mul_ceil(tq_delta);
             ensure!(
                 mq_delta
@@ -1610,7 +1876,6 @@ pub mod pallet {
                     == tq_delta,
                 Error::<T>::ProofsUnsatisfied
             );
-            // FIXME ceil
             let base_charged = taker_fee.mul_ceil(mb_delta);
             ensure!(
                 tb_delta
@@ -1626,13 +1891,14 @@ pub mod pallet {
                     Error::<T>::ProofsUnsatisfied
                 );
             }
-            delta.push(TokenMutation {
+            let taker_mutation = TakerMutation {
                 who: taker_b_id,
-                matched_volume: tq_delta.into(),
-                matched_amount: mb_delta.into(),
-                base_value: (tba1.checked_add(tbf1).ok_or(Error::<T>::Overflow)?).into(),
-                quote_value: (tqa1.checked_add(tqf1).ok_or(Error::<T>::Overflow)?).into(),
-            });
+                unfilled_volume: tqf1.into(),
+                filled_volume: tq_delta.into(),
+                filled_amount: mb_delta.into(),
+                base_balance: (tba1.checked_add(tbf1).ok_or(Error::<T>::Overflow)?).into(),
+                quote_balance: (tqa1.checked_add(tqf1).ok_or(Error::<T>::Overflow)?).into(),
+            };
             let best_price = &leaves[maker_accounts as usize + 3];
             let (b, q) = best_price.try_get_symbol::<T>()?;
             ensure!(b == base && q == quote, Error::<T>::ProofsUnsatisfied);
@@ -1712,7 +1978,8 @@ pub mod pallet {
                 }
             }
             Ok(ClearingResult {
-                users_mutation: delta,
+                makers: maker_mutation,
+                taker: taker_mutation,
                 base_fee: base_charged.into(),
                 quote_fee: quote_charged.into(),
             })
@@ -1786,7 +2053,7 @@ pub mod pallet {
             quote: u32,
             account: &T::AccountId,
             leaves: &[MerkleLeaf],
-        ) -> Result<(), DispatchError> {
+        ) -> Result<u128, DispatchError> {
             ensure!(leaves.len() == 5, Error::<T>::ProofsUnsatisfied);
             let (b, q) = leaves[0].try_get_symbol::<T>()?;
             ensure!(b == base && q == quote, Error::<T>::ProofsUnsatisfied);
@@ -1819,18 +2086,13 @@ pub mod pallet {
             );
             let before_cancel = leaves[4].split_old_to_sum();
             let after_cancel = leaves[4].split_new_to_sum();
+            let delta = before_cancel - after_cancel;
             if cancel_at >= best_ask0 && best_ask0 != 0 {
-                ensure!(
-                    ask_delta == before_cancel - after_cancel,
-                    Error::<T>::ProofsUnsatisfied
-                );
+                ensure!(ask_delta == delta, Error::<T>::ProofsUnsatisfied);
             } else {
-                ensure!(
-                    bid_delta == before_cancel - after_cancel,
-                    Error::<T>::ProofsUnsatisfied
-                );
+                ensure!(bid_delta == delta, Error::<T>::ProofsUnsatisfied);
             }
-            Ok(())
+            Ok(delta)
         }
 
         fn has_authorized_morethan(

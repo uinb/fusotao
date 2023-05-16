@@ -1,7 +1,13 @@
+# v0.9.30-mainnet.161
+
+- migrate trading rewards to marketing rewards
+- distribute transaction fees to broker
+- change the caller of `register_broker` to broker beneficiary
+
 # v0.9.30-mainnet.159
 
 - enable polygon chain bridge
-- fix node rpc compile error
+- switch the compiler toolchain to stable
 
 # v0.9.30-node.158
 
@@ -9,7 +15,7 @@
 
 # v0.9.30-mainnet.158
 
-- fix bug about issue token
+- fix bug of issuing token
 
 # v0.9.30-node.157
 
