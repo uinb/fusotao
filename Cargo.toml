@@ -19,6 +19,7 @@ members = [
     'pallets/agent',
     'pallets/indicator',
     'pallets/market',
+    'pallets/bot',
     'pallets/chainbridge',
     'pallets/chainbridge-handler',
 ]

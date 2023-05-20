@@ -5216,6 +5216,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-fuso-bot"
+version = "4.0.2"
+dependencies = [
+ "ascii",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "fuso-support",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-keyring",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-fuso-foundation"
 version = "4.0.2"
 dependencies = [
