@@ -1,3 +1,7 @@
+# v0.9.30-mainnet.162
+
+- fix bug of `Token` pallet: when `from` and `to` are the same
+
 # v0.9.30-mainnet.161
 
 - migrate trading rewards to marketing rewards
