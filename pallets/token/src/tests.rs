@@ -48,7 +48,19 @@ fn issuing_token_and_transfer_should_work() {
                 reserved: Zero::zero(),
             }
         );
-
+        assert_ok!(Token::transfer(
+            RuntimeOrigin::signed(ferdie.clone()),
+            id.clone(),
+            MultiAddress::Id(ferdie.clone()),
+            1000000000000000000
+        ));
+        assert_eq!(
+            Token::get_token_balance((&id, &ferdie)),
+            TokenAccountData {
+                free: 1000000000000000000,
+                reserved: Zero::zero(),
+            }
+        );
         assert_ok!(Token::transfer(
             RuntimeOrigin::signed(ferdie.clone()),
             id.clone(),

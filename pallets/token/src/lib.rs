@@ -513,6 +513,9 @@ pub mod pallet {
             if amount.is_zero() {
                 return Ok(amount);
             }
+            if origin == target {
+                return Ok(amount);
+            }
             if token == Self::native_token_id() {
                 return <pallet_balances::Pallet<T> as Currency<T::AccountId>>::transfer(
                     origin,
