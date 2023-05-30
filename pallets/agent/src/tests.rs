@@ -13,7 +13,7 @@ type Balances = pallet_balances::Pallet<Test>;
 
 fn imply_account(pubkey: PublicKey) -> AccountId {
     let address = sp_io::hashing::keccak_256(&pubkey.serialize_uncompressed()[1..])[12..].to_vec();
-    let h = (b"-*-#fusotao#-*-", 1u16, address).using_encoded(sp_io::hashing::blake2_256);
+    let h = (b"-*-*-", 1u16, address).using_encoded(sp_io::hashing::blake2_256);
     Decode::decode(&mut TrailingZeroInput::new(h.as_ref())).unwrap()
 }
 
@@ -100,13 +100,18 @@ fn basic_sign_should_work() {
         sig[0..64].copy_from_slice(&r64[..]);
         sig[64] = r.to_i32().try_into().unwrap();
         let prefix = b"\x19Ethereum Signed Message:\n8Ofg4NGHw";
+		println!("{:?}", String::from_utf8(prefix.to_vec()));
         let digest = sp_io::hashing::keccak_256(&prefix[..]);
+		println!("hash = {}", hex::encode(&digest));
         let signature: [u8; 65] = hex_literal::hex!("aecf9f42ffd739ba2057adea3f035e286c4a40d16875da3b63f116227489831a33b5a3e58ce58bb9ad3bafe81bb7582fc57de2cd23fd90cf3ab58d7a390996b51b");
         let pubkey = sp_io::crypto::secp256k1_ecdsa_recover(&signature, &digest).map_err(|_|()).unwrap();
+		println!("==={:?}", hex::encode(pubkey));
         let addr = &sp_io::hashing::keccak_256(&pubkey[..])[12..];
         assert_eq!(addr.to_vec(), hex_literal::hex!("544f52f459a42e098775118e0a1880f1fa3eb9a9"));
-        let prefix = b"\x19Ethereum Signed Message:\n264000000001b0900d8366bd6c6bd841069543b219c46fda846981bdf19fae11cc88d2d9924a0f2630c0000000000f4448291634500000000000000001801404b4c000000000000000000000000001400000000000000006d816a5c38acefabede80a56b1f8bc27fa6ec24201050050847dc5ea89c407f1416f23d87b40ce317798e1330500";
-        let digest = sp_io::hashing::keccak_256(&prefix[..]);
+
+       let prefix = b"\x19Ethereum Signed Message:\n264000000001b0900d8366bd6c6bd841069543b219c46fda846981bdf19fae11cc88d2d9924a0f2630c0000000000f4448291634500000000000000001801404b4c000000000000000000000000001400000000000000006d816a5c38acefabede80a56b1f8bc27fa6ec24201050050847dc5ea89c407f1416f23d87b40ce317798e1330500";
+        println!("{:?}", String::from_utf8(prefix.to_vec()));
+		let digest = sp_io::hashing::keccak_256(&prefix[..]);
         let signature: [u8; 65] = hex_literal::hex!("bf2d50b1ccbb04621dbd87e4f3ff75e96526d2fbfeaf5ddff93a9cd28130f8603581067cfc14717a66af8b27efb895a549dfc5487074bfb960a7812177e3ea141c");
         let pubkey = sp_io::crypto::secp256k1_ecdsa_recover(&signature, &digest).map_err(|_|()).unwrap();
         let addr = &sp_io::hashing::keccak_256(&pubkey[..])[12..];

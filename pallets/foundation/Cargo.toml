@@ -28,7 +28,14 @@ fuso-support = { path = "../fuso-support", default-features = false }
 [dev-dependencies]
 sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
-
+beefy-primitives = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+hex = "0.4.3"
+anyhow = "1.0.70"
+ckb-merkle-mountain-range = "0.3.2"
+sc-finality-grandpa = { version = "0.10.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+fuso-primitives = { version = "4.0.1", default-features = false, path = "../../primitives" }
+pallet-beefy-mmr = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+secp256k1 = "0.24.3"
 [features]
 default = ['std']
 std = [
