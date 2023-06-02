@@ -28,7 +28,7 @@ pub mod pallet {
     use fuso_support::traits::{Custody, ReservableToken, Token};
     use sp_runtime::traits::{AccountIdConversion, Zero};
 
-    pub const PALLET_ID: frame_support::PalletId = frame_support::PalletId(*b"fuso/mrk");
+    pub const PALLET_ID: frame_support::PalletId = frame_support::PalletId(*b"fuso/bot");
 
     pub type TokenId<T> =
         <<T as Config>::Assets as Token<<T as frame_system::Config>::AccountId>>::TokenId;
