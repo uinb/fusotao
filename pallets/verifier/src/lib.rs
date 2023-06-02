@@ -1857,13 +1857,14 @@ pub mod pallet {
                 mq_delta = mq_delta
                     .checked_add(quote_incr)
                     .ok_or(Error::<T>::Overflow)?;
-                let filled_vol = Permill::one()
-                    .checked_sub(&maker_fee)
-                    .ok_or(Error::<T>::Overflow)?
-                    .saturating_reciprocal_mul_ceil(quote_incr);
+                // let filled_vol = Permill::one()
+                //     .checked_sub(&maker_fee)
+                //     .ok_or(Error::<T>::Overflow)?
+                //     .saturating_reciprocal_mul_ceil(quote_incr);
+                // FIXME this is actually wrong, we need to include the transaction fee
                 maker_mutation.push(MakerMutation {
                     who: maker_b_id,
-                    filled_volume: filled_vol.into(),
+                    filled_volume: quote_incr.into(),
                     base_balance: mb1.into(),
                     quote_balance: mq1.into(),
                 });
