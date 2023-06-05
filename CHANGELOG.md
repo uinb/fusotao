@@ -1,3 +1,7 @@
+# v0.9.30-testnet.165
+
+- enable dmm test
+
 # v0.9.30-mainnet.163
 
 - fix bug of `Rewards` pallet: counting `ask`-`maker`-`vol` into the `taken_liquidity`
