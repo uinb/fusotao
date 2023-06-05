@@ -27,6 +27,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use fuso_support::traits::{Custody, ReservableToken, Token};
     use sp_runtime::traits::{AccountIdConversion, Zero};
+    use sp_std::vec::Vec;
 
     pub const PALLET_ID: frame_support::PalletId = frame_support::PalletId(*b"fuso/bot");
 
@@ -282,8 +283,8 @@ pub mod pallet {
             bot: T::AccountId,
             currency: TokenId<T>,
         ) -> T::AccountId {
-            let h = (b"-*-#fuso-proxy#-*-", currency, from, bot)
-                .using_encoded(sp_core::hashing::blake2_256);
+            let h = (b"-*-#fusotao-proxy#-*-", currency, from, bot)
+                .using_encoded(sp_io::hashing::blake2_256);
             Decode::decode(&mut h.as_ref()).expect("32 bytes; qed")
         }
 

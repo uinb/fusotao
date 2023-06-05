@@ -2544,6 +2544,7 @@ dependencies = [
  "pallet-chainbridge",
  "pallet-chainbridge-handler",
  "pallet-fuso-agent",
+ "pallet-fuso-bot",
  "pallet-fuso-foundation",
  "pallet-fuso-indicator",
  "pallet-fuso-market",

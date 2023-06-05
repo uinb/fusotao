@@ -40,6 +40,9 @@ std = [
     'frame-system/std',
     'frame-benchmarking/std',
     'sp-std/std',
+	'sp-core/std',
+	'sp-io/std',
+	'sp-runtime/std',
 	'pallet-fuso-token/std',
 	'pallet-fuso-verifier/std'
 ]

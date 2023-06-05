@@ -124,7 +124,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 163,
+    spec_version: 166,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 3,
@@ -771,6 +771,17 @@ impl pallet_fuso_reward::Config for Runtime {
 }
 
 parameter_types! {
+    pub const BotStakingThreshold: Balance = 5000 * DOLLARS;
+}
+
+impl pallet_fuso_bot::Config for Runtime {
+    type Assets = Token;
+    type BotStakingThreshold = BotStakingThreshold;
+    type Custody = Verifier;
+    type RuntimeEvent = RuntimeEvent;
+}
+
+parameter_types! {
     pub const DominatorOnlineThreshold: Balance = 80_000 * DOLLARS;
     pub const SeasonDuration: BlockNumber = 3 * DAYS;
     pub const MinimalStakingAmount: Balance = 100 * DOLLARS;
@@ -847,7 +858,8 @@ construct_runtime!(
         Agent: pallet_fuso_agent::<EthInstance>,
         Indicator: pallet_fuso_indicator,
         Verifier: pallet_fuso_verifier,
-        Market: pallet_fuso_market
+        Market: pallet_fuso_market,
+        Bot: pallet_fuso_bot,
     }
 );
 
