@@ -192,7 +192,7 @@ parameter_types! {
 }
 
 impl pallet_fuso_bot::Config for Test {
-    type Assets = Token;
+    type Assets = TokenModule;
     type BotStakingThreshold = BotStakingThreshold;
     type Custody = Verifier;
     type RuntimeEvent = RuntimeEvent;

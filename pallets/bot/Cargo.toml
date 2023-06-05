@@ -29,7 +29,9 @@ fuso-support = { path = "../fuso-support", default-features = false }
 [dev-dependencies]
 sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
-
+pallet-fuso-verifier = {path = "../verifier", default-features = false }
+pallet-fuso-token = {path = "../token", default-features = false }
+pallet-fuso-indicator = {path = "../indicator", default-features = false }
 [features]
 default = ['std']
 std = [
@@ -38,6 +40,8 @@ std = [
     'frame-system/std',
     'frame-benchmarking/std',
     'sp-std/std',
+	'pallet-fuso-token/std',
+	'pallet-fuso-verifier/std'
 ]
 runtime-benchmarks = [
     'frame-benchmarking',
