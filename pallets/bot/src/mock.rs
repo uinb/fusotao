@@ -221,8 +221,13 @@ pub fn new_tester() -> sp_io::TestExternalities {
         .unwrap();
 
     let ferdie = AccountKeyring::Ferdie.into();
+    let alice = AccountKeyring::Alice.into();
     pallet_balances::GenesisConfig::<Test> {
-        balances: vec![(ferdie, 10000000000000000000), (TREASURY, 1000 * DOLLARS)],
+        balances: vec![
+            (ferdie, 10000 * DOLLARS),
+            (alice, 100000 * DOLLARS),
+            (TREASURY, 1000 * DOLLARS),
+        ],
     }
     .assimilate_storage(&mut t)
     .unwrap();
