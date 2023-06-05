@@ -219,18 +219,18 @@ pub fn new_tester() -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
-
+    let dominator = AccountKeyring::Eve.into();
     let ferdie = AccountKeyring::Ferdie.into();
     let alice = AccountKeyring::Alice.into();
     pallet_balances::GenesisConfig::<Test> {
         balances: vec![
-            (ferdie, 10000 * DOLLARS),
-            (alice, 100000 * DOLLARS),
+            (ferdie, 100000 * DOLLARS),
+            (alice, 100000000000 * DOLLARS),
             (TREASURY, 1000 * DOLLARS),
+            (dominator, 100000 * DOLLARS),
         ],
     }
     .assimilate_storage(&mut t)
     .unwrap();
-
     sp_io::TestExternalities::new(t)
 }

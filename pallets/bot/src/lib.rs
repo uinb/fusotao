@@ -59,6 +59,7 @@ pub mod pallet {
     pub enum Error<T> {
         BotAlreadyExist,
         BotNotFound,
+        InvalidSymbol,
         InvalidCurrency,
         BeyondMaxInstance,
         MinimalAmountRequired,
@@ -168,6 +169,7 @@ pub mod pallet {
                 !Bots::<T>::contains_key(&creator),
                 Error::<T>::BotAlreadyExist
             );
+            ensure!(symbol.0 != symbol.1, Error::<T>::InvalidSymbol,);
             let requires = T::BotStakingThreshold::get();
             T::Assets::transfer_token(
                 &creator,
@@ -214,7 +216,7 @@ pub mod pallet {
             let sub0 = Self::derive_sub_account(from.clone(), bot_id.clone(), bot.symbol.0);
             let sub1 = Self::derive_sub_account(from.clone(), bot_id.clone(), bot.symbol.1);
             T::Assets::transfer_token(&from, bot.symbol.0, base_amount, &sub0)?;
-            T::Assets::transfer_token(&from, bot.symbol.1, quote_amount, &sub0)?;
+            T::Assets::transfer_token(&from, bot.symbol.1, quote_amount, &sub1)?;
             T::Custody::authorize_to(sub0.clone(), dominator.clone(), bot.symbol.0, base_amount)?;
             T::Custody::authorize_to(sub1.clone(), dominator, bot.symbol.1, quote_amount)?;
             Bots::<T>::mutate(&bot_id, |b| b.as_mut().unwrap().current_instance += 1);
