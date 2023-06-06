@@ -5225,6 +5225,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "fuso-support",
+ "hex",
  "pallet-balances",
  "pallet-fuso-indicator",
  "pallet-fuso-token",

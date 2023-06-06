@@ -32,6 +32,7 @@ pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch 
 pallet-fuso-verifier = {path = "../verifier", default-features = false }
 pallet-fuso-token = {path = "../token", default-features = false }
 pallet-fuso-indicator = {path = "../indicator", default-features = false }
+hex = "0.4.3"
 [features]
 default = ['std']
 std = [

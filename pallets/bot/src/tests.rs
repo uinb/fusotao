@@ -8,9 +8,12 @@ use fuso_support::traits::ReservableToken;
 use fuso_support::XToken;
 use pallet_fuso_token::TokenAccountData;
 use pallet_fuso_verifier::Receipt;
+use sp_core::crypto::Ss58Codec;
+use sp_core::ByteArray;
 use sp_keyring::AccountKeyring;
 use sp_runtime::traits::Zero;
 use sp_runtime::MultiAddress;
+use std::str::FromStr;
 
 type Bot = Pallet<Test>;
 #[test]
@@ -193,4 +196,20 @@ fn test_deposit() {
 }
 
 #[test]
-fn test_revoke() {}
+fn test_derive_sub_account() {
+    let alice: AccountId = AccountKeyring::Alice.into();
+    let bot: AccountId = AccountKeyring::Ferdie.into();
+    let r = Bot::derive_sub_account(alice.clone(), bot.clone(), 1u32);
+    assert_eq!(
+        r,
+        AccountId::from_str("0x768cff70bf523090fa1d09494cda1d4686361d1bc99129db3d67fe8b57649b7f")
+            .unwrap()
+    );
+    /*  println!(
+        "参数:user_addr: {}, bot_addr: {}, tokenid: {}",
+        format!("0x{}", hex::encode(alice.to_raw_vec())),
+        format!("0x{}", hex::encode(bot.to_raw_vec())),
+        1
+    );
+    println!("子账户: 0x768cff70bf523090fa1d09494cda1d4686361d1bc99129db3d67fe8b57649b7f",);*/
+}
