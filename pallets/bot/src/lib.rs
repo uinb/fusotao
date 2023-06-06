@@ -69,7 +69,7 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-    pub struct Bot<Balance, TokenId> {
+    pub struct Bot<Balance, TokenId, AccountId> {
         pub staked: Balance,
         pub symbol: (TokenId, TokenId),
         pub name: Vec<u8>,
@@ -77,13 +77,19 @@ pub mod pallet {
         pub current_instance: u32,
         pub min_base: Balance,
         pub min_quote: Balance,
+        pub users: Vec<AccountId>,
         pub desc: Vec<u8>,
     }
 
     #[pallet::storage]
     #[pallet::getter(fn bots)]
-    pub type Bots<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, Bot<Balance<T>, TokenId<T>>, OptionQuery>;
+    pub type Bots<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        T::AccountId,
+        Bot<Balance<T>, TokenId<T>, T::AccountId>,
+        OptionQuery,
+    >;
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -185,6 +191,7 @@ pub mod pallet {
                 current_instance: 0,
                 min_base,
                 min_quote,
+                users: vec![],
                 desc,
             };
             Bots::<T>::insert(creator.clone(), bot);
@@ -219,7 +226,13 @@ pub mod pallet {
             T::Assets::transfer_token(&from, bot.symbol.1, quote_amount, &sub1)?;
             T::Custody::authorize_to(sub0.clone(), dominator.clone(), bot.symbol.0, base_amount)?;
             T::Custody::authorize_to(sub1.clone(), dominator, bot.symbol.1, quote_amount)?;
-            Bots::<T>::mutate(&bot_id, |b| b.as_mut().unwrap().current_instance += 1);
+            Bots::<T>::mutate(&bot_id, |b| {
+                let bb = b.as_mut().unwrap();
+                if !bb.users.contains(&from) {
+                    bb.users.push(from);
+                    bb.current_instance += 1;
+                }
+            });
             Ok(())
         }
 

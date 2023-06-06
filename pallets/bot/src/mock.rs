@@ -222,10 +222,12 @@ pub fn new_tester() -> sp_io::TestExternalities {
     let dominator = AccountKeyring::Eve.into();
     let ferdie = AccountKeyring::Ferdie.into();
     let alice = AccountKeyring::Alice.into();
+    let charlie = AccountKeyring::Charlie.into();
     pallet_balances::GenesisConfig::<Test> {
         balances: vec![
             (ferdie, 100000 * DOLLARS),
             (alice, 100000000000 * DOLLARS),
+            (charlie, 100000000000 * DOLLARS),
             (TREASURY, 1000 * DOLLARS),
             (dominator, 100000 * DOLLARS),
         ],

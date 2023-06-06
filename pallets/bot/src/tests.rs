@@ -58,6 +58,7 @@ fn test_register_bot() {
             current_instance: 0,
             min_base: 10000000,
             min_quote: 10000000,
+            users: vec![],
             desc: "aas".as_bytes().to_vec(),
         };
         assert_eq!(b, Bot::bots(&ferdie).unwrap());
@@ -69,6 +70,7 @@ fn test_deposit() {
     let bot_account: AccountId = AccountKeyring::Ferdie.into();
     let alice: AccountId = AccountKeyring::Alice.into();
     let dominator: AccountId = AccountKeyring::Eve.into();
+    let charlie: AccountId = AccountKeyring::Charlie.into();
     new_tester().execute_with(|| {
         //error
         assert_noop!(
@@ -86,7 +88,7 @@ fn test_deposit() {
             RuntimeOrigin::signed(bot_account.clone()),
             (0, 1),
             "01".as_bytes().to_vec(),
-            1000u32,
+            1u32,
             1000,
             1000,
             "aas".as_bytes().to_vec(),
@@ -138,6 +140,9 @@ fn test_deposit() {
 
         // mint 1 usdt
         let _ = pallet_fuso_token::Pallet::<Test>::do_mint(usdt_id, &alice, 1000000, None);
+        // mint 1 usdt
+        let _ = pallet_fuso_token::Pallet::<Test>::do_mint(usdt_id, &charlie, 1000000, None);
+
         assert_eq!(
             pallet_fuso_token::Pallet::<Test>::get_token_balance((&usdt_id, &alice)),
             TokenAccountData {
@@ -152,5 +157,18 @@ fn test_deposit() {
             1000u128,
             1000u128
         ));
+        assert_noop!(
+            Bot::deposit(
+                RuntimeOrigin::signed(charlie.clone()),
+                bot_account.clone(),
+                dominator.clone(),
+                1000u128,
+                1000u128
+            ),
+            Error::<Test>::BeyondMaxInstance
+        );
     });
 }
+
+#[test]
+fn test_revoke() {}
