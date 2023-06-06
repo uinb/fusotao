@@ -4,8 +4,10 @@ use crate::mock::*;
 use crate::{pallet, Error, Pallet};
 use frame_support::dispatch::RawOrigin;
 use frame_support::{assert_noop, assert_ok};
+use fuso_support::traits::ReservableToken;
 use fuso_support::XToken;
 use pallet_fuso_token::TokenAccountData;
+use pallet_fuso_verifier::Receipt;
 use sp_keyring::AccountKeyring;
 use sp_runtime::traits::Zero;
 use sp_runtime::MultiAddress;
@@ -166,6 +168,26 @@ fn test_deposit() {
                 1000u128
             ),
             Error::<Test>::BeyondMaxInstance
+        );
+
+        let sub0 = Bot::derive_sub_account(alice.clone(), bot_account.clone(), 0);
+        let sub1 = Bot::derive_sub_account(alice.clone(), bot_account.clone(), 1);
+        assert_eq!(Balances::free_balance(&sub0), 0);
+        assert_eq!(Balances::reserved_balance(&sub0), 1000);
+        assert_eq!(
+            TokenModule::get_token_balance((&1u32, &sub1)),
+            TokenAccountData {
+                free: 0,
+                reserved: 1000,
+            }
+        );
+        assert_eq!(
+            Verifier::receipts(dominator.clone(), sub0.clone()).unwrap(),
+            Receipt::Authorize(0, 1000, 15)
+        );
+        assert_eq!(
+            Verifier::receipts(dominator.clone(), sub1.clone()).unwrap(),
+            Receipt::Authorize(1, 1000, 15)
         );
     });
 }

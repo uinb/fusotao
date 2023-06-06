@@ -191,7 +191,7 @@ pub mod pallet {
                 current_instance: 0,
                 min_base,
                 min_quote,
-                users: vec![],
+                users: Vec::new(),
                 desc,
             };
             Bots::<T>::insert(creator.clone(), bot);
