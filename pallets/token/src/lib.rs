@@ -521,7 +521,7 @@ pub mod pallet {
                     origin,
                     target,
                     amount,
-                    ExistenceRequirement::KeepAlive,
+                    ExistenceRequirement::AllowDeath,
                 )
                 .map(|_| amount);
             }

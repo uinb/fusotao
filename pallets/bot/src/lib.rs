@@ -245,18 +245,14 @@ pub mod pallet {
             let bot = Bots::<T>::get(&bot_id).ok_or(Error::<T>::BotNotFound)?;
             let sub0 = Self::derive_sub_account(from.clone(), bot_id.clone(), bot.symbol.0);
             let sub1 = Self::derive_sub_account(from.clone(), bot_id.clone(), bot.symbol.1);
-            T::Assets::transfer_token(
-                &sub0,
-                currency,
-                T::Assets::free_balance(&currency, &sub0),
-                &from,
-            )?;
-            T::Assets::transfer_token(
-                &sub1,
-                currency,
-                T::Assets::free_balance(&currency, &sub1),
-                &from,
-            )?;
+            let balance0 = T::Assets::free_balance(&currency, &sub0);
+            let balance1 = T::Assets::free_balance(&currency, &sub1);
+            if balance0 != Zero::zero() {
+                T::Assets::transfer_token(&sub0, currency, balance0, &from)?;
+            }
+            if balance1 != Zero::zero() {
+                T::Assets::transfer_token(&sub1, currency, balance1, &from)?;
+            }
             Ok(())
         }
 
