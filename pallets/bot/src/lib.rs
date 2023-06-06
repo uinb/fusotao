@@ -248,12 +248,8 @@ pub mod pallet {
             let sub1 = Self::derive_sub_account(from.clone(), bot_id.clone(), bot.symbol.1);
             let balance0 = T::Assets::free_balance(&currency, &sub0);
             let balance1 = T::Assets::free_balance(&currency, &sub1);
-            if balance0 != Zero::zero() {
-                T::Assets::transfer_token(&sub0, currency, balance0, &from)?;
-            }
-            if balance1 != Zero::zero() {
-                T::Assets::transfer_token(&sub1, currency, balance1, &from)?;
-            }
+            T::Assets::transfer_token(&sub0, currency, balance0, &from)?;
+            T::Assets::transfer_token(&sub1, currency, balance1, &from)?;
             Ok(())
         }
 

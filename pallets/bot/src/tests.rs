@@ -213,6 +213,7 @@ fn test_deposit() {
 
 #[test]
 fn test_derive_sub_account() {
+    use sp_core::ByteArray;
     let alice: AccountId = AccountKeyring::Alice.into();
     let bot: AccountId = AccountKeyring::Ferdie.into();
     let r = Bot::derive_sub_account(alice.clone(), bot.clone(), 1u32);
@@ -221,13 +222,13 @@ fn test_derive_sub_account() {
         AccountId::from_str("0x768cff70bf523090fa1d09494cda1d4686361d1bc99129db3d67fe8b57649b7f")
             .unwrap()
     );
-    /*  println!(
+    println!(
         "参数:user_addr: {}, bot_addr: {}, tokenid: {}",
         format!("0x{}", hex::encode(alice.to_raw_vec())),
         format!("0x{}", hex::encode(bot.to_raw_vec())),
         1
     );
-    println!("子账户: 0x768cff70bf523090fa1d09494cda1d4686361d1bc99129db3d67fe8b57649b7f",);*/
+    println!("子账户: 0x768cff70bf523090fa1d09494cda1d4686361d1bc99129db3d67fe8b57649b7f",);
 }
 
 #[test]
@@ -245,7 +246,6 @@ fn test_withdraw() {
             true,
             6,
         );
-
         assert_ok!(pallet_fuso_token::Pallet::<Test>::issue(
             RuntimeOrigin::signed(alice.clone()),
             usdt,
