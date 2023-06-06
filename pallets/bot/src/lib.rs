@@ -176,6 +176,7 @@ pub mod pallet {
                 Error::<T>::BotAlreadyExist
             );
             ensure!(symbol.0 != symbol.1, Error::<T>::InvalidSymbol,);
+            ensure!(T::Assets::is_stable(&symbol.1), Error::<T>::InvalidSymbol);
             let requires = T::BotStakingThreshold::get();
             T::Assets::transfer_token(
                 &creator,

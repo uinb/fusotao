@@ -1,15 +1,13 @@
 #![cfg(test)]
 
 use crate::mock::*;
-use crate::{pallet, Error, Pallet};
+use crate::{Error, Pallet};
 use frame_support::dispatch::RawOrigin;
 use frame_support::{assert_noop, assert_ok};
-use fuso_support::traits::{ReservableToken, Token};
+use fuso_support::traits::Token;
 use fuso_support::XToken;
 use pallet_fuso_token::TokenAccountData;
 use pallet_fuso_verifier::Receipt;
-use sp_core::crypto::Ss58Codec;
-use sp_core::ByteArray;
 use sp_keyring::AccountKeyring;
 use sp_runtime::traits::Zero;
 use sp_runtime::MultiAddress;
@@ -20,11 +18,29 @@ type Bot = Pallet<Test>;
 fn test_register_bot() {
     let ferdie: AccountId = AccountKeyring::Ferdie.into();
     let bob: AccountId = AccountKeyring::Bob.into();
+    let alice: AccountId = AccountKeyring::Alice.into();
     new_tester().execute_with(|| {
+        let usdt_id = 1u32;
+        let usdt = XToken::NEP141(
+            br#"USDT"#.to_vec(),
+            br#"usdt.testnet"#.to_vec(),
+            Zero::zero(),
+            true,
+            6,
+        );
+
+        assert_ok!(pallet_fuso_token::Pallet::<Test>::issue(
+            RuntimeOrigin::signed(alice.clone()),
+            usdt,
+        ));
+        assert_ok!(pallet_fuso_token::Pallet::<Test>::mark_stable(
+            RawOrigin::Root.into(),
+            usdt_id
+        ));
         assert_noop!(
             Bot::register(
                 RuntimeOrigin::signed(bob),
-                (0, 3),
+                (0, 1),
                 "03".as_bytes().to_vec(),
                 1000u32,
                 10000000,
@@ -35,7 +51,7 @@ fn test_register_bot() {
         );
         assert_ok!(Bot::register(
             RuntimeOrigin::signed(ferdie.clone()),
-            (0, 3),
+            (0, 1),
             "03".as_bytes().to_vec(),
             1000u32,
             10000000,
@@ -46,7 +62,7 @@ fn test_register_bot() {
         assert_noop!(
             Bot::register(
                 RuntimeOrigin::signed(ferdie.clone()),
-                (0, 3),
+                (0, 1),
                 "03".as_bytes().to_vec(),
                 1000u32,
                 10000000,
@@ -57,7 +73,7 @@ fn test_register_bot() {
         );
         let b = crate::pallet::Bot {
             staked: 10000,
-            symbol: (0, 3),
+            symbol: (0, 1),
             name: "03".as_bytes().to_vec(),
             max_instance: 1000,
             current_instance: 0,
@@ -88,6 +104,24 @@ fn test_deposit() {
             ),
             Error::<Test>::BotNotFound
         );
+
+        let usdt_id = 1u32;
+        let usdt = XToken::NEP141(
+            br#"USDT"#.to_vec(),
+            br#"usdt.testnet"#.to_vec(),
+            Zero::zero(),
+            true,
+            6,
+        );
+
+        assert_ok!(pallet_fuso_token::Pallet::<Test>::issue(
+            RuntimeOrigin::signed(alice.clone()),
+            usdt,
+        ));
+        assert_ok!(pallet_fuso_token::Pallet::<Test>::mark_stable(
+            RawOrigin::Root.into(),
+            usdt_id
+        ));
 
         assert_ok!(Bot::register(
             RuntimeOrigin::signed(bot_account.clone()),
@@ -123,24 +157,6 @@ fn test_deposit() {
             RuntimeOrigin::signed(alice.clone()),
             MultiAddress::Id(dominator.clone()),
             90000
-        ));
-
-        let usdt_id = 1u32;
-        let usdt = XToken::NEP141(
-            br#"USDT"#.to_vec(),
-            br#"usdt.testnet"#.to_vec(),
-            Zero::zero(),
-            true,
-            6,
-        );
-
-        assert_ok!(pallet_fuso_token::Pallet::<Test>::issue(
-            RuntimeOrigin::signed(alice.clone()),
-            usdt,
-        ));
-        assert_ok!(pallet_fuso_token::Pallet::<Test>::mark_stable(
-            RawOrigin::Root.into(),
-            usdt_id
         ));
 
         // mint 1 usdt
@@ -218,8 +234,6 @@ fn test_derive_sub_account() {
 fn test_withdraw() {
     let bot_account: AccountId = AccountKeyring::Ferdie.into();
     let alice: AccountId = AccountKeyring::Alice.into();
-    let dominator: AccountId = AccountKeyring::Eve.into();
-    let charlie: AccountId = AccountKeyring::Charlie.into();
     let sub0 = Bot::derive_sub_account(alice.clone(), bot_account.clone(), 0);
     let sub1 = Bot::derive_sub_account(alice.clone(), bot_account.clone(), 1);
     new_tester().execute_with(|| {
