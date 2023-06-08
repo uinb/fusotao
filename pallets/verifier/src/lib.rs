@@ -1079,6 +1079,9 @@ pub mod pallet {
                 &(RESERVE_FOR_AUTHORIZING, fund_owner.clone(), token_id),
                 dominator_id.clone(),
             ));
+            if amount == Zero::zero() {
+                return Ok(());
+            }
             ensure!(
                 Self::has_authorized_morethan(fund_owner.clone(), token_id, amount, &dominator_id),
                 Error::<T>::InsufficientBalance
