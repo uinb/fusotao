@@ -22,7 +22,7 @@ pub mod pallet {
     use fuso_support::traits::DecimalsTransformer;
     use fuso_support::{
         chainbridge::*,
-        traits::{PriceOracle, Token},
+        traits::{Custody, PriceOracle, Token},
         ChainId,
     };
     use pallet_chainbridge as bridge;

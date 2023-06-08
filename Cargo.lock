@@ -2544,6 +2544,7 @@ dependencies = [
  "pallet-chainbridge",
  "pallet-chainbridge-handler",
  "pallet-fuso-agent",
+ "pallet-fuso-bot",
  "pallet-fuso-foundation",
  "pallet-fuso-indicator",
  "pallet-fuso-market",
@@ -5207,6 +5208,30 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "secp256k1",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-keyring",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-fuso-bot"
+version = "4.0.2"
+dependencies = [
+ "ascii",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "fuso-support",
+ "hex",
+ "pallet-balances",
+ "pallet-fuso-indicator",
+ "pallet-fuso-token",
+ "pallet-fuso-verifier",
+ "parity-scale-codec",
+ "scale-info",
  "serde",
  "sp-core",
  "sp-io",

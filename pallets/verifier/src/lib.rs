@@ -36,7 +36,9 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
     use fuso_support::{
         constants::*,
-        traits::{FeeBeneficiary, MarketManager, PriceOracle, ReservableToken, Rewarding, Token},
+        traits::{
+            Custody, FeeBeneficiary, MarketManager, PriceOracle, ReservableToken, Rewarding, Token,
+        },
     };
     use scale_info::TypeInfo;
     use sp_core::sr25519::{Public as Sr25519Public, Signature as Sr25519Signature};
@@ -1013,46 +1015,16 @@ pub mod pallet {
         pub quote_balance: Balance,
     }
 
-    impl<T: Config> Pallet<T>
+    impl<T: Config> Custody<T::AccountId, TokenId<T>, Balance<T>> for Pallet<T>
     where
         Balance<T>: Copy + From<u128> + Into<u128>,
         TokenId<T>: Copy + From<u32> + Into<u32>,
-        T::BlockNumber: From<u32> + Into<u32>,
+        T::BlockNumber: Copy + From<u32> + Into<u32>,
     {
-        pub fn system_account() -> T::AccountId {
-            PALLET_ID.try_into_account().unwrap()
-        }
-
-        /// this is not associated with the runtime definitions
-        pub fn validate_beneficiary(
-            old_beneficiary: Option<T::AccountId>,
-            signature: Sr25519Signature,
-            new_beneficiary: T::AccountId,
-        ) -> DispatchResult {
-            if let Some(old_beneficiary) = old_beneficiary {
-                let nonce = frame_system::Pallet::<T>::account_nonce(&old_beneficiary);
-                let payload = (nonce, new_beneficiary).using_encoded(|v| v.to_vec());
-                let raw_old_beneficiary: [u8; 32] = old_beneficiary
-                    .encode()
-                    .try_into()
-                    .expect("AccountId32 <-> [u8; 32]; qed");
-                if sp_io::crypto::sr25519_verify(
-                    &signature,
-                    &payload,
-                    &Sr25519Public(raw_old_beneficiary),
-                ) {
-                    frame_system::Pallet::<T>::inc_account_nonce(old_beneficiary);
-                    Ok(())
-                } else {
-                    Err(Error::<T>::InvalidBeneficiaryProof.into())
-                }
-            } else {
-                Ok(())
-            }
-        }
+        type Callback = T::Callback;
 
         #[transactional]
-        pub fn authorize_to(
+        fn authorize_to(
             fund_owner: T::AccountId,
             dex: T::AccountId,
             token_id: TokenId<T>,
@@ -1090,7 +1062,7 @@ pub mod pallet {
         }
 
         #[transactional]
-        pub fn revoke_from(
+        fn revoke_from(
             fund_owner: T::AccountId,
             dominator_id: T::AccountId,
             token_id: TokenId<T>,
@@ -1153,6 +1125,45 @@ pub mod pallet {
                 amount,
             ));
             Ok(())
+        }
+    }
+
+    impl<T: Config> Pallet<T>
+    where
+        Balance<T>: Copy + From<u128> + Into<u128>,
+        TokenId<T>: Copy + From<u32> + Into<u32>,
+        T::BlockNumber: From<u32> + Into<u32>,
+    {
+        pub fn system_account() -> T::AccountId {
+            PALLET_ID.try_into_account().unwrap()
+        }
+
+        /// this is not associated with the runtime definitions
+        pub fn validate_beneficiary(
+            old_beneficiary: Option<T::AccountId>,
+            signature: Sr25519Signature,
+            new_beneficiary: T::AccountId,
+        ) -> DispatchResult {
+            if let Some(old_beneficiary) = old_beneficiary {
+                let nonce = frame_system::Pallet::<T>::account_nonce(&old_beneficiary);
+                let payload = (nonce, new_beneficiary).using_encoded(|v| v.to_vec());
+                let raw_old_beneficiary: [u8; 32] = old_beneficiary
+                    .encode()
+                    .try_into()
+                    .expect("AccountId32 <-> [u8; 32]; qed");
+                if sp_io::crypto::sr25519_verify(
+                    &signature,
+                    &payload,
+                    &Sr25519Public(raw_old_beneficiary),
+                ) {
+                    frame_system::Pallet::<T>::inc_account_nonce(old_beneficiary);
+                    Ok(())
+                } else {
+                    Err(Error::<T>::InvalidBeneficiaryProof.into())
+                }
+            } else {
+                Ok(())
+            }
         }
 
         fn verify_batch(

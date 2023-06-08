@@ -90,6 +90,7 @@ pallet-fuso-indicator = { path = "../pallets/indicator", default-features = fals
 pallet-fuso-market = { path = "../pallets/market", default-features = false }
 pallet-chainbridge = { path = "../pallets/chainbridge", default-features = false }
 pallet-chainbridge-handler = { path = "../pallets/chainbridge-handler", default-features = false }
+pallet-fuso-bot = { path = "../pallets/bot", default-features = false }
 
 # fusotao runtime api
 fuso-runtime-api = { path = "../runtime-api", default-features = false }
@@ -166,7 +167,7 @@ std = [
 	'pallet-fuso-indicator/std',
 	'pallet-fuso-agent/std',
 	'fuso-runtime-api/std',
-
+	'pallet-fuso-bot/std',
 	"pallet-octopus-bridge-benchmarking?/std",
 	"pallet-octopus-appchain-benchmarking?/std",
 ]
@@ -186,6 +187,7 @@ runtime-benchmarks = [
 	"pallet-session-benchmarking/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-uniques/runtime-benchmarks",
+	"pallet-fuso-bot/runtime-benchmarks",
 	"frame-system-benchmarking/runtime-benchmarks",
 
 	"pallet-octopus-upward-messages/runtime-benchmarks",

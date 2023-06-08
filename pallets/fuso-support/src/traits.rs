@@ -352,3 +352,22 @@ impl<AccountId> FeeBeneficiary<AccountId> for () {
         origin
     }
 }
+
+pub trait Custody<AccountId, TokenId, Balance> {
+    type Callback: Parameter;
+
+    fn authorize_to(
+        fund_owner: AccountId,
+        dex: AccountId,
+        token_id: TokenId,
+        amount: Balance,
+    ) -> DispatchResult;
+
+    fn revoke_from(
+        fund_owner: AccountId,
+        dominator_id: AccountId,
+        token_id: TokenId,
+        amount: Balance,
+        callback: Option<Self::Callback>,
+    ) -> DispatchResult;
+}
