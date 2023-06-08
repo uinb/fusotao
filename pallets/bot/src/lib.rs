@@ -26,7 +26,7 @@ pub mod pallet {
     use frame_support::{pallet_prelude::*, transactional};
     use frame_system::pallet_prelude::*;
     use fuso_support::traits::{Custody, ReservableToken, Token};
-    use sp_runtime::traits::{AccountIdConversion, Zero};
+    use sp_runtime::traits::AccountIdConversion;
     use sp_std::vec::Vec;
 
     pub const PALLET_ID: frame_support::PalletId = frame_support::PalletId(*b"fuso/bot");
@@ -263,26 +263,8 @@ pub mod pallet {
             let bot = Bots::<T>::get(&bot_id).ok_or(Error::<T>::BotNotFound)?;
             let sub0 = Self::derive_sub_account(from.clone(), bot_id.clone(), bot.symbol.0);
             let sub1 = Self::derive_sub_account(from.clone(), bot_id.clone(), bot.symbol.1);
-            let reserved0 = T::Assets::reserved_balance(&currency, &sub0);
-            let reserved1 = T::Assets::reserved_balance(&currency, &sub1);
-            if reserved0 != Zero::zero() {
-                T::Custody::revoke_from(
-                    sub0.clone(),
-                    dominator.clone(),
-                    currency,
-                    reserved0,
-                    None,
-                )?;
-            }
-            if reserved1 != Zero::zero() {
-                T::Custody::revoke_from(
-                    sub1.clone(),
-                    dominator.clone(),
-                    currency,
-                    reserved1,
-                    None,
-                )?;
-            }
+            T::Custody::revoke_from(sub0.clone(), dominator.clone(), currency, None, None)?;
+            T::Custody::revoke_from(sub1.clone(), dominator.clone(), currency, None, None)?;
             Ok(())
         }
 

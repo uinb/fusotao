@@ -367,7 +367,7 @@ pub trait Custody<AccountId, TokenId, Balance> {
         fund_owner: AccountId,
         dominator_id: AccountId,
         token_id: TokenId,
-        amount: Balance,
+        amount: Option<Balance>,
         callback: Option<Self::Callback>,
     ) -> DispatchResult;
 }
