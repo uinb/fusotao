@@ -1,4 +1,4 @@
-# v0.9.30-mainnet.170
+# v0.9.30-mainnet.node.170
 
 - enable amm bot
 
