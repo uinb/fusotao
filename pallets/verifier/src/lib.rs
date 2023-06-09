@@ -943,7 +943,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let fund_owner = ensure_signed(origin)?;
             let dominator = T::Lookup::lookup(dominator)?;
-            Self::revoke_from(fund_owner, dominator, token_id, amount, None)?;
+            Self::revoke_from(fund_owner, dominator, token_id, Some(amount), None)?;
             Ok(().into())
         }
 
@@ -958,7 +958,13 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let fund_owner = ensure_signed(origin)?;
             let dominator = T::Lookup::lookup(dominator)?;
-            Self::revoke_from(fund_owner, dominator, token_id, amount, Some(*callback))?;
+            Self::revoke_from(
+                fund_owner,
+                dominator,
+                token_id,
+                Some(amount),
+                Some(*callback),
+            )?;
             Ok(().into())
         }
 
@@ -1066,9 +1072,16 @@ pub mod pallet {
             fund_owner: T::AccountId,
             dominator_id: T::AccountId,
             token_id: TokenId<T>,
-            amount: Balance<T>,
+            amount: Option<Balance<T>>,
             callback: Option<T::Callback>,
         ) -> DispatchResult {
+            let amount = amount.unwrap_or(Reserves::<T>::get(
+                &(RESERVE_FOR_AUTHORIZING, fund_owner.clone(), token_id),
+                dominator_id.clone(),
+            ));
+            if amount == Zero::zero() {
+                return Ok(());
+            }
             ensure!(
                 Self::has_authorized_morethan(fund_owner.clone(), token_id, amount, &dominator_id),
                 Error::<T>::InsufficientBalance
