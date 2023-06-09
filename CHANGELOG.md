@@ -1,3 +1,7 @@
+# v0.9.30-mainnet.170
+
+- enable amm bot
+
 # v0.9.30-mainnet.163
 
 - fix bug of `Rewards` pallet: counting `ask`-`maker`-`vol` into the `taken_liquidity`
