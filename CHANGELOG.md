@@ -1,3 +1,7 @@
+# v0.9.30-testnet.171
+
+- change set reward origin
+
 # v0.9.30-mainnet.171
 
 - change set reward origin
