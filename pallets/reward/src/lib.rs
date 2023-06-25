@@ -65,6 +65,8 @@ pub mod pallet {
 
         #[pallet::constant]
         type RewardTerminateAt: Get<Self::BlockNumber>;
+
+        type TreasuryOrigin: EnsureOrigin<Self::RuntimeOrigin>;
     }
 
     #[pallet::event]
@@ -182,7 +184,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             era_rewards: Balance<T>,
         ) -> DispatchResultWithPostInfo {
-            let _ = ensure_root(origin)?;
+            let _ = T::TreasuryOrigin::ensure_origin(origin)?;
             EraRewards::<T>::put(era_rewards);
             Self::deposit_event(Event::EraRewardsUpdated(era_rewards));
             Ok(().into())
