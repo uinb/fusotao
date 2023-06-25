@@ -126,6 +126,7 @@ impl pallet_fuso_reward::Config for Test {
     type RewardsPerEra = RewardsPerEra;
     type RuntimeEvent = RuntimeEvent;
     type TimeCoefficientZoom = TimeCoefficientZoom;
+    type TreasuryOrigin = EnsureSignedBy<TreasuryMembers, Self::AccountId>;
 }
 
 // Configure a mock runtime to test the pallet.
