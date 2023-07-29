@@ -124,7 +124,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 171,
+    spec_version: 200,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 3,
@@ -696,6 +696,14 @@ pub const BRIDGE_ADMIN1: AccountId = AccountId::new(hex_literal::hex!(
     "5e6197279237e048a53e59b25c50e7e48de9d1c76c7077d5f33b8fcde4af873f"
 ));
 
+pub const BVB_ORGANIZER: AccountId = AccountId::new(hex_literal::hex!(
+    "4a390a4c6da1c32cff91183a861cab95f313dafa017c5fe0a7726976097e0c4e"
+));
+
+pub const BVB_TREASURY: AccountId = AccountId::new(hex_literal::hex!(
+    "760409da47a69ccab6ee4dd81ccf829fa05c14e25df43e2af556dc683f93c6dc"
+));
+
 parameter_types! {
     pub NativeResourceId: fuso_support::chainbridge::ResourceId = derive_resource_id(FusotaoChainId::get(), 0, b"TAO".as_ref()).unwrap();
     pub NativeTokenMaxValue: Balance = 30_000_000 * TAO;
@@ -712,10 +720,16 @@ impl SortedMembers<AccountId> for BridgeAdminMembers {
 }
 
 pub struct TreasuryMembers;
-
 impl SortedMembers<AccountId> for TreasuryMembers {
     fn sorted_members() -> Vec<AccountId> {
         vec![TREASURY]
+    }
+}
+
+pub struct BvbOrganizerMembers;
+impl SortedMembers<AccountId> for BvbOrganizerMembers {
+    fn sorted_members() -> Vec<AccountId> {
+        vec![BVB_ORGANIZER]
     }
 }
 
@@ -830,6 +844,28 @@ impl pallet_fuso_market::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+parameter_types! {
+    pub const AwtTokenId: u32 = 15;
+    pub const MaxTicketAmount: u32 = 99;
+    pub const MaxParticipantPerBattle: u32 = 10000000;
+    pub const BvbTreasury: AccountId = BVB_TREASURY;
+}
+
+impl pallet_abyss_tournament::Config for Runtime {
+    type Assets = Token;
+    type AwtTokenId = AwtTokenId;
+    type BalanceConversion = Token;
+    type BridgeOrigin = pallet_chainbridge::EnsureBridge<Runtime>;
+    type BvbTreasury = BvbTreasury;
+    type DonationForAgent = DonationForAgent;
+    type DonorAccount = DonorAccount;
+    type MaxParticipantPerBattle = MaxParticipantPerBattle;
+    type MaxTicketAmount = MaxTicketAmount;
+    type OrganizerOrigin = EnsureSignedBy<BvbOrganizerMembers, Self::AccountId>;
+    type RuntimeEvent = RuntimeEvent;
+    type TimeProvider = Timestamp;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -869,6 +905,7 @@ construct_runtime!(
         Verifier: pallet_fuso_verifier,
         Market: pallet_fuso_market,
         Bot: pallet_fuso_bot,
+        Tournament: pallet_abyss_tournament,
     }
 );
 

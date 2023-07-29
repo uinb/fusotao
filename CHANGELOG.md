@@ -1,3 +1,7 @@
+# v0.9.30-mainnet.200
+
+- enable bvb tournment
+
 # v0.9.30-mainnet.171
 
 - change set reward origin

@@ -91,6 +91,7 @@ pallet-fuso-market = { path = "../pallets/market", default-features = false }
 pallet-chainbridge = { path = "../pallets/chainbridge", default-features = false }
 pallet-chainbridge-handler = { path = "../pallets/chainbridge-handler", default-features = false }
 pallet-fuso-bot = { path = "../pallets/bot", default-features = false }
+pallet-abyss-tournament = {path = "../pallets/abyss-tournament", default-features = false}
 
 # fusotao runtime api
 fuso-runtime-api = { path = "../runtime-api", default-features = false }
@@ -168,6 +169,7 @@ std = [
 	'pallet-fuso-agent/std',
 	'fuso-runtime-api/std',
 	'pallet-fuso-bot/std',
+	'pallet-abyss-tournament/std',
 	"pallet-octopus-bridge-benchmarking?/std",
 	"pallet-octopus-appchain-benchmarking?/std",
 ]
