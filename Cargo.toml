@@ -22,4 +22,5 @@ members = [
     'pallets/bot',
     'pallets/chainbridge',
     'pallets/chainbridge-handler',
+    'pallets/abyss-tournament'
 ]
