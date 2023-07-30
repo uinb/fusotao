@@ -139,6 +139,7 @@ pub mod pallet {
         PriceOverflow,
         LessThanBridgingThreshold,
         ResourceIdInvalid,
+        FeeZero,
     }
 
     #[pallet::hooks]
@@ -279,6 +280,17 @@ pub mod pallet {
         ) -> DispatchResult {
             T::BridgeOrigin::ensure_origin(origin)?;
             Ok(())
+        }
+
+        #[pallet::weight(195_000_0000)]
+        pub fn update_bridge_fee(
+            origin: OriginFor<T>,
+            fee: BalanceOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            let _ = T::BridgeOrigin::ensure_origin(origin)?;
+            ensure!(fee > 0.into(), Error::<T>::FeeZero);
+            BridgingFeeInUSD::<T>::put(fee.into());
+            Ok(().into())
         }
     }
 

@@ -563,6 +563,24 @@ pub mod pallet {
             Ok(().into())
         }
 
+        #[pallet::weight(195_000_0000)]
+        pub fn give_away_fee(origin: OriginFor<T>, addrs: Vec<u8>) -> DispatchResultWithPostInfo {
+            let _ = T::OrganizerOrigin::ensure_origin(origin)?;
+            let v: Vec<Vec<u8>> = Decode::decode(&mut TrailingZeroInput::new(addrs.as_slice()))
+                .map_err(|_e| Error::<T>::AddrListInputError)?;
+            for a in v {
+                let addr: T::AccountId = Decode::decode(&mut TrailingZeroInput::new(a.as_ref()))
+                    .map_err(|_e| Error::<T>::AddrListInputError)?;
+                let _ = T::Fungibles::transfer_token(
+                    &T::DonorAccount::get(),
+                    T::Fungibles::native_token_id(),
+                    T::DonationForAgent::get(),
+                    &addr,
+                );
+            }
+            Ok(().into())
+        }
+
         #[transactional]
         #[pallet::weight(195_000_000)]
         pub fn create_battle(

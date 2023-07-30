@@ -8,6 +8,7 @@ use crate::{
 use codec::Encode;
 
 use frame_support::{assert_noop, assert_ok};
+use fuso_support::traits::Token;
 use fuso_support::XToken;
 use pallet_fuso_token::TokenAccountData;
 use sp_core::crypto::Ss58Codec;
@@ -852,8 +853,20 @@ pub fn test_buy_ticket() {
     assert_ok!(Tournament::buy_ticket(
         RuntimeOrigin::signed(alice.clone()),
         91,
-        vec![]
+        "QcH88cpFX2sx8uTAaXpmFE8ab7bBOWwoR03Fz/7Ww7I="
+            .to_string()
+            .into_bytes(),
     ),);
+    assert_eq!(
+        pallet_fuso_token::Pallet::<Test>::get_token_balance((
+            &1u32,
+            &AccountId::from_ss58check("5G76ZGjY3xaR3XCxHTPTEyktJ6kajnKFPiSrEVSqoKvJSwrb").unwrap()
+        )),
+        TokenAccountData {
+            free: 455000000000000000000,
+            reserved: Zero::zero(),
+        }
+    );
     assert_eq!(Tournament::get_ticket(1, &alice), (98, 98));
     let n = alice.to_raw_vec();
     let v = vec![n].encode();
@@ -1050,6 +1063,7 @@ pub fn test_decode_invite() {
         AccountId::from_ss58check("5G76ZGjY3xaR3XCxHTPTEyktJ6kajnKFPiSrEVSqoKvJSwrb").unwrap();
     let alice: AccountId = AccountKeyring::Alice.into();
     let t = Tournament::addr_to_invite_code(a.clone());
+    println!("{}", String::from_utf8(t.clone()).unwrap());
     let addr = Tournament::invite_code_to_addr(t);
     assert_eq!(a, addr.unwrap().into());
 }
