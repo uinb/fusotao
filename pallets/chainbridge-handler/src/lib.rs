@@ -292,7 +292,6 @@ pub mod pallet {
             fee: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             let _ = T::BridgeAdminOrigin::ensure_origin(origin)?;
-            ensure!(fee > 0.into(), Error::<T>::FeeZero);
             BridgingFeeInUSD::<T>::insert(chain_id, fee.into());
             Ok(().into())
         }
@@ -325,11 +324,11 @@ pub mod pallet {
             token_id: &AssetId<T>,
         ) -> BalanceOf<T> {
             let price: u128 = T::Oracle::get_price(&token_id).into();
-            // the oracle is not working
-            if price.is_zero() {
+            let usd: u128 = Self::bridging_fee(dest_chain_id);
+            // the oracle is not working or bridging fee zero
+            if price.is_zero() || usd == 0 {
                 Zero::zero()
             } else {
-                let usd = Self::bridging_fee(dest_chain_id);
                 (usd / price * QUINTILL
                     + Perquintill::from_rational::<u128>(usd % price, price).deconstruct() as u128)
                     .into()
