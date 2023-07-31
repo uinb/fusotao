@@ -68,6 +68,8 @@ pub mod pallet {
         /// the bridge pallet
         type BridgeOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
 
+        type BridgeAdminOrigin: EnsureOrigin<Self::RuntimeOrigin, Success = Self::AccountId>;
+
         type BalanceConversion: BalanceConversion<BalanceOf<Self>, AssetId<Self>, BalanceOf<Self>>;
 
         /// dispatchable call
@@ -287,7 +289,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             fee: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let _ = T::BridgeOrigin::ensure_origin(origin)?;
+            let _ = T::BridgeAdminOrigin::ensure_origin(origin)?;
             ensure!(fee > 0.into(), Error::<T>::FeeZero);
             BridgingFeeInUSD::<T>::put(fee.into());
             Ok(().into())
