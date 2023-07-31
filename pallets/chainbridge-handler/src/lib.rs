@@ -99,7 +99,8 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn bridging_fee)]
-    pub type BridgingFeeInUSD<T> = StorageValue<_, u128, ValueQuery, DefaultBridgingFee<T>>;
+    pub type BridgingFeeInUSD<T> =
+        StorageMap<_, Blake2_128Concat, ChainId, u128, ValueQuery, DefaultBridgingFee<T>>;
 
     #[pallet::storage]
     #[pallet::getter(fn associated_dominator)]
@@ -287,11 +288,12 @@ pub mod pallet {
         #[pallet::weight(195_000_0000)]
         pub fn update_bridge_fee(
             origin: OriginFor<T>,
+            chain_id: ChainId,
             fee: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             let _ = T::BridgeAdminOrigin::ensure_origin(origin)?;
             ensure!(fee > 0.into(), Error::<T>::FeeZero);
-            BridgingFeeInUSD::<T>::put(fee.into());
+            BridgingFeeInUSD::<T>::insert(chain_id, fee.into());
             Ok(().into())
         }
     }
@@ -318,13 +320,16 @@ pub mod pallet {
             AssociatedDominator::<T>::insert(idx, dominator);
         }
 
-        pub(crate) fn calculate_bridging_fee(token_id: &AssetId<T>) -> BalanceOf<T> {
+        pub(crate) fn calculate_bridging_fee(
+            dest_chain_id: ChainId,
+            token_id: &AssetId<T>,
+        ) -> BalanceOf<T> {
             let price: u128 = T::Oracle::get_price(&token_id).into();
             // the oracle is not working
             if price.is_zero() {
                 Zero::zero()
             } else {
-                let usd = BridgingFeeInUSD::<T>::get();
+                let usd = Self::bridging_fee(dest_chain_id);
                 (usd / price * QUINTILL
                     + Perquintill::from_rational::<u128>(usd % price, price).deconstruct() as u128)
                     .into()
@@ -350,7 +355,7 @@ pub mod pallet {
                     return Err(Error::<T>::OverTransferLimit)?;
                 }
             }
-            let fee = Self::calculate_bridging_fee(&native_token_id);
+            let fee = Self::calculate_bridging_fee(dest_id, &native_token_id);
             ensure!(amount > fee + fee, Error::<T>::LessThanBridgingThreshold);
             T::Fungibles::transfer_token(
                 &sender,
@@ -394,7 +399,7 @@ pub mod pallet {
             let external_decimals = T::Fungibles::token_external_decimals(&token_id)?;
             let standard_ammount =
                 T::Fungibles::transform_decimals_to_standard(amount, external_decimals);
-            let fee = Self::calculate_bridging_fee(&token_id);
+            let fee = Self::calculate_bridging_fee(dest_id, &token_id);
             ensure!(
                 standard_ammount > fee + fee,
                 Error::<T>::LessThanBridgingThreshold

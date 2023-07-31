@@ -667,7 +667,10 @@ fn transfer_out_charge_stable_non_native() {
             RuntimeOrigin::signed(TREASURY),
             dest_chain.clone()
         ));
-        assert_eq!(ChainBridgeTransfer::calculate_bridging_fee(&1), 2 * DOLLARS);
+        assert_eq!(
+            ChainBridgeTransfer::calculate_bridging_fee(1, &1),
+            2 * DOLLARS
+        );
         assert_ok!(ChainBridgeTransfer::transfer_out(
             RuntimeOrigin::signed(ferdie.clone()),
             amount,
@@ -751,7 +754,7 @@ fn transfer_out_charge_unstable_non_native() {
         Indicator::set_price(1, DOLLARS, 3 * DOLLARS, 1);
         assert_ok!(Assets::do_mint(1, &ferdie, 10 * DOLLARS, None));
         assert_eq!(
-            ChainBridgeTransfer::calculate_bridging_fee(&1),
+            ChainBridgeTransfer::calculate_bridging_fee(1, &1),
             666_666_666_666_666_666
         );
         assert_ok!(ChainBridgeTransfer::transfer_out(
@@ -777,7 +780,7 @@ fn transfer_out_charge_unstable_non_native() {
         assert_ok!(Assets::do_mint(1, &ferdie, 100 * DOLLARS, None));
         // charge = 2 / 0.333333333333333333 * DOLLARS
         assert_eq!(
-            ChainBridgeTransfer::calculate_bridging_fee(&1),
+            ChainBridgeTransfer::calculate_bridging_fee(1, &1),
             6 * DOLLARS + 6
         );
         assert_ok!(ChainBridgeTransfer::transfer_out(
