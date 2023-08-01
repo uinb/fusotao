@@ -8,7 +8,6 @@ use crate::{
 use codec::Encode;
 
 use frame_support::{assert_noop, assert_ok};
-use fuso_support::traits::Token;
 use fuso_support::XToken;
 use pallet_fuso_token::TokenAccountData;
 use sp_core::crypto::Ss58Codec;
@@ -870,7 +869,11 @@ pub fn test_buy_ticket() {
     assert_eq!(Tournament::get_ticket(1, &alice), (98, 98));
     let n = alice.to_raw_vec();
     let v = vec![n].encode();
-    Tournament::give_away_tickets(RuntimeOrigin::signed(TREASURY), 1, v);
+    assert_ok!(Tournament::give_away_tickets(
+        RuntimeOrigin::signed(TREASURY),
+        1,
+        v
+    ));
     assert_eq!(Tournament::get_ticket(1, &alice), (99, 99));
 }
 
@@ -1061,7 +1064,6 @@ pub fn test_decode_invite() {
     use sp_core::crypto::Ss58Codec;
     let a: AccountId =
         AccountId::from_ss58check("5G76ZGjY3xaR3XCxHTPTEyktJ6kajnKFPiSrEVSqoKvJSwrb").unwrap();
-    let alice: AccountId = AccountKeyring::Alice.into();
     let t = Tournament::addr_to_invite_code(a.clone());
     println!("{}", String::from_utf8(t.clone()).unwrap());
     let addr = Tournament::invite_code_to_addr(t);

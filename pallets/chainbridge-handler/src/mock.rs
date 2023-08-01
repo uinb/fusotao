@@ -20,6 +20,7 @@ pub use frame_support::{
     weights::{IdentityFee, Weight},
     PalletId, StorageValue,
 };
+use frame_system::EnsureSignedBy;
 use sp_runtime::{traits::AccountIdConversion, AccountId32};
 
 pub(crate) type BlockNumber = u32;
@@ -236,6 +237,7 @@ impl pallet_fuso_indicator::Config for Test {
 
 impl crate::Config for Test {
     type BalanceConversion = Assets;
+    type BridgeAdminOrigin = EnsureSignedBy<TreasuryMembers, Self::AccountId>;
     type BridgeOrigin = bridge::EnsureBridge<Test>;
     type DonationForAgent = DonationForAgent;
     type DonorAccount = DonorAccount;
