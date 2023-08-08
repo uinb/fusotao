@@ -1010,7 +1010,7 @@ pub fn init() {
         Tournament::create_battle(
             RuntimeOrigin::signed(TREASURY),
             1,
-            BattleType::Regular,
+            BattleType::League,
             1,
             1,
             "2023-07-30 00:00:00".into(),
@@ -1022,7 +1022,7 @@ pub fn init() {
         Tournament::create_battle(
             RuntimeOrigin::signed(TREASURY),
             4,
-            BattleType::Regular,
+            BattleType::League,
             1,
             2,
             "2023-07-30 00:00:00".into(),
@@ -1035,7 +1035,7 @@ pub fn init() {
         Tournament::create_battle(
             RuntimeOrigin::signed(TREASURY),
             1,
-            BattleType::Regular,
+            BattleType::League,
             5,
             2,
             "2023-07-30 00:00:00".into(),

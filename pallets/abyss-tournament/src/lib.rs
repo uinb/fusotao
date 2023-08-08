@@ -205,7 +205,7 @@ pub mod pallet {
         QuarterFinals,
         SemiFinals,
         Finals,
-        Regular,
+        League,
     }
 
     impl Into<u8> for BattleType {
@@ -216,7 +216,7 @@ pub mod pallet {
                 BattleType::QuarterFinals => 4u8,
                 BattleType::SemiFinals => 2u8,
                 BattleType::Finals => 1u8,
-                BattleType::Regular => 255u8,
+                BattleType::League => 255u8,
             }
         }
     }
@@ -226,7 +226,7 @@ pub mod pallet {
 
         fn try_from(value: u8) -> Result<Self, Self::Error> {
             match value {
-                255 => Ok(BattleType::Regular),
+                255 => Ok(BattleType::League),
                 16 => Ok(BattleType::SixteenthFinals),
                 8 => Ok(BattleType::EighthFinals),
                 4 => Ok(BattleType::QuarterFinals),
@@ -1222,14 +1222,14 @@ pub mod pallet {
                 e.1 = e.1 + 1;
                 e.2 = e.2 + 3;
                 e.3 = e.3 + (score_diff as i32);
-                if battle_type == BattleType::Regular {
+                if battle_type == BattleType::League {
                     Self::deposit_event(Event::NpcPoints(season_id, winner, e.0, e.1, e.2, e.3));
                 }
             });
             NpcPoints::<T>::mutate(&season_id, &loser, |e| {
                 e.0 = e.0 + 1;
                 e.3 = e.3 - (score_diff as i32);
-                if battle_type == BattleType::Regular {
+                if battle_type == BattleType::League {
                     Self::deposit_event(Event::NpcPoints(season_id, loser, e.0, e.1, e.2, e.3));
                 }
             });
