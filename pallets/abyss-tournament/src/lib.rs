@@ -70,6 +70,27 @@ pub mod pallet {
         pub video_url: Vec<u8>,
     }
 
+    impl Battle {
+        fn calc(&self) -> (u8, u32, u32) {
+            let mut score_diff: Score = 0;
+            let mut winner: NpcId = 0;
+            let mut loser: NpcId = 0;
+            match self.home_score > self.visiting_score {
+                true => {
+                    score_diff = self.home_score.unwrap() - self.visiting_score.unwrap();
+                    winner = self.home;
+                    loser = self.visiting;
+                }
+                false => {
+                    score_diff = self.visiting_score.unwrap() - self.home_score.unwrap();
+                    winner = self.visiting;
+                    loser = self.home;
+                }
+            };
+            (score_diff, winner, loser)
+        }
+    }
+
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct BattleAbstract {
         pub season: SeasonId,
@@ -94,18 +115,24 @@ pub mod pallet {
     }
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-    pub struct Odds {
-        pub battle: Vec<(BattleId, NpcId)>,
-        pub o: u128,
+    pub struct OddsItem<Balance> {
+        pub win_lose: Option<Vec<NpcId>>,
+        pub score: Option<Vec<(Score, Score)>>,
+        pub o: OddsNumber,
+        pub total_compensate_amount: Balance,
     }
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-    pub struct Betting {
+    pub struct Betting<AccountId, Balancce> {
+        pub creator: AccountId,
+        pub pledge_account: AccountId,
+        pub betting_type: BettingType,
         pub battles: Vec<BattleId>,
-        pub odds: Vec<Odds>,
+        pub odds: Vec<OddsItem<Balancce>>,
         pub season: SeasonId,
         pub start_time: u64,
     }
+
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct Season<AccountId, Balance> {
         pub id: SeasonId,
@@ -142,6 +169,10 @@ pub mod pallet {
     type NpcId = ObjectId;
 
     type BattleId = ObjectId;
+
+    type BettingId = ObjectId;
+
+    type OddsNumber = u128;
 
     type SelectIndex = u16;
 
@@ -206,6 +237,13 @@ pub mod pallet {
         SemiFinals,
         Finals,
         League,
+    }
+
+    #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, TypeInfo, Debug)]
+    pub enum BettingType {
+        #[default]
+        Score,
+        WinLose,
     }
 
     impl Into<u8> for BattleType {
@@ -309,6 +347,21 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn get_battle_info)]
     pub type Battles<T: Config> = StorageMap<_, Twox64Concat, BattleId, Battle, OptionQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn get_betting_info)]
+    pub type Bettings<T: Config> =
+        StorageMap<_, Twox64Concat, BettingId, Betting<T::AccountId, BalanceOf<T>>, OptionQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn get_betting_records_info)]
+    pub type BettingRecords<T: Config> = StorageMap<
+        _,
+        Twox64Concat,
+        (T::AccountId, BettingId),
+        Vec<(SelectIndex, OddsNumber, BalanceOf<T>)>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn get_season_winners)]
@@ -514,18 +567,18 @@ pub mod pallet {
             Ok(().into())
         }
 
-        #[transactional]
-        #[pallet::weight(195_000_000)]
-        pub fn create_betting(
-            origin: OriginFor<T>,
-            _battles: Vec<BattleId>,
-            _odds: Vec<Odds>,
-        ) -> DispatchResultWithPostInfo {
-            let _ = T::OrganizerOrigin::ensure_origin(origin)?;
+        /*  #[transactional]
+                #[pallet::weight(195_000_000)]
+                pub fn create_betting(
+                    origin: OriginFor<T>,
+                    _battles: Vec<BattleId>,
+                    _odds: Vec<OddsItem<>>,
+                ) -> DispatchResultWithPostInfo {
+                    let _ = T::OrganizerOrigin::ensure_origin(origin)?;
 
-            Ok(().into())
-        }
-
+                    Ok(().into())
+                }
+        */
         #[pallet::weight(195_000_000)]
         pub fn set_default_season(
             origin: OriginFor<T>,
@@ -1074,7 +1127,10 @@ pub mod pallet {
 
         #[transactional]
         #[pallet::weight(195_000_000)]
-        pub fn settle(origin: OriginFor<T>, battle_id: BattleId) -> DispatchResultWithPostInfo {
+        pub fn finals_settle(
+            origin: OriginFor<T>,
+            battle_id: BattleId,
+        ) -> DispatchResultWithPostInfo {
             let _ = T::OrganizerOrigin::ensure_origin(origin)?;
             let battle: Battle =
                 Self::get_battle_info(battle_id).ok_or(Error::<T>::BattleNotFound)?;
@@ -1084,28 +1140,7 @@ pub mod pallet {
                 battle.status == BattleStatus::Completed,
                 Error::<T>::BattleStatusError
             );
-            let mut score_diff: Score = 0;
-            let mut winner: NpcId = 0;
-            let mut loser: NpcId = 0;
-            match battle.home_score > battle.visiting_score {
-                true => {
-                    score_diff = battle.home_score.unwrap() - battle.visiting_score.unwrap();
-                    winner = battle.home;
-                    loser = battle.visiting;
-                }
-                false => {
-                    score_diff = battle.visiting_score.unwrap() - battle.home_score.unwrap();
-                    winner = battle.visiting;
-                    loser = battle.home;
-                }
-            };
-            Self::update_npc_point(
-                battle.season,
-                winner,
-                loser,
-                score_diff,
-                battle.battle_type.clone(),
-            )?;
+            let (_score_diff, winner, _loser) = battle.calc();
             Self::update_participant_point(battle.season, battle_id, battle, winner)?;
             Battles::<T>::mutate(battle_id, |b| {
                 let mut battle = b.take().unwrap();
@@ -1124,6 +1159,41 @@ pub mod pallet {
                 Self::deposit_event(Event::SeasonUpdate(s, is_default));
             }
 
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn league_settle(
+            origin: OriginFor<T>,
+            battle_id: BattleId,
+        ) -> DispatchResultWithPostInfo {
+            let _ = T::OrganizerOrigin::ensure_origin(origin)?;
+            let battle: Battle =
+                Self::get_battle_info(battle_id).ok_or(Error::<T>::BattleNotFound)?;
+            let battle_type = battle.battle_type.clone();
+            ensure!(
+                battle.status == BattleStatus::Completed,
+                Error::<T>::BattleStatusError
+            );
+            ensure!(
+                battle_type == BattleType::League,
+                Error::<T>::BattleTypeError
+            );
+            let (score_diff, winner, loser) = battle.calc();
+            Self::update_npc_league_point(
+                battle.season,
+                winner,
+                loser,
+                score_diff,
+                battle.battle_type.clone(),
+            )?;
+            Self::update_participant_point(battle.season, battle_id, battle, winner)?;
+            Battles::<T>::mutate(battle_id, |b| {
+                let mut battle = b.take().unwrap();
+                battle.status = BattleStatus::Finalized;
+                b.replace(battle);
+            });
             Ok(().into())
         }
     }
@@ -1210,28 +1280,27 @@ pub mod pallet {
             Ok(())
         }
 
-        pub fn update_npc_point(
+        pub fn update_npc_league_point(
             season_id: SeasonId,
             winner: NpcId,
             loser: NpcId,
             score_diff: Score,
             battle_type: BattleType,
         ) -> DispatchResult {
+            if battle_type != BattleType::League {
+                return Ok(());
+            }
             NpcPoints::<T>::mutate(&season_id, &winner, |e| {
                 e.0 = e.0 + 1;
                 e.1 = e.1 + 1;
                 e.2 = e.2 + 3;
                 e.3 = e.3 + (score_diff as i32);
-                if battle_type == BattleType::League {
-                    Self::deposit_event(Event::NpcPoints(season_id, winner, e.0, e.1, e.2, e.3));
-                }
+                Self::deposit_event(Event::NpcPoints(season_id, winner, e.0, e.1, e.2, e.3));
             });
             NpcPoints::<T>::mutate(&season_id, &loser, |e| {
                 e.0 = e.0 + 1;
                 e.3 = e.3 - (score_diff as i32);
-                if battle_type == BattleType::League {
-                    Self::deposit_event(Event::NpcPoints(season_id, loser, e.0, e.1, e.2, e.3));
-                }
+                Self::deposit_event(Event::NpcPoints(season_id, loser, e.0, e.1, e.2, e.3));
             });
             Ok(())
         }
