@@ -228,7 +228,7 @@ pub mod pallet {
 
     type BettingId = ObjectId;
 
-    type OddsNumber = Vec<u8>;
+    type OddsNumber = u16;
 
     type SelectIndex = u16;
 
@@ -378,6 +378,8 @@ pub mod pallet {
         BattleTypeError,
         AddrListInputError,
         BettingParamsError,
+        PledgeAmountZero,
+        BettingNotFound,
     }
 
     #[pallet::hooks]
@@ -642,6 +644,58 @@ pub mod pallet {
 
         #[transactional]
         #[pallet::weight(195_000_000)]
+        pub fn go_bet(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+            item_index: SelectIndex,
+            amount: BalanceOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let betting = Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            if amount == Zero::zero() {
+                return Ok(().into());
+            }
+            ensure!(
+                usize::from(item_index) < betting.odds.len(),
+                Error::<T>::SelectIndexOverflow
+            );
+            let now = T::TimeProvider::now();
+            for battle_id in betting.battles {
+                let battle = Self::get_battle_info(battle_id).ok_or(Error::<T>::BattleNotFound)?;
+                ensure!(
+                    now.into() / 1000 < battle.start_time,
+                    Error::<T>::BettingOverTime
+                );
+            }
+            let current_selected_odd = betting.odds[item_index as usize].o;
+            let _ = T::Fungibles::transfer_token(&who, betting.token_id, amount, &betting.creator)?;
+            BettingRecords::<T>::mutate((&who, betting_id), |r| {
+                let mut found = false;
+                for s in &mut *r {
+                    if s.0 == item_index && s.1 == current_selected_odd {
+                        s.2 = s.2 + amount;
+                        found = true;
+                        break;
+                    }
+                }
+                if found == false {
+                    r.push((item_index, current_selected_odd, amount));
+                }
+            });
+            Bettings::<T>::mutate(betting_id, |b| {
+                let mut betting = b.take().unwrap();
+                let add_compensate_amount =
+                    current_selected_odd as u128 * amount.into() / 100 as u128;
+                betting.odds[item_index as usize].total_compensate_amount +=
+                    add_compensate_amount.into();
+                b.replace(betting);
+            });
+
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
         pub fn create_betting(
             origin: OriginFor<T>,
             betting_type: BettingType,
@@ -651,11 +705,12 @@ pub mod pallet {
             pledge_amount: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             let _ = T::OrganizerOrigin::ensure_origin(origin)?;
+            ensure!(pledge_amount > Zero::zero(), Error::<T>::PledgeAmountZero);
             let mut modified_odds = odds;
             for mut x in &mut modified_odds {
                 x.total_compensate_amount = Zero::zero();
             }
-            let season = Self::get_season_info(season_id).ok_or(Error::<T>::SeasonNotFound)?;
+            let _season = Self::get_season_info(season_id).ok_or(Error::<T>::SeasonNotFound)?;
             let betting_id: BettingId = Self::next_betting_id();
             let betting = Betting::<T::AccountId, BalanceOf<T>, AssetId<T>> {
                 creator: T::BvbOrganizer::get(),
@@ -668,7 +723,14 @@ pub mod pallet {
                 season: season_id,
             };
             ensure!(betting.check(), Error::<T>::BettingParamsError);
-
+            let _ = T::Fungibles::transfer_token(
+                &betting.creator,
+                betting.token_id,
+                pledge_amount,
+                &betting.pledge_account,
+            )?;
+            Bettings::<T>::insert(betting_id, betting);
+            NextBettingId::<T>::mutate(|id| *id += 1);
             Ok(().into())
         }
 
