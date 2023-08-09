@@ -116,21 +116,80 @@ pub mod pallet {
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct OddsItem<Balance> {
-        pub win_lose: Option<Vec<NpcId>>,
-        pub score: Option<Vec<(Score, Score)>>,
+        pub win_lose: Vec<HomeOrVisiting>,
+        pub score: Vec<(Score, Score)>,
         pub o: OddsNumber,
         pub total_compensate_amount: Balance,
     }
 
+    impl<B> OddsItem<B> {
+        pub fn check(&self, betting_type: &BettingType, battle_size: usize) -> bool {
+            match betting_type {
+                BettingType::Score => {
+                    if self.score.len() != battle_size {
+                        return false;
+                    }
+                    for x in &self.score {
+                        let h = x.0;
+                        let v = x.1;
+                        if h != 3 && v != 3 {
+                            return false;
+                        }
+                        if h > 3 || v > 3 {
+                            return false;
+                        }
+                        if h == v {
+                            return false;
+                        }
+                    }
+                }
+                BettingType::WinLose => {
+                    if self.win_lose.len() != battle_size {
+                        return false;
+                    }
+                    for x in &self.win_lose {
+                        if *x != 1 && *x != 2 {
+                            return false;
+                        }
+                    }
+                }
+            }
+            true
+        }
+    }
+
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-    pub struct Betting<AccountId, Balancce> {
+    pub struct Betting<AccountId, Balance, TokenId> {
         pub creator: AccountId,
         pub pledge_account: AccountId,
         pub betting_type: BettingType,
         pub battles: Vec<BattleId>,
-        pub odds: Vec<OddsItem<Balancce>>,
+        pub odds: Vec<OddsItem<Balance>>,
+        pub token_id: TokenId,
+        pub min_betting_amount: Balance,
         pub season: SeasonId,
-        pub start_time: u64,
+    }
+
+    impl<A, B, TID> Betting<A, B, TID> {
+        pub fn check(&self) -> bool {
+            if self.battles.len() != 1 {
+                return false;
+            }
+            let battle_size = self.battles.len();
+            for o in &self.odds {
+                if o.check(&self.betting_type, battle_size) == false {
+                    return false;
+                }
+            }
+            true
+        }
+    }
+
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
+    pub struct BettingCreateParms<Balance> {
+        pub betting_type: BettingType,
+        pub battles: Vec<BattleId>,
+        pub odds: Vec<OddsItem<Balance>>,
     }
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
@@ -151,9 +210,6 @@ pub mod pallet {
 
     pub const PALLET_ID: frame_support::PalletId = frame_support::PalletId(*b"abytourn");
 
-    pub type TokenId<T> =
-        <<T as Config>::Assets as Token<<T as frame_system::Config>::AccountId>>::TokenId;
-
     type AssetId<T> = <<T as bridge::Config>::Fungibles as Token<
         <T as frame_system::Config>::AccountId,
     >>::TokenId;
@@ -172,13 +228,15 @@ pub mod pallet {
 
     type BettingId = ObjectId;
 
-    type OddsNumber = u128;
+    type OddsNumber = Vec<u8>;
 
     type SelectIndex = u16;
 
     type BattleAmount = u8;
 
     type Score = u8;
+
+    type HomeOrVisiting = u8; //1 as home,and 2 as visiting
 
     #[pallet::config]
     pub trait Config: frame_system::Config + bridge::Config {
@@ -201,6 +259,9 @@ pub mod pallet {
         type MaxTicketAmount: Get<u32>;
 
         #[pallet::constant]
+        type DefaultMinBetingAmount: Get<BalanceOf<Self>>;
+
+        #[pallet::constant]
         type DonorAccount: Get<Self::AccountId>;
 
         #[pallet::constant]
@@ -211,6 +272,9 @@ pub mod pallet {
 
         #[pallet::constant]
         type BvbTreasury: Get<Self::AccountId>;
+
+        #[pallet::constant]
+        type BvbOrganizer: Get<Self::AccountId>;
     }
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo, Debug, Default)]
@@ -278,7 +342,6 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub (super) fn deposit_event)]
     pub enum Event<T: Config> {
-        BotCreated(T::AccountId, TokenId<T>, TokenId<T>),
         NowTime(u64),
         NpcPoints(SeasonId, NpcId, BattleAmount, BattleAmount, u32, i32),
         ParticipantPoints(SeasonId, T::AccountId, BattleAmount, BattleAmount, u32),
@@ -314,6 +377,7 @@ pub mod pallet {
         SelectIndexOverflow,
         BattleTypeError,
         AddrListInputError,
+        BettingParamsError,
     }
 
     #[pallet::hooks]
@@ -337,6 +401,10 @@ pub mod pallet {
     pub type NextBattleId<T: Config> = StorageValue<_, ObjectId, ValueQuery, DefaultNextId<T>>;
 
     #[pallet::storage]
+    #[pallet::getter(fn next_betting_id)]
+    pub type NextBettingId<T: Config> = StorageValue<_, ObjectId, ValueQuery, DefaultNextId<T>>;
+
+    #[pallet::storage]
     #[pallet::getter(fn default_season)]
     pub type DefaultSeason<T: Config> = StorageValue<_, SeasonId, ValueQuery>;
 
@@ -350,8 +418,13 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn get_betting_info)]
-    pub type Bettings<T: Config> =
-        StorageMap<_, Twox64Concat, BettingId, Betting<T::AccountId, BalanceOf<T>>, OptionQuery>;
+    pub type Bettings<T: Config> = StorageMap<
+        _,
+        Twox64Concat,
+        BettingId,
+        Betting<T::AccountId, BalanceOf<T>, AssetId<T>>,
+        OptionQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn get_betting_records_info)]
@@ -567,18 +640,38 @@ pub mod pallet {
             Ok(().into())
         }
 
-        /*  #[transactional]
-                #[pallet::weight(195_000_000)]
-                pub fn create_betting(
-                    origin: OriginFor<T>,
-                    _battles: Vec<BattleId>,
-                    _odds: Vec<OddsItem<>>,
-                ) -> DispatchResultWithPostInfo {
-                    let _ = T::OrganizerOrigin::ensure_origin(origin)?;
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn create_betting(
+            origin: OriginFor<T>,
+            betting_type: BettingType,
+            battles: Vec<BattleId>,
+            odds: Vec<OddsItem<BalanceOf<T>>>,
+            season_id: SeasonId,
+            pledge_amount: BalanceOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            let _ = T::OrganizerOrigin::ensure_origin(origin)?;
+            let mut modified_odds = odds;
+            for mut x in &mut modified_odds {
+                x.total_compensate_amount = Zero::zero();
+            }
+            let season = Self::get_season_info(season_id).ok_or(Error::<T>::SeasonNotFound)?;
+            let betting_id: BettingId = Self::next_betting_id();
+            let betting = Betting::<T::AccountId, BalanceOf<T>, AssetId<T>> {
+                creator: T::BvbOrganizer::get(),
+                pledge_account: Self::get_betting_treasury(betting_id),
+                betting_type,
+                battles,
+                odds: modified_odds,
+                token_id: T::AwtTokenId::get(),
+                min_betting_amount: T::DefaultMinBetingAmount::get(),
+                season: season_id,
+            };
+            ensure!(betting.check(), Error::<T>::BettingParamsError);
 
-                    Ok(().into())
-                }
-        */
+            Ok(().into())
+        }
+
         #[pallet::weight(195_000_000)]
         pub fn set_default_season(
             origin: OriginFor<T>,
@@ -749,6 +842,36 @@ pub mod pallet {
             }
             Ok(())
         }
+
+        /*  #[pallet::weight(195_000_0000)]
+        pub fn swap(
+            origin: OriginFor<T>,
+            to: T::AccountId,
+            awt: BalanceOf<T>,
+            r_id: ResourceId,
+        ) -> DispatchResult {
+            let _ = T::BridgeOrigin::ensure_origin(origin)?;
+            //mint
+            let (chain_id, _, maybe_contract) =
+                decode_resource_id(r_id).map_err(|_| Error::<T>::InvalidResourceId)?;
+            let token_id = T::AssetIdByName::try_get_asset_id(chain_id, maybe_contract)
+                .map_err(|_| Error::<T>::InvalidResourceId)?;
+            T::Fungibles::mint_into(token_id, &to, awt)?;
+            if frame_system::Pallet::<T>::account_nonce(&to) == Zero::zero() {
+                let _ = T::Fungibles::transfer_token(
+                    &T::DonorAccount::get(),
+                    T::Fungibles::native_token_id(),
+                    T::DonationForAgent::get(),
+                    &to,
+                );
+            }
+            let stable = T::Fungibles::is_stable(token_id);
+            if stable == false {
+                return Ok(());
+            }
+
+            Ok(())
+        }*/
 
         #[transactional]
         #[pallet::weight(195_000_000)]
@@ -1321,6 +1444,12 @@ pub mod pallet {
 
         pub fn get_season_treasury(season_id: SeasonId) -> T::AccountId {
             let h = (b"-*-#fusotao-abyssworld-season#-*-", season_id)
+                .using_encoded(sp_io::hashing::blake2_256);
+            Decode::decode(&mut h.as_ref()).expect("32 bytes; qed")
+        }
+
+        pub fn get_betting_treasury(bid: BettingId) -> T::AccountId {
+            let h = (b"-*-#fusotao-abyssworld-betting#-*-", bid)
                 .using_encoded(sp_io::hashing::blake2_256);
             Decode::decode(&mut h.as_ref()).expect("32 bytes; qed")
         }
