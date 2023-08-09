@@ -380,6 +380,7 @@ pub mod pallet {
         BettingParamsError,
         PledgeAmountZero,
         BettingNotFound,
+        BettingAmountOverflow,
     }
 
     #[pallet::hooks]
@@ -434,7 +435,7 @@ pub mod pallet {
         _,
         Twox64Concat,
         (T::AccountId, BettingId),
-        Vec<(SelectIndex, OddsNumber, BalanceOf<T>)>,
+        (Vec<(SelectIndex, OddsNumber, BalanceOf<T>)>, bool),
         ValueQuery,
     >;
 
@@ -667,29 +668,47 @@ pub mod pallet {
                     Error::<T>::BettingOverTime
                 );
             }
-            let current_selected_odd = betting.odds[item_index as usize].o;
+            let select_odd = betting.odds[item_index as usize].clone();
+            let current_selected_odd_value = select_odd.o;
+            let add_compensate_amount =
+                current_selected_odd_value as u128 * amount.into() / 100 as u128;
+            let new_compensate_amount =
+                select_odd.total_compensate_amount + add_compensate_amount.into();
+            let pledge_amount =
+                T::Fungibles::free_balance(&T::AwtTokenId::get(), &betting.pledge_account);
+            ensure!(
+                new_compensate_amount <= pledge_amount,
+                Error::<T>::BettingAmountOverflow
+            );
             let _ = T::Fungibles::transfer_token(&who, betting.token_id, amount, &betting.creator)?;
             BettingRecords::<T>::mutate((&who, betting_id), |r| {
                 let mut found = false;
-                for s in &mut *r {
-                    if s.0 == item_index && s.1 == current_selected_odd {
+                for s in &mut *r.0 {
+                    if s.0 == item_index && s.1 == current_selected_odd_value {
                         s.2 = s.2 + amount;
                         found = true;
                         break;
                     }
                 }
                 if found == false {
-                    r.push((item_index, current_selected_odd, amount));
+                    r.0.push((item_index, current_selected_odd_value, amount));
                 }
             });
             Bettings::<T>::mutate(betting_id, |b| {
                 let mut betting = b.take().unwrap();
-                let add_compensate_amount =
-                    current_selected_odd as u128 * amount.into() / 100 as u128;
-                betting.odds[item_index as usize].total_compensate_amount +=
-                    add_compensate_amount.into();
+                betting.odds[item_index as usize].total_compensate_amount = new_compensate_amount;
                 b.replace(betting);
             });
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn betting_claim(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
 
             Ok(().into())
         }
@@ -1321,6 +1340,12 @@ pub mod pallet {
                 Self::get_battle_info(battle_id).ok_or(Error::<T>::BattleNotFound)?;
             let battle_season = battle.season;
             let battle_type = battle.battle_type.clone();
+            ensure!(
+                battle_type == BattleType::QuarterFinals
+                    || battle_type == BattleType::SemiFinals
+                    || battle_type == BattleType::Finals,
+                Error::<T>::BattleTypeError
+            );
             ensure!(
                 battle.status == BattleStatus::Completed,
                 Error::<T>::BattleStatusError
