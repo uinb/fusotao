@@ -122,6 +122,18 @@ pub mod pallet {
         pub total_compensate_amount: Balance,
     }
 
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
+    pub struct Betting<AccountId, Balance, TokenId> {
+        pub creator: AccountId,
+        pub pledge_account: AccountId,
+        pub betting_type: BettingType,
+        pub battles: Vec<BattleId>,
+        pub odds: Vec<OddsItem<Balance>>,
+        pub token_id: TokenId,
+        pub min_betting_amount: Balance,
+        pub season: SeasonId,
+    }
+
     impl<B> OddsItem<B> {
         pub fn check(&self, betting_type: &BettingType, battle_size: usize) -> bool {
             match betting_type {
@@ -156,18 +168,6 @@ pub mod pallet {
             }
             true
         }
-    }
-
-    #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-    pub struct Betting<AccountId, Balance, TokenId> {
-        pub creator: AccountId,
-        pub pledge_account: AccountId,
-        pub betting_type: BettingType,
-        pub battles: Vec<BattleId>,
-        pub odds: Vec<OddsItem<Balance>>,
-        pub token_id: TokenId,
-        pub min_betting_amount: Balance,
-        pub season: SeasonId,
     }
 
     impl<A, B, TID> Betting<A, B, TID> {
@@ -381,6 +381,7 @@ pub mod pallet {
         PledgeAmountZero,
         BettingNotFound,
         BettingAmountOverflow,
+        BettingError,
     }
 
     #[pallet::hooks]
@@ -709,7 +710,29 @@ pub mod pallet {
             betting_id: BettingId,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-
+            let (v, b): (Vec<(SelectIndex, OddsNumber, BalanceOf<T>)>, bool) =
+                Self::get_betting_records_info((&who, betting_id));
+            ensure!(!b, Error::<T>::HaveNoBonus);
+            ensure!(!v.is_empty(), Error::<T>::HaveNoBonus);
+            let betting = Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            let hit_index = Self::calc_betting_hit_index(&betting)?;
+            let mut total_claim_amount: BalanceOf<T> = 0.into();
+            for s in v {
+                if s.0 == hit_index {
+                    total_claim_amount += s.2 * s.1.into() / 100.into();
+                }
+            }
+            if total_claim_amount > Zero::zero() {
+                let _ = T::Fungibles::transfer_token(
+                    &betting.pledge_account,
+                    betting.token_id,
+                    total_claim_amount,
+                    &who,
+                )?;
+            }
+            BettingRecords::<T>::mutate((&who, betting_id), |r| {
+                r.1 = true;
+            });
             Ok(().into())
         }
 
@@ -1435,6 +1458,64 @@ pub mod pallet {
                 return addr;
             }
             None
+        }
+
+        pub fn calc_betting_hit_index(
+            betting: &Betting<T::AccountId, BalanceOf<T>, AssetId<T>>,
+        ) -> Result<SelectIndex, DispatchError> {
+            let mut battles = Vec::new();
+            for battle_id in &betting.battles {
+                let battle: Battle =
+                    Self::get_battle_info(battle_id).ok_or(Error::<T>::BattleNotFound)?;
+                ensure!(
+                    battle.status == BattleStatus::Finalized,
+                    Error::<T>::BattleStatusError
+                );
+                battles.push(battle);
+            }
+            match &betting.betting_type {
+                BettingType::Score => {
+                    for i in 0..betting.odds.len() {
+                        let odd = betting.odds[i].clone();
+                        let mut hited = true;
+                        for j in 0..odd.score.len() {
+                            let s = odd.score[j];
+                            if s.0 != battles[j].home_score.clone().unwrap()
+                                || s.1 != battles[j].visiting_score.clone().unwrap()
+                            {
+                                hited = false;
+                                break;
+                            }
+                        }
+                        if hited {
+                            return Ok(i as SelectIndex);
+                        }
+                    }
+                }
+                BettingType::WinLose => {
+                    for i in 0..betting.odds.len() {
+                        let odd = betting.odds[i].clone();
+                        let mut hited = true;
+                        for j in 0..odd.win_lose.len() {
+                            let s = odd.win_lose[j];
+                            let winner_home_visiting =
+                                if battles[j].home_score > battles[j].visiting_score {
+                                    1 as HomeOrVisiting
+                                } else {
+                                    2 as HomeOrVisiting
+                                };
+                            if s != winner_home_visiting {
+                                hited = false;
+                                break;
+                            }
+                        }
+                        if hited {
+                            return Ok(i as SelectIndex);
+                        }
+                    }
+                }
+            }
+            Err(Error::<T>::BettingError.into())
         }
 
         pub fn addr_to_invite_code(addr: T::AccountId) -> Vec<u8> {
