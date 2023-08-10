@@ -34,6 +34,7 @@ pub mod pallet {
     use sp_core::bounded::BoundedBTreeMap;
     use sp_runtime::traits::{TrailingZeroInput, Zero};
     use sp_runtime::Perquintill;
+    use sp_std::vec;
     use sp_std::vec::Vec;
 
     const QUINTILL: u128 = 1_000_000_000_000_000_000;
@@ -756,6 +757,12 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let _ = T::OrganizerOrigin::ensure_origin(origin)?;
             ensure!(pledge_amount > Zero::zero(), Error::<T>::PledgeAmountZero);
+            let mut odds = odds;
+            if odds.is_empty() {
+                odds = Self::generate_default_odd_item(&betting_type, battles.len())
+                    .ok_or(Error::<T>::BettingError)?;
+            }
+
             let mut modified_odds = odds;
             for mut x in &mut modified_odds {
                 x.total_compensate_amount = Zero::zero();
@@ -992,11 +999,14 @@ pub mod pallet {
             if price.is_zero() {
                 return Ok(());
             }
-
             let awt_amount: u128 = unified_amount.into() / price * QUINTILL
                 + Perquintill::from_rational::<u128>(unified_amount.into() % price, price)
                     .deconstruct() as u128;
-
+            if T::Fungibles::free_balance(&T::AwtTokenId::get(), &T::SwapPoolAccount::get())
+                < awt_amount.into()
+            {
+                return Ok(());
+            }
             T::Fungibles::transfer_token(
                 &T::SwapPoolAccount::get(),
                 T::AwtTokenId::get(),
@@ -1467,6 +1477,97 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        pub fn generate_default_odd_item(
+            betting_type: &BettingType,
+            battle_size: usize,
+        ) -> Option<Vec<OddsItem<BalanceOf<T>>>> {
+            let v = [
+                (3 as Score, 0 as Score),
+                (3 as Score, 1 as Score),
+                (3 as Score, 2 as Score),
+                (0 as Score, 3 as Score),
+                (1 as Score, 3 as Score),
+                (2 as Score, 3 as Score),
+            ];
+            let home = 1 as HomeOrVisiting;
+            let visiting = 2 as HomeOrVisiting;
+            let w1 = [vec![home], vec![visiting]];
+            let w2 = [
+                vec![home, home],
+                vec![home, visiting],
+                vec![visiting, home],
+                vec![visiting, visiting],
+            ];
+            let w3 = [
+                vec![home, home, home],
+                vec![home, home, visiting],
+                vec![home, visiting, home],
+                vec![home, visiting, visiting],
+                vec![visiting, home, home],
+                vec![visiting, home, visiting],
+                vec![visiting, visiting, home],
+                vec![visiting, visiting, visiting],
+            ];
+
+            let win_lose = [1 as HomeOrVisiting, 2 as HomeOrVisiting];
+            let mut r = Vec::new();
+            match betting_type {
+                BettingType::Score => {
+                    if battle_size != 1 {
+                        return None;
+                    }
+                    for s in v {
+                        let item = OddsItem {
+                            win_lose: vec![],
+                            score: vec![s],
+                            o: 600u16,
+                            total_compensate_amount: Zero::zero(),
+                        };
+                        r.push(item);
+                    }
+                }
+                BettingType::WinLose => match battle_size {
+                    1 => {
+                        for o in w1 {
+                            let item = OddsItem {
+                                win_lose: o,
+                                score: vec![],
+                                o: 200u16,
+                                total_compensate_amount: Zero::zero(),
+                            };
+                            r.push(item);
+                        }
+                    }
+                    2 => {
+                        for o in w2 {
+                            let item = OddsItem {
+                                win_lose: o,
+                                score: vec![],
+                                o: 400u16,
+                                total_compensate_amount: Zero::zero(),
+                            };
+                            r.push(item);
+                        }
+                    }
+                    3 => {
+                        for o in w3 {
+                            let item = OddsItem {
+                                win_lose: o,
+                                score: vec![],
+                                o: 800u16,
+                                total_compensate_amount: Zero::zero(),
+                            };
+                            r.push(item);
+                        }
+                    }
+                    _ => {
+                        return None;
+                    }
+                },
+            }
+            Some(r)
+        }
+
         pub fn append_vote_check_duplicate(
             old_select: &Vec<VoteSelect>,
             new_select: &Vec<VoteSelect>,
