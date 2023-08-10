@@ -29,11 +29,14 @@ pub mod pallet {
     use frame_support::{pallet_prelude::*, transactional};
     use frame_system::pallet_prelude::*;
     use fuso_support::chainbridge::*;
-    use fuso_support::traits::{ReservableToken, Token};
+    use fuso_support::traits::{DecimalsTransformer, PriceOracle, ReservableToken, Token};
     use pallet_chainbridge as bridge;
     use sp_core::bounded::BoundedBTreeMap;
     use sp_runtime::traits::{TrailingZeroInput, Zero};
+    use sp_runtime::Perquintill;
     use sp_std::vec::Vec;
+
+    const QUINTILL: u128 = 1_000_000_000_000_000_000;
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct NPC {
@@ -275,6 +278,11 @@ pub mod pallet {
 
         #[pallet::constant]
         type BvbOrganizer: Get<Self::AccountId>;
+
+        #[pallet::constant]
+        type SwapPoolAccount: Get<Self::AccountId>;
+
+        type Oracle: PriceOracle<AssetId<Self>, BalanceOf<Self>, Self::BlockNumber>;
     }
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo, Debug, Default)]
@@ -947,20 +955,20 @@ pub mod pallet {
             Ok(())
         }
 
-        /*  #[pallet::weight(195_000_0000)]
+        #[pallet::weight(195_000_0000)]
         pub fn swap(
             origin: OriginFor<T>,
             to: T::AccountId,
-            awt: BalanceOf<T>,
+            amt: BalanceOf<T>,
             r_id: ResourceId,
         ) -> DispatchResult {
             let _ = T::BridgeOrigin::ensure_origin(origin)?;
-            //mint
             let (chain_id, _, maybe_contract) =
                 decode_resource_id(r_id).map_err(|_| Error::<T>::InvalidResourceId)?;
             let token_id = T::AssetIdByName::try_get_asset_id(chain_id, maybe_contract)
                 .map_err(|_| Error::<T>::InvalidResourceId)?;
-            T::Fungibles::mint_into(token_id, &to, awt)?;
+            let who = to.clone();
+            T::Fungibles::mint_into(token_id, &to, amt)?;
             if frame_system::Pallet::<T>::account_nonce(&to) == Zero::zero() {
                 let _ = T::Fungibles::transfer_token(
                     &T::DonorAccount::get(),
@@ -969,13 +977,40 @@ pub mod pallet {
                     &to,
                 );
             }
-            let stable = T::Fungibles::is_stable(token_id);
-            if stable == false {
+            if token_id == T::AwtTokenId::get() {
                 return Ok(());
             }
 
+            let stable = T::Fungibles::is_stable(&token_id);
+            if stable == false {
+                return Ok(());
+            }
+            let external_decimals = T::Fungibles::token_external_decimals(&token_id)?;
+            let unified_amount =
+                T::Fungibles::transform_decimals_to_standard(amt, external_decimals);
+            let price: u128 = T::Oracle::get_price(&token_id).into();
+            if price.is_zero() {
+                return Ok(());
+            }
+
+            let awt_amount: u128 = unified_amount.into() / price * QUINTILL
+                + Perquintill::from_rational::<u128>(unified_amount.into() % price, price)
+                    .deconstruct() as u128;
+
+            T::Fungibles::transfer_token(
+                &T::SwapPoolAccount::get(),
+                T::AwtTokenId::get(),
+                awt_amount.into(),
+                &who,
+            )?;
+            T::Fungibles::transfer_token(
+                &who,
+                token_id,
+                unified_amount,
+                &T::SwapPoolAccount::get(),
+            )?;
             Ok(())
-        }*/
+        }
 
         #[transactional]
         #[pallet::weight(195_000_000)]
