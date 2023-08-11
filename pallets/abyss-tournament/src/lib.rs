@@ -426,6 +426,11 @@ pub mod pallet {
     pub type Npcs<T: Config> = StorageMap<_, Twox64Concat, NpcId, NPC, OptionQuery>;
 
     #[pallet::storage]
+    #[pallet::getter(fn get_bettings_by_battle)]
+    pub type BettingByBattle<T: Config> =
+        StorageMap<_, Twox64Concat, BattleId, Vec<BettingId>, ValueQuery>;
+
+    #[pallet::storage]
     #[pallet::getter(fn get_battle_info)]
     pub type Battles<T: Config> = StorageMap<_, Twox64Concat, BattleId, Battle, OptionQuery>;
 

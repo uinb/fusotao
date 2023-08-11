@@ -253,6 +253,7 @@ parameter_types! {
     pub const MaxTicketAmount: u32 = 100;
     pub const MaxPariticipantPerBattle:u32 = 10000000;
     pub const BvbTreasury: AccountId32 = AccountId32::new([6u8; 32]);
+    pub const DefaultMinBetingAmount: Balance = 20* TAO;
 }
 
 impl pallet_abyss_tournament::Config for Test {
@@ -260,13 +261,17 @@ impl pallet_abyss_tournament::Config for Test {
     type AwtTokenId = AwtTokenId;
     type BalanceConversion = Assets;
     type BridgeOrigin = bridge::EnsureBridge<Test>;
+    type BvbOrganizer = TreasuryAccount;
     type BvbTreasury = BvbTreasury;
+    type DefaultMinBetingAmount = DefaultMinBetingAmount;
     type DonationForAgent = DonationForAgent;
     type DonorAccount = DonorAccount;
     type MaxParticipantPerBattle = MaxPariticipantPerBattle;
     type MaxTicketAmount = MaxTicketAmount;
+    type Oracle = ();
     type OrganizerOrigin = frame_system::EnsureSignedBy<TreasuryMembers, Self::AccountId>;
     type RuntimeEvent = RuntimeEvent;
+    type SwapPoolAccount = TreasuryAccount;
     type TimeProvider = Timestamp;
 }
 
