@@ -172,6 +172,9 @@ pub mod pallet {
                     }
                 }
             }
+            if self.o <= 100 {
+                return false;
+            }
             true
         }
     }
@@ -185,6 +188,47 @@ pub mod pallet {
             for o in &self.odds {
                 if o.check(&self.betting_type, battle_size) == false {
                     return false;
+                }
+            }
+            match self.betting_type {
+                BettingType::Score => {
+                    let mut v = Vec::new();
+                    if self.odds.len() as u32 != 6u32.pow(self.battles.len() as u32) {
+                        return false;
+                    }
+                    for oo in &self.odds {
+                        if oo.score.len() != self.battles.len() {
+                            return false;
+                        }
+                        v.push(oo.score.clone());
+                    }
+
+                    for i in 0..v.len() - 1 {
+                        for j in (i + 1)..v.len() {
+                            if v[i] == v[j] {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                BettingType::WinLose => {
+                    let mut v = Vec::new();
+                    if self.odds.len() as u32 != 2u32.pow(self.battles.len() as u32) {
+                        return false;
+                    }
+                    for oo in &self.odds {
+                        if oo.win_lose.len() != self.battles.len() {
+                            return false;
+                        }
+                        v.push(oo.win_lose.clone());
+                    }
+                    for i in 0..v.len() - 1 {
+                        for j in (i + 1)..v.len() {
+                            if v[i] == v[j] {
+                                return false;
+                            }
+                        }
+                    }
                 }
             }
             true
