@@ -28,7 +28,86 @@ fn test_all() {
     });
 }
 
-pub fn claim() {}
+pub fn claim() {
+    let alice: AccountId = AccountKeyring::Alice.into();
+
+    assert_eq!(
+        pallet_fuso_token::Pallet::<Test>::get_token_balance((&1u32, &alice)),
+        TokenAccountData {
+            free: 9940_000_000_000_000_000_000,
+            reserved: Zero::zero(),
+        }
+    );
+
+    assert_eq!(
+        Tournament::get_betting_records_info((&alice, 1)),
+        (vec![(1, 200, 20_000_000_000_000_000_000)], false)
+    );
+
+    assert_eq!(
+        Tournament::get_betting_records_info((&alice, 2)),
+        (vec![(0, 600, 40_000_000_000_000_000_000)], false)
+    );
+    assert_ok!(Tournament::betting_claim(
+        RuntimeOrigin::signed(alice.clone()),
+        1
+    ));
+
+    assert_noop!(
+        Tournament::betting_claim(RuntimeOrigin::signed(alice.clone()), 1),
+        Error::<Test>::HaveNoBonus
+    );
+
+    assert_ok!(Tournament::betting_claim(
+        RuntimeOrigin::signed(alice.clone()),
+        2
+    ));
+
+    assert_noop!(
+        Tournament::betting_claim(RuntimeOrigin::signed(alice.clone()), 2),
+        Error::<Test>::HaveNoBonus
+    );
+
+    assert_eq!(
+        pallet_fuso_token::Pallet::<Test>::get_token_balance((&1u32, &alice)),
+        TokenAccountData {
+            free: 10180_000_000_000_000_000_000,
+            reserved: Zero::zero(),
+        }
+    );
+
+    assert_eq!(
+        Tournament::get_betting_records_info((&alice, 1)),
+        (vec![(1, 200, 20_000_000_000_000_000_000)], true)
+    );
+
+    assert_eq!(
+        Tournament::get_betting_records_info((&alice, 2)),
+        (vec![(0, 600, 40_000_000_000_000_000_000)], true)
+    );
+
+    assert_eq!(
+        pallet_fuso_token::Pallet::<Test>::get_token_balance((
+            &1u32,
+            &Tournament::get_betting_treasury(1)
+        )),
+        TokenAccountData {
+            free: 100_000_000_000_000_000_000,
+            reserved: Zero::zero(),
+        }
+    );
+
+    assert_eq!(
+        pallet_fuso_token::Pallet::<Test>::get_token_balance((
+            &1u32,
+            &Tournament::get_betting_treasury(2)
+        )),
+        TokenAccountData {
+            free: 60_000_000_000_000_000_000,
+            reserved: Zero::zero(),
+        }
+    );
+}
 
 pub fn set_result() {
     assert_ok!(Tournament::set_result(
@@ -408,4 +487,5 @@ pub fn create_betting() {
             reserved: Zero::zero(),
         }
     );
+    assert_eq!(Tournament::get_bettings_by_battle(1), vec![1, 2]);
 }
