@@ -16,6 +16,8 @@
 pub use pallet::*;
 
 #[cfg(test)]
+pub mod betting_tests;
+#[cfg(test)]
 pub mod mock;
 #[cfg(test)]
 pub mod tests;
@@ -391,6 +393,7 @@ pub mod pallet {
         BettingNotFound,
         BettingAmountOverflow,
         BettingError,
+        BettingAmountTooSmall,
     }
 
     #[pallet::hooks]
@@ -667,10 +670,12 @@ pub mod pallet {
             amount: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
-            let betting = Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
-            if amount == Zero::zero() {
-                return Ok(().into());
-            }
+            let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
+                Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            ensure!(
+                amount >= betting.min_betting_amount,
+                Error::<T>::BettingAmountTooSmall
+            );
             ensure!(
                 usize::from(item_index) < betting.odds.len(),
                 Error::<T>::SelectIndexOverflow
@@ -778,7 +783,7 @@ pub mod pallet {
                 creator: T::BvbOrganizer::get(),
                 pledge_account: Self::get_betting_treasury(betting_id),
                 betting_type,
-                battles,
+                battles: battles.clone(),
                 odds: modified_odds,
                 token_id: T::AwtTokenId::get(),
                 min_betting_amount: T::DefaultMinBetingAmount::get(),
@@ -792,6 +797,11 @@ pub mod pallet {
                 &betting.pledge_account,
             )?;
             Bettings::<T>::insert(betting_id, betting);
+            for battleid in battles {
+                BettingByBattle::<T>::mutate(battleid, |v| {
+                    v.push(betting_id);
+                })
+            }
             NextBettingId::<T>::mutate(|id| *id += 1);
             Ok(().into())
         }

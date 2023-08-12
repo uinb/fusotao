@@ -253,7 +253,7 @@ parameter_types! {
     pub const MaxTicketAmount: u32 = 100;
     pub const MaxPariticipantPerBattle:u32 = 10000000;
     pub const BvbTreasury: AccountId32 = AccountId32::new([6u8; 32]);
-    pub const DefaultMinBetingAmount: Balance = 20* TAO;
+    pub const DefaultMinBetingAmount: Balance = 20_000_000_000_000_000_000;
 }
 
 impl pallet_abyss_tournament::Config for Test {
