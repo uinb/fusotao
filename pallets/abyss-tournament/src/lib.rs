@@ -132,6 +132,7 @@ pub mod pallet {
     pub struct Betting<AccountId, Balance, TokenId> {
         pub creator: AccountId,
         pub pledge_account: AccountId,
+        pub total_pledge: Balance,
         pub betting_type: BettingType,
         pub battles: Vec<BattleId>,
         pub odds: Vec<OddsItem<Balance>>,
@@ -779,15 +780,13 @@ pub mod pallet {
             ensure!(&who == &betting.creator, Error::<T>::PermissonDeny);
             let hit_index = Self::calc_betting_hit_index(&betting)?;
             let total_compensate_amount = betting.odds[hit_index as usize].total_compensate_amount;
-            let pledge_amount =
-                T::Fungibles::free_balance(&betting.token_id, &betting.pledge_account);
-            if pledge_amount <= total_compensate_amount {
+            if betting.total_pledge <= total_compensate_amount {
                 return Ok(().into());
             }
             let _ = T::Fungibles::transfer_token(
                 &betting.pledge_account,
                 betting.token_id,
-                pledge_amount - total_compensate_amount,
+                betting.total_pledge - total_compensate_amount,
                 &who,
             )?;
 
@@ -854,6 +853,7 @@ pub mod pallet {
             let betting = Betting::<T::AccountId, BalanceOf<T>, AssetId<T>> {
                 creator: T::BvbOrganizer::get(),
                 pledge_account: Self::get_betting_treasury(betting_id),
+                total_pledge: pledge_amount,
                 betting_type,
                 battles: battles.clone(),
                 odds: modified_odds,

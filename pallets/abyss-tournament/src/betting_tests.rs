@@ -39,7 +39,13 @@ pub fn claim() {
 
     assert_eq!(
         Tournament::get_betting_records_info((&alice, 2)),
-        (vec![(0, 600, 40_000_000_000_000_000_000)], false)
+        (
+            vec![
+                (0, 600, 20000000000000000000),
+                (0, 400, 20000000000000000000)
+            ],
+            false
+        )
     );
     assert_ok!(Tournament::betting_claim(
         RuntimeOrigin::signed(alice.clone()),
@@ -64,7 +70,7 @@ pub fn claim() {
     assert_eq!(
         pallet_fuso_token::Pallet::<Test>::get_token_balance((&1u32, &alice)),
         TokenAccountData {
-            free: 10180_000_000_000_000_000_000,
+            free: 10140_000_000_000_000_000_000,
             reserved: Zero::zero(),
         }
     );
@@ -76,7 +82,13 @@ pub fn claim() {
 
     assert_eq!(
         Tournament::get_betting_records_info((&alice, 2)),
-        (vec![(0, 600, 40_000_000_000_000_000_000)], true)
+        (
+            vec![
+                (0, 600, 20000000000000000000),
+                (0, 400, 20000000000000000000)
+            ],
+            true
+        )
     );
 
     assert_eq!(
@@ -96,7 +108,38 @@ pub fn claim() {
             &Tournament::get_betting_treasury(2)
         )),
         TokenAccountData {
-            free: 60_000_000_000_000_000_000,
+            free: 100_000_000_000_000_000_000,
+            reserved: Zero::zero(),
+        }
+    );
+    assert_eq!(
+        pallet_fuso_token::Pallet::<Test>::get_token_balance((&1u32, &TREASURY)),
+        TokenAccountData {
+            free: 9660000000000000000000,
+            reserved: Zero::zero(),
+        }
+    );
+    assert_ok!(Tournament::revoke_remain_compensate(
+        RuntimeOrigin::signed(TREASURY),
+        1
+    ));
+
+    assert_eq!(
+        pallet_fuso_token::Pallet::<Test>::get_token_balance((&1u32, &TREASURY)),
+        TokenAccountData {
+            free: 9760000000000000000000,
+            reserved: Zero::zero(),
+        }
+    );
+    assert_ok!(Tournament::revoke_remain_compensate(
+        RuntimeOrigin::signed(TREASURY),
+        2
+    ));
+
+    assert_eq!(
+        pallet_fuso_token::Pallet::<Test>::get_token_balance((&1u32, &TREASURY)),
+        TokenAccountData {
+            free: 9860000000000000000000,
             reserved: Zero::zero(),
         }
     );
@@ -158,6 +201,7 @@ pub fn do_bet() {
         Some(Betting {
             creator: TREASURY,
             pledge_account: Tournament::get_betting_treasury(1),
+            total_pledge: 100_000_000_000_000_000_000,
             betting_type: BettingType::WinLose,
             battles: vec![1],
             odds: vec![
@@ -213,6 +257,11 @@ pub fn do_bet() {
         0,
         20_000_000_000_000_000_000
     ));
+    assert_ok!(Tournament::update_odds(
+        RuntimeOrigin::signed(TREASURY),
+        2u32,
+        vec![(0u16, 400u16)]
+    ));
     assert_ok!(Tournament::go_bet(
         RuntimeOrigin::signed(alice.clone()),
         2u32,
@@ -224,7 +273,7 @@ pub fn do_bet() {
             RuntimeOrigin::signed(alice.clone()),
             2u32,
             0,
-            20_000_000_000_000_000_000
+            40_000_000_000_000_000_000
         ),
         Error::<Test>::BettingAmountOverflow
     );
@@ -243,14 +292,15 @@ pub fn do_bet() {
         Some(Betting {
             creator: TREASURY,
             pledge_account: Tournament::get_betting_treasury(2),
+            total_pledge: 300_000_000_000_000_000_000,
             betting_type: BettingType::Score,
             battles: vec![1],
             odds: vec![
                 OddsItem {
                     win_lose: vec![],
                     score: vec![(3, 0)],
-                    o: 600,
-                    total_compensate_amount: 240_000_000_000_000_000_000,
+                    o: 400,
+                    total_compensate_amount: 200_000_000_000_000_000_000,
                 },
                 OddsItem {
                     win_lose: vec![],
@@ -376,6 +426,7 @@ pub fn create_betting() {
         Some(Betting {
             creator: TREASURY,
             pledge_account: Tournament::get_betting_treasury(1),
+            total_pledge: 100_000_000_000_000_000_000,
             betting_type: BettingType::WinLose,
             battles: vec![1],
             odds: vec![
@@ -428,6 +479,7 @@ pub fn create_betting() {
         Some(Betting {
             creator: TREASURY,
             pledge_account: Tournament::get_betting_treasury(2),
+            total_pledge: 300_000_000_000_000_000_000,
             betting_type: BettingType::Score,
             battles: vec![1],
             odds: vec![
