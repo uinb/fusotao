@@ -1,17 +1,10 @@
 #![cfg(test)]
 
 use crate::mock::*;
-use crate::{
-    Battle, BattleStatus, BattleType, Betting, BettingType, Error, OddsItem, Pallet, Season,
-    SeasonStatus, VoteSelect, VoteSelectInfo, NPC,
-};
-use codec::Encode;
-
+use crate::{BattleType, Betting, BettingType, Error, OddsItem, Pallet, NPC};
 use frame_support::{assert_noop, assert_ok};
 use fuso_support::XToken;
 use pallet_fuso_token::TokenAccountData;
-use sp_core::crypto::Ss58Codec;
-use sp_core::ByteArray;
 use sp_keyring::AccountKeyring;
 use sp_runtime::traits::Zero;
 

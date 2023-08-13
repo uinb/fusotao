@@ -438,6 +438,7 @@ pub mod pallet {
         BettingAmountOverflow,
         BettingError,
         BettingAmountTooSmall,
+        PermissonDeny,
     }
 
     #[pallet::hooks]
@@ -739,7 +740,7 @@ pub mod pallet {
             let new_compensate_amount =
                 select_odd.total_compensate_amount + add_compensate_amount.into();
             let pledge_amount =
-                T::Fungibles::free_balance(&T::AwtTokenId::get(), &betting.pledge_account);
+                T::Fungibles::free_balance(&betting.token_id, &betting.pledge_account);
             ensure!(
                 new_compensate_amount <= pledge_amount,
                 Error::<T>::BettingAmountOverflow
@@ -763,6 +764,33 @@ pub mod pallet {
                 betting.odds[item_index as usize].total_compensate_amount = new_compensate_amount;
                 b.replace(betting);
             });
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn revoke_remain_compensate(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
+                Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            ensure!(&who == &betting.creator, Error::<T>::PermissonDeny);
+            let hit_index = Self::calc_betting_hit_index(&betting)?;
+            let total_compensate_amount = betting.odds[hit_index as usize].total_compensate_amount;
+            let pledge_amount =
+                T::Fungibles::free_balance(&betting.token_id, &betting.pledge_account);
+            if pledge_amount <= total_compensate_amount {
+                return Ok(().into());
+            }
+            let _ = T::Fungibles::transfer_token(
+                &betting.pledge_account,
+                betting.token_id,
+                pledge_amount - total_compensate_amount,
+                &who,
+            )?;
+
             Ok(().into())
         }
 
@@ -1496,6 +1524,34 @@ pub mod pallet {
                 Self::deposit_event(Event::SeasonUpdate(s, is_default));
             }
 
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn update_odds(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+            odds: Vec<(SelectIndex, OddsNumber)>,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
+                Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            ensure!(&who == &betting.creator, Error::<T>::PermissonDeny);
+            Bettings::<T>::mutate(betting_id, |b| -> DispatchResult {
+                ensure!(b.is_some(), Error::<T>::BettingNotFound);
+                let mut betting = b.take().unwrap();
+                for o in odds {
+                    ensure!(
+                        usize::from(o.0) < betting.odds.len(),
+                        Error::<T>::SelectIndexOverflow
+                    );
+                    ensure!(o.1 > 100, Error::<T>::BettingParamsError);
+                    betting.odds[o.0 as usize].o = o.1;
+                }
+                b.replace(betting);
+                Ok(())
+            })?;
             Ok(().into())
         }
 
