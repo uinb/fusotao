@@ -47,6 +47,9 @@ pub mod pallet {
         type Assets: ReservableToken<Self::AccountId>;
 
         type BalanceConversion: BalanceConversion<BalanceOf<Self>, AssetId<Self>, BalanceOf<Self>>;
+
+        #[pallet::constant]
+        type AwtTokenId: Get<AssetId<Self>>;
     }
 
     #[pallet::event]
@@ -65,5 +68,16 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
     #[pallet::call]
-    impl<T: Config> Pallet<T> {}
+    impl<T: Config> Pallet<T> {
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn stake_awt(
+            origin: OriginFor<T>,
+            awt_amount: BalanceOf<T>,
+            days: u16,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            Ok(().into())
+        }
+    }
 }

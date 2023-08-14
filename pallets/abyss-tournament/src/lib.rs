@@ -405,6 +405,7 @@ pub mod pallet {
         Battle(BattleId, Battle),
         BattleResult(BattleId, Score, Score, Vec<u8>),
         SeasonUpdate(Season<T::AccountId, BalanceOf<T>>, bool),
+        BettingUpdate(BettingId, Betting<T::AccountId, BalanceOf<T>, AssetId<T>>),
     }
 
     #[pallet::error]
@@ -763,6 +764,7 @@ pub mod pallet {
             Bettings::<T>::mutate(betting_id, |b| {
                 let mut betting = b.take().unwrap();
                 betting.odds[item_index as usize].total_compensate_amount = new_compensate_amount;
+                Self::deposit_event(Event::BettingUpdate(betting_id, betting.clone()));
                 b.replace(betting);
             });
             Ok(().into())
@@ -789,7 +791,6 @@ pub mod pallet {
                 betting.total_pledge - total_compensate_amount,
                 &who,
             )?;
-
             Ok(().into())
         }
 
@@ -822,6 +823,33 @@ pub mod pallet {
             }
             BettingRecords::<T>::mutate((&who, betting_id), |r| {
                 r.1 = true;
+            });
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn append_betting_pledge(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+            amount: BalanceOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            ensure!(amount > Zero::zero(), Error::<T>::PledgeAmountZero);
+            let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
+                Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            let _ = Self::calc_betting_hit_index(&betting).map(|h| Error::<T>::BettingError)?;
+
+            let _ = T::Fungibles::transfer_token(
+                &who,
+                betting.token_id,
+                amount,
+                &betting.pledge_account,
+            )?;
+            Bettings::<T>::mutate(betting_id, |b| {
+                let mut bb = b.take().unwrap();
+                bb.total_pledge = T::Fungibles::free_balance(&bb.token_id, &bb.pledge_account);
+                b.replace(bb);
             });
             Ok(().into())
         }
@@ -868,13 +896,14 @@ pub mod pallet {
                 pledge_amount,
                 &betting.pledge_account,
             )?;
-            Bettings::<T>::insert(betting_id, betting);
+            Bettings::<T>::insert(betting_id, betting.clone());
             for battleid in battles {
                 BettingByBattle::<T>::mutate(battleid, |v| {
                     v.push(betting_id);
                 })
             }
             NextBettingId::<T>::mutate(|id| *id += 1);
+            Self::deposit_event(Event::BettingUpdate(betting_id, betting));
             Ok(().into())
         }
 
@@ -1021,6 +1050,39 @@ pub mod pallet {
             };
             Battles::<T>::insert(battle_id, battle.clone());
             Self::deposit_event(Event::Battle(battle_id, battle));
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn transfer_ticket(
+            origin: OriginFor<T>,
+            season_id: SeasonId,
+            tickets: u32,
+            to: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let (total_tickets, remain_tickets) = Self::get_ticket(season_id, &who);
+            ensure!(
+                total_tickets >= tickets && remain_tickets >= tickets && tickets > 0u32,
+                Error::<T>::TicketAmountError
+            );
+            Tickets::<T>::mutate(season_id, &who, |tickets_amount| {
+                tickets_amount.0 = tickets_amount.0 - tickets;
+                tickets_amount.1 = tickets_amount.1 - tickets;
+            });
+            Tickets::<T>::mutate(season_id, &to, |tickets_amount| {
+                tickets_amount.0 = tickets_amount.0 + tickets;
+                tickets_amount.1 = tickets_amount.1 + tickets;
+            });
+            if frame_system::Pallet::<T>::account_nonce(&to) == Zero::zero() {
+                let _ = T::Fungibles::transfer_token(
+                    &T::DonorAccount::get(),
+                    T::Fungibles::native_token_id(),
+                    T::DonationForAgent::get(),
+                    &to,
+                );
+            }
             Ok(().into())
         }
 
@@ -1549,9 +1611,11 @@ pub mod pallet {
                     ensure!(o.1 > 100, Error::<T>::BettingParamsError);
                     betting.odds[o.0 as usize].o = o.1;
                 }
+                Self::deposit_event(Event::BettingUpdate(betting_id, betting.clone()));
                 b.replace(betting);
                 Ok(())
             })?;
+
             Ok(().into())
         }
 
