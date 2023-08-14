@@ -838,7 +838,7 @@ pub mod pallet {
             ensure!(amount > Zero::zero(), Error::<T>::PledgeAmountZero);
             let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
                 Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
-            let _ = Self::calc_betting_hit_index(&betting).map(|h| Error::<T>::BettingError)?;
+            let _ = Self::calc_betting_hit_index(&betting).map(|_| Error::<T>::BettingError)?;
 
             let _ = T::Fungibles::transfer_token(
                 &who,
@@ -1688,7 +1688,6 @@ pub mod pallet {
                 vec![visiting, visiting, visiting],
             ];
 
-            let win_lose = [1 as HomeOrVisiting, 2 as HomeOrVisiting];
             let mut r = Vec::new();
             match betting_type {
                 BettingType::Score => {
