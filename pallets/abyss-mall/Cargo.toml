@@ -1,8 +1,60 @@
 [package]
-name = "abyss-mall"
-version = "0.1.0"
+name = "pallet-abyss-mall"
+version = "4.0.2"
+authors = ["UINB Tech"]
 edition = "2021"
+license = "Apache-2.0"
+homepage = "https://www.fusotao.org"
+repository = "https://github.com/uinb/fusotao"
+description = "abyssworld mall pallet"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+codec = { default-features = false, features = ['derive'], package = 'parity-scale-codec', version = '3.0.0' }
+scale-info = { version = "2.0.1", default-features = false, features = ["derive"] }
+frame-system = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+frame-support = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+frame-benchmarking = { default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"}
+sp-std = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+ascii = { version = "1.0", default-features = false }
+log = { version = "0.4.14", default-features = false }
+serde = { default-features = false, version = "1.0.126" }
+base64 = {version = "0.13.1", default-features = false }
+chrono = {version = "0.4.26", default-features = false }
+sp-core = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+sp-io = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-timestamp = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-balances = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+fuso-support = { path = "../fuso-support", default-features = false }
+pallet-chainbridge = { path = "../chainbridge", default-features = false }
+
+[dev-dependencies]
+sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-fuso-verifier = {path = "../verifier", default-features = false }
+pallet-fuso-token = {path = "../token", default-features = false }
+pallet-fuso-indicator = {path = "../indicator", default-features = false }
+hex = "0.4.3"
+[features]
+default = ['std']
+std = [
+	'codec/std',
+	'frame-support/std',
+	'frame-system/std',
+	'frame-benchmarking/std',
+	'sp-std/std',
+	'sp-core/std',
+	'sp-io/std',
+	'sp-runtime/std',
+	'pallet-fuso-token/std',
+	'pallet-fuso-verifier/std',
+	'chrono/std'
+]
+runtime-benchmarks = [
+	'frame-benchmarking',
+	'frame-support/runtime-benchmarks',
+	'frame-system/runtime-benchmarks',
+]
