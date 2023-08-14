@@ -838,8 +838,13 @@ pub mod pallet {
             ensure!(amount > Zero::zero(), Error::<T>::PledgeAmountZero);
             let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
                 Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
-            let _ = Self::calc_betting_hit_index(&betting).map(|_| Error::<T>::BettingError)?;
-
+            for battle_id in &betting.battles {
+                let battle = Self::get_battle_info(battle_id).ok_or(Error::<T>::BattleNotFound)?;
+                ensure!(
+                    battle.status != BattleStatus::Finalized,
+                    Error::<T>::BattleStatusError
+                );
+            }
             let _ = T::Fungibles::transfer_token(
                 &who,
                 betting.token_id,
