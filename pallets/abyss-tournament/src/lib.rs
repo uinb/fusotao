@@ -984,7 +984,10 @@ pub mod pallet {
             Self::get_npc_info(visiting).ok_or(Error::<T>::NpcNotFound)?;
             let start_time = Self::date_to_timestamp(start_time_str)
                 .map_err(|_e| Error::<T>::TimeFormatError)?;
-            ensure!(start_time >= s.start_time, Error::<T>::BattleTimeError);
+            ensure!(
+                battle_type == BattleType::League || start_time >= s.start_time,
+                Error::<T>::BattleTimeError
+            );
             ensure!(home != visiting, Error::<T>::BattleNpcCantSame);
             let battle = Battle {
                 season,
