@@ -15,6 +15,7 @@ fn test_all() {
     new_test_ext().execute_with(|| {
         init();
         create_betting();
+        drop_betting();
         do_bet();
         set_result();
         claim();
@@ -370,7 +371,6 @@ pub fn init() {
         RuntimeOrigin::signed(TREASURY),
         b"sdsd".to_vec(),
         "2023-07-25 00:00:00".into(),
-        7,
         BattleType::QuarterFinals,
         100000000000000000000
     ));
@@ -409,6 +409,62 @@ pub fn init() {
     ));
     let _ = pallet_fuso_token::Pallet::<Test>::do_mint(awt_id, &alice, 1000000, None);
     let _ = pallet_fuso_token::Pallet::<Test>::do_mint(awt_id, &TREASURY, 1000000, None);
+}
+
+pub fn drop_betting() {
+    assert_eq!(
+        pallet_fuso_token::Pallet::<Test>::get_token_balance((&1u32, &TREASURY)),
+        TokenAccountData {
+            free: 9600_000_000_000_000_000_000,
+            reserved: Zero::zero(),
+        }
+    );
+    assert_ok!(Tournament::create_betting(
+        RuntimeOrigin::signed(TREASURY),
+        BettingType::WinLose,
+        vec![1],
+        vec![],
+        1,
+        100_000_000_000_000_000_000
+    ));
+    assert_eq!(Tournament::get_bettings_by_battle(1), vec![1, 2, 3]);
+    assert_ok!(Tournament::drop_betting(RuntimeOrigin::signed(TREASURY), 3,));
+    assert_eq!(Tournament::get_bettings_by_battle(1), vec![1, 2]);
+    assert_eq!(
+        pallet_fuso_token::Pallet::<Test>::get_token_balance((&1u32, &TREASURY)),
+        TokenAccountData {
+            free: 9600_000_000_000_000_000_000,
+            reserved: Zero::zero(),
+        }
+    );
+
+    assert_eq!(
+        Tournament::get_betting_info(&3),
+        Some(Betting {
+            creator: TREASURY,
+            pledge_account: Tournament::get_betting_treasury(3),
+            total_pledge: 0,
+            betting_type: BettingType::WinLose,
+            battles: vec![1],
+            odds: vec![
+                OddsItem {
+                    win_lose: vec![1],
+                    score: vec![],
+                    o: 200,
+                    total_compensate_amount: 0,
+                },
+                OddsItem {
+                    win_lose: vec![2],
+                    score: vec![],
+                    o: 200,
+                    total_compensate_amount: 0,
+                }
+            ],
+            token_id: 1u32,
+            min_betting_amount: 20000000000000000000,
+            season: 1u32
+        })
+    );
 }
 
 pub fn create_betting() {

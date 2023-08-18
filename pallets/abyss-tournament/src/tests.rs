@@ -142,8 +142,8 @@ pub fn test_close_season() {
                 (2, 50, 1041250000000000000000)
             ],
             ticket_price: 100000000000000000000,
-            first_round_battle_type: BattleType::SemiFinals,
-            current_round_battle_type: BattleType::SemiFinals,
+            first_finals_battle_type: BattleType::SemiFinals,
+            current_finals_battle_type: BattleType::SemiFinals,
             champion: Some(1),
             total_tickets: 98u32,
         }),
@@ -948,7 +948,6 @@ pub fn init() {
         RuntimeOrigin::signed(TREASURY),
         b"sdsd".to_vec(),
         "2023-07-25 00:00:00".into(),
-        3,
         BattleType::SemiFinals,
         100000000000000000000
     ));
@@ -974,8 +973,8 @@ pub fn init() {
             total_battles: 3,
             bonus_strategy: vec![],
             ticket_price: 100000000000000000000,
-            first_round_battle_type: BattleType::SemiFinals,
-            current_round_battle_type: BattleType::Finals,
+            first_finals_battle_type: BattleType::SemiFinals,
+            current_finals_battle_type: BattleType::Finals,
             champion: None,
             total_tickets: 0u32,
         }),
@@ -1077,4 +1076,17 @@ pub fn test_decode_invite() {
     println!("{}", String::from_utf8(t.clone()).unwrap());
     let addr = Tournament::invite_code_to_addr(t);
     assert_eq!(a, addr.unwrap().into());
+}
+
+#[test]
+pub fn vec_remove() {
+    let mut v = vec![1, 2, 3, 1, 2];
+    for i in 0..v.len() {
+        if v[i] == 3 {
+            v.remove(i);
+            break;
+        }
+    }
+
+    println!("{:?}", v);
 }

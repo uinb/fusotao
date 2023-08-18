@@ -253,8 +253,8 @@ pub mod pallet {
         pub total_battles: u8,
         pub bonus_strategy: Vec<(u8, u32, Balance)>,
         pub ticket_price: Balance,
-        pub first_round_battle_type: BattleType,
-        pub current_round_battle_type: BattleType,
+        pub first_finals_battle_type: BattleType,
+        pub current_finals_battle_type: BattleType,
         pub champion: Option<NpcId>,
         pub total_tickets: u32,
     }
@@ -366,6 +366,18 @@ pub mod pallet {
         WinLose,
     }
 
+    impl BattleType {
+        fn total_battles(&self) -> u8 {
+            match self {
+                BattleType::SixteenthFinals => 31u8,
+                BattleType::EighthFinals => 15u8,
+                BattleType::QuarterFinals => 7u8,
+                BattleType::SemiFinals => 3u8,
+                BattleType::Finals => 1u8,
+                BattleType::League => 35u8,
+            }
+        }
+    }
     impl Into<u8> for BattleType {
         fn into(self) -> u8 {
             match self {
@@ -629,19 +641,18 @@ pub mod pallet {
             origin: OriginFor<T>,
             name: Vec<u8>,
             start_time_str: Vec<u8>,
-            total_battles: BattleAmount,
-            first_round_battle_type: BattleType,
+            first_finals_battle_type: BattleType,
             ticket_price: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             let _ = T::OrganizerOrigin::ensure_origin(origin)?;
-            let start_time = Self::date_to_timestamp(start_time_str)
-                .map_err(|_e| Error::<T>::TimeFormatError)?;
+            let start_time = Self::date_to_timestamp(start_time_str)?;
             ensure!(
                 ticket_price > 1000000000000000000.into(),
                 Error::<T>::TicketPriceTooSmall
             );
             let id = Self::next_season_id();
             let treasury = Self::get_season_treasury(id);
+            let total_battles = first_finals_battle_type.total_battles();
             let season = Season {
                 id,
                 name,
@@ -651,8 +662,8 @@ pub mod pallet {
                 total_battles,
                 bonus_strategy: Vec::default(),
                 ticket_price,
-                first_round_battle_type: first_round_battle_type.clone(),
-                current_round_battle_type: first_round_battle_type,
+                first_finals_battle_type: first_finals_battle_type.clone(),
+                current_finals_battle_type: first_finals_battle_type,
                 champion: None,
                 total_tickets: 0u32,
             };
@@ -671,7 +682,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let _ = T::OrganizerOrigin::ensure_origin(origin)?;
             let mut s = Self::get_season_info(season_id).ok_or(Error::<T>::SeasonNotFound)?;
-            s.current_round_battle_type = battle_type;
+            s.current_finals_battle_type = battle_type;
             Seasons::<T>::insert(season_id, s.clone());
             let is_default = Self::default_season() == season_id;
             Self::deposit_event(Event::SeasonUpdate(s, is_default));
@@ -685,13 +696,12 @@ pub mod pallet {
             season_id: SeasonId,
             name: Vec<u8>,
             start_time_str: Vec<u8>,
-            total_battles: BattleAmount,
-            first_round_battle_type: BattleType,
+            first_finals_battle_type: BattleType,
+            current_finals_battle_type: BattleType,
             ticket_price: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             let _ = T::OrganizerOrigin::ensure_origin(origin)?;
-            let start_time = Self::date_to_timestamp(start_time_str)
-                .map_err(|_e| Error::<T>::TimeFormatError)?;
+            let start_time = Self::date_to_timestamp(start_time_str)?;
             ensure!(
                 ticket_price > 1000000000000000000.into(),
                 Error::<T>::TicketPriceTooSmall
@@ -699,8 +709,9 @@ pub mod pallet {
             let mut s = Self::get_season_info(season_id).ok_or(Error::<T>::SeasonNotFound)?;
             s.name = name;
             s.start_time = start_time;
-            s.total_battles = total_battles;
-            s.first_round_battle_type = first_round_battle_type;
+            s.total_battles = first_finals_battle_type.total_battles();
+            s.first_finals_battle_type = first_finals_battle_type;
+            s.current_finals_battle_type = current_finals_battle_type;
             s.ticket_price = ticket_price;
             Seasons::<T>::insert(season_id, s.clone());
             let is_default = Self::default_season() == season_id;
@@ -876,7 +887,6 @@ pub mod pallet {
                 odds = Self::generate_default_odd_item(&betting_type, battles.len())
                     .ok_or(Error::<T>::BettingError)?;
             }
-
             let mut modified_odds = odds;
             for mut x in &mut modified_odds {
                 x.total_compensate_amount = Zero::zero();
@@ -982,8 +992,7 @@ pub mod pallet {
             let s = Self::get_season_info(season).ok_or(Error::<T>::SeasonNotFound)?;
             Self::get_npc_info(home).ok_or(Error::<T>::NpcNotFound)?;
             Self::get_npc_info(visiting).ok_or(Error::<T>::NpcNotFound)?;
-            let start_time = Self::date_to_timestamp(start_time_str)
-                .map_err(|_e| Error::<T>::TimeFormatError)?;
+            let start_time = Self::date_to_timestamp(start_time_str)?;
             ensure!(
                 battle_type == BattleType::League || start_time >= s.start_time,
                 Error::<T>::BattleTimeError
@@ -1039,8 +1048,7 @@ pub mod pallet {
             let s = Self::get_season_info(season).ok_or(Error::<T>::SeasonNotFound)?;
             Self::get_npc_info(home).ok_or(Error::<T>::NpcNotFound)?;
             Self::get_npc_info(visiting).ok_or(Error::<T>::NpcNotFound)?;
-            let start_time = Self::date_to_timestamp(start_time_str)
-                .map_err(|_e| Error::<T>::TimeFormatError)?;
+            let start_time = Self::date_to_timestamp(start_time_str)?;
             ensure!(start_time >= s.start_time, Error::<T>::BattleTimeError);
             ensure!(home != visiting, Error::<T>::BattleNpcCantSame);
             let battle = Battle {
@@ -1144,7 +1152,6 @@ pub mod pallet {
             if token_id == T::AwtTokenId::get() {
                 return Ok(());
             }
-
             let stable = T::Fungibles::is_stable(&token_id);
             if stable == false {
                 return Ok(());
@@ -1404,7 +1411,7 @@ pub mod pallet {
                     Error::<T>::BattleStatusError
                 );
                 ensure!(
-                    battle.battle_type == season.first_round_battle_type,
+                    battle.battle_type == season.first_finals_battle_type,
                     Error::<T>::BattleTypeError,
                 );
                 ensure!(battle.season == season_id, Error::<T>::BattleNotInSeason);
@@ -1449,7 +1456,8 @@ pub mod pallet {
             ensure!(votes.len() > 0, Error::<T>::VoteSelectZero);
             let season = Self::get_season_info(season_id).ok_or(Error::<T>::SeasonNotFound)?;
             ensure!(
-                select_battle_type < <BattleType as Into<u8>>::into(season.first_round_battle_type)
+                select_battle_type
+                    < <BattleType as Into<u8>>::into(season.first_finals_battle_type)
                     && BattleType::try_from(select_battle_type).is_ok(),
                 Error::<T>::BattleTypeError
             );
@@ -1594,6 +1602,51 @@ pub mod pallet {
                 Self::deposit_event(Event::SeasonUpdate(s, is_default));
             }
 
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn drop_betting(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
+                Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            ensure!(who == betting.creator, Error::<T>::PermissonDeny);
+
+            for o in betting.odds {
+                ensure!(
+                    o.total_compensate_amount == Zero::zero(),
+                    Error::<T>::BettingError
+                );
+            }
+            let pledge_amount =
+                T::Fungibles::free_balance(&betting.token_id, &betting.pledge_account);
+            let _ = T::Fungibles::transfer_token(
+                &betting.pledge_account,
+                betting.token_id,
+                pledge_amount,
+                &betting.creator,
+            )?;
+            Bettings::<T>::mutate(betting_id, |b| {
+                let mut bb = b.take().unwrap();
+                bb.total_pledge = Zero::zero();
+                b.replace(bb);
+            });
+
+            for battle_id in betting.battles {
+                BettingByBattle::<T>::mutate(battle_id, |mut v| {
+                    let mut new_v = Vec::new();
+                    for i in 0..v.len() {
+                        if v[i] != betting_id {
+                            new_v.push(v[i]);
+                        }
+                    }
+                    *v = new_v;
+                });
+            }
             Ok(().into())
         }
 
@@ -1944,10 +1997,11 @@ pub mod pallet {
             Decode::decode(&mut h.as_ref()).expect("32 bytes; qed")
         }
 
-        pub fn date_to_timestamp(v: Vec<u8>) -> Result<u64, u8> {
+        pub fn date_to_timestamp(v: Vec<u8>) -> Result<u64, DispatchError> {
             let fmt = "%Y-%m-%d %H:%M:%S";
-            let dt = AsciiStr::from_ascii(&v).map_err(|_e| 0u8)?;
-            let s = NaiveDateTime::parse_from_str(dt.as_str(), fmt).map_err(|_e| 1u8)?;
+            let dt = AsciiStr::from_ascii(&v).map_err(|_e| Error::<T>::TimeFormatError)?;
+            let s = NaiveDateTime::parse_from_str(dt.as_str(), fmt)
+                .map_err(|_e| Error::<T>::TimeFormatError)?;
             let timestamp: u64 = s.timestamp() as u64;
             Ok(timestamp)
         }
