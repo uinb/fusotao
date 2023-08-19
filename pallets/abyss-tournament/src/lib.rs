@@ -126,6 +126,28 @@ pub mod pallet {
         pub score: Vec<(Score, Score)>,
         pub o: OddsNumber,
         pub total_compensate_amount: Balance,
+        pub buy_in: Balance,
+        pub accounts: u32,
+    }
+
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
+    pub struct OddsItemPrams {
+        pub win_lose: Vec<HomeOrVisiting>,
+        pub score: Vec<(Score, Score)>,
+        pub o: OddsNumber,
+    }
+
+    impl<Balance: Zero> Into<OddsItem<Balance>> for OddsItemPrams {
+        fn into(self) -> OddsItem<Balance> {
+            OddsItem {
+                win_lose: self.win_lose,
+                score: self.score,
+                o: self.o,
+                total_compensate_amount: Zero::zero(),
+                buy_in: Zero::zero(),
+                accounts: 0,
+            }
+        }
     }
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
@@ -775,6 +797,8 @@ pub mod pallet {
             Bettings::<T>::mutate(betting_id, |b| {
                 let mut betting = b.take().unwrap();
                 betting.odds[item_index as usize].total_compensate_amount = new_compensate_amount;
+                betting.odds[item_index as usize].accounts += 1;
+                betting.odds[item_index as usize].buy_in += amount;
                 Self::deposit_event(Event::BettingUpdate(betting_id, betting.clone()));
                 b.replace(betting);
             });
@@ -876,20 +900,17 @@ pub mod pallet {
             origin: OriginFor<T>,
             betting_type: BettingType,
             battles: Vec<BattleId>,
-            odds: Vec<OddsItem<BalanceOf<T>>>,
+            odditem_params: Vec<OddsItemPrams>,
             season_id: SeasonId,
             pledge_amount: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             let _ = T::OrganizerOrigin::ensure_origin(origin)?;
             ensure!(pledge_amount > Zero::zero(), Error::<T>::PledgeAmountZero);
-            let mut odds = odds;
+            let mut odds: Vec<OddsItem<BalanceOf<T>>> =
+                odditem_params.iter().map(|o| o.clone().into()).collect();
             if odds.is_empty() {
                 odds = Self::generate_default_odd_item(&betting_type, battles.len())
                     .ok_or(Error::<T>::BettingError)?;
-            }
-            let mut modified_odds = odds;
-            for mut x in &mut modified_odds {
-                x.total_compensate_amount = Zero::zero();
             }
             let _season = Self::get_season_info(season_id).ok_or(Error::<T>::SeasonNotFound)?;
             let betting_id: BettingId = Self::next_betting_id();
@@ -899,7 +920,7 @@ pub mod pallet {
                 total_pledge: pledge_amount,
                 betting_type,
                 battles: battles.clone(),
-                odds: modified_odds,
+                odds,
                 token_id: T::AwtTokenId::get(),
                 min_betting_amount: T::DefaultMinBetingAmount::get(),
                 season: season_id,
@@ -1637,7 +1658,7 @@ pub mod pallet {
             });
 
             for battle_id in betting.battles {
-                BettingByBattle::<T>::mutate(battle_id, |mut v| {
+                BettingByBattle::<T>::mutate(battle_id, |v| {
                     let mut new_v = Vec::new();
                     for i in 0..v.len() {
                         if v[i] != betting_id {
@@ -1761,6 +1782,8 @@ pub mod pallet {
                             score: vec![s],
                             o: 600u16,
                             total_compensate_amount: Zero::zero(),
+                            buy_in: Zero::zero(),
+                            accounts: 0,
                         };
                         r.push(item);
                     }
@@ -1773,6 +1796,8 @@ pub mod pallet {
                                 score: vec![],
                                 o: 200u16,
                                 total_compensate_amount: Zero::zero(),
+                                buy_in: Zero::zero(),
+                                accounts: 0,
                             };
                             r.push(item);
                         }
@@ -1784,6 +1809,8 @@ pub mod pallet {
                                 score: vec![],
                                 o: 400u16,
                                 total_compensate_amount: Zero::zero(),
+                                buy_in: Zero::zero(),
+                                accounts: 0,
                             };
                             r.push(item);
                         }
@@ -1795,6 +1822,8 @@ pub mod pallet {
                                 score: vec![],
                                 o: 800u16,
                                 total_compensate_amount: Zero::zero(),
+                                buy_in: Zero::zero(),
+                                accounts: 0,
                             };
                             r.push(item);
                         }

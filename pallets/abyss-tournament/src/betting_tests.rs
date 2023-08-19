@@ -211,12 +211,16 @@ pub fn do_bet() {
                     score: vec![],
                     o: 200,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
                 OddsItem {
                     win_lose: vec![2],
                     score: vec![],
                     o: 200,
                     total_compensate_amount: 40_000_000_000_000_000_000,
+                    buy_in: 20_000_000_000_000_000_000,
+                    accounts: 1
                 }
             ],
             token_id: 1u32,
@@ -302,36 +306,48 @@ pub fn do_bet() {
                     score: vec![(3, 0)],
                     o: 400,
                     total_compensate_amount: 200_000_000_000_000_000_000,
+                    buy_in: 40_000_000_000_000_000_000,
+                    accounts: 2
                 },
                 OddsItem {
                     win_lose: vec![],
                     score: vec![(3, 1)],
                     o: 600,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
                 OddsItem {
                     win_lose: vec![],
                     score: vec![(3, 2)],
                     o: 600,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
                 OddsItem {
                     win_lose: vec![],
                     score: vec![(0, 3)],
                     o: 600,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
                 OddsItem {
                     win_lose: vec![],
                     score: vec![(1, 3)],
                     o: 600,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
                 OddsItem {
                     win_lose: vec![],
                     score: vec![(2, 3)],
                     o: 600,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
             ],
             token_id: 1u32,
@@ -452,12 +468,16 @@ pub fn drop_betting() {
                     score: vec![],
                     o: 200,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
                 OddsItem {
                     win_lose: vec![2],
                     score: vec![],
                     o: 200,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 }
             ],
             token_id: 1u32,
@@ -491,12 +511,16 @@ pub fn create_betting() {
                     score: vec![],
                     o: 200,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
                 OddsItem {
                     win_lose: vec![2],
                     score: vec![],
                     o: 200,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 }
             ],
             token_id: 1u32,
@@ -544,36 +568,48 @@ pub fn create_betting() {
                     score: vec![(3, 0)],
                     o: 600,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
                 OddsItem {
                     win_lose: vec![],
                     score: vec![(3, 1)],
                     o: 600,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
                 OddsItem {
                     win_lose: vec![],
                     score: vec![(3, 2)],
                     o: 600,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
                 OddsItem {
                     win_lose: vec![],
                     score: vec![(0, 3)],
                     o: 600,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
                 OddsItem {
                     win_lose: vec![],
                     score: vec![(1, 3)],
                     o: 600,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
                 OddsItem {
                     win_lose: vec![],
                     score: vec![(2, 3)],
                     o: 600,
                     total_compensate_amount: 0,
+                    buy_in: 0,
+                    accounts: 0
                 },
             ],
             token_id: 1u32,
