@@ -74,7 +74,7 @@ pub fn register_market_should_work() {
             ),
             Error::<Test>::UnsupportedQuoteCurrency
         );
-        assert_ok!(Token::mark_stable(RawOrigin::Root.into(), 2));
+        assert_ok!(Token::mark_stable(RuntimeOrigin::signed(TREASURY), 2));
         assert_noop!(
             Market::apply_for_token_listing(
                 RuntimeOrigin::signed(ferdie.clone()),

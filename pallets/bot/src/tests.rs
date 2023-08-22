@@ -34,7 +34,7 @@ fn test_register_bot() {
             usdt,
         ));
         assert_ok!(pallet_fuso_token::Pallet::<Test>::mark_stable(
-            RawOrigin::Root.into(),
+            RuntimeOrigin::signed(TREASURY),
             usdt_id
         ));
         assert_noop!(
@@ -119,7 +119,7 @@ fn test_deposit() {
             usdt,
         ));
         assert_ok!(pallet_fuso_token::Pallet::<Test>::mark_stable(
-            RawOrigin::Root.into(),
+            RuntimeOrigin::signed(TREASURY),
             usdt_id
         ));
 
@@ -251,7 +251,7 @@ fn test_withdraw() {
             usdt,
         ));
         assert_ok!(pallet_fuso_token::Pallet::<Test>::mark_stable(
-            RawOrigin::Root.into(),
+            RuntimeOrigin::signed(TREASURY),
             usdt_id
         ));
 

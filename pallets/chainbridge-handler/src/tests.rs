@@ -660,7 +660,7 @@ fn transfer_out_charge_stable_non_native() {
             resource
         ));
         assert_ok!(Assets::issue(RuntimeOrigin::signed(TREASURY), denom));
-        assert_ok!(Assets::mark_stable(RawOrigin::Root.into(), 1));
+        assert_ok!(Assets::mark_stable(RuntimeOrigin::signed(TREASURY), 1));
         let amount: Balance = 5 * DOLLARS;
         assert_ok!(Assets::do_mint(1, &ferdie, amount, None));
         assert_ok!(Bridge::whitelist_chain(
