@@ -854,7 +854,7 @@ parameter_types! {
     pub const MaxTicketAmount: u32 = 99;
     pub const MaxParticipantPerBattle: u32 = 10000000;
     pub const BvbTreasury: AccountId = BVB_TREASURY;
-    pub const DefaultMinBetingAmount: Balance = 20 * TAO;
+    pub const DefaultMinBetingAmount: Balance = 100 * TAO;
     pub const BvbOrganizerAccount: AccountId = BVB_ORGANIZER;
     pub const SwapPoolAccount: AccountId = SWAP_POOL_ACCOUNT;
 }
