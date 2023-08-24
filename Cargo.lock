@@ -4995,6 +4995,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-abyss-mall"
+version = "4.0.2"
+dependencies = [
+ "ascii",
+ "base64 0.13.1",
+ "chrono",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "fuso-support",
+ "hex",
+ "log",
+ "pallet-balances",
+ "pallet-chainbridge",
+ "pallet-fuso-indicator",
+ "pallet-fuso-token",
+ "pallet-fuso-verifier",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-keyring",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-abyss-tournament"
 version = "4.0.2"
 dependencies = [

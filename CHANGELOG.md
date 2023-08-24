@@ -1,3 +1,7 @@
+# v0.9.30-mainnet.203
+
+- enable abyssworld betting
+
 # v0.9.30-mainnet.202
 
 - hot fix tournament

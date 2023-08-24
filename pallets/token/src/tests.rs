@@ -27,7 +27,7 @@ fn issuing_token_and_transfer_should_work() {
     );
     new_test_ext().execute_with(|| {
         assert_ok!(Token::issue(RuntimeOrigin::signed(TREASURY), usdt,));
-        assert_ok!(Token::mark_stable(RawOrigin::Root.into(), 1));
+        assert_ok!(Token::mark_stable(RuntimeOrigin::signed(TREASURY), 1));
         let id = 1u32;
         assert_eq!(
             Token::get_token_info(&id),

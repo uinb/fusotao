@@ -16,6 +16,8 @@
 pub use pallet::*;
 
 #[cfg(test)]
+pub mod betting_tests;
+#[cfg(test)]
 pub mod mock;
 #[cfg(test)]
 pub mod tests;
@@ -29,11 +31,15 @@ pub mod pallet {
     use frame_support::{pallet_prelude::*, transactional};
     use frame_system::pallet_prelude::*;
     use fuso_support::chainbridge::*;
-    use fuso_support::traits::{ReservableToken, Token};
+    use fuso_support::traits::{DecimalsTransformer, PriceOracle, ReservableToken, Token};
     use pallet_chainbridge as bridge;
     use sp_core::bounded::BoundedBTreeMap;
     use sp_runtime::traits::{TrailingZeroInput, Zero};
+    use sp_runtime::Perquintill;
+    use sp_std::vec;
     use sp_std::vec::Vec;
+
+    const QUINTILL: u128 = 1_000_000_000_000_000_000;
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct NPC {
@@ -70,6 +76,27 @@ pub mod pallet {
         pub video_url: Vec<u8>,
     }
 
+    impl Battle {
+        fn calc(&self) -> (u8, u32, u32) {
+            let mut score_diff: Score = 0;
+            let mut winner: NpcId = 0;
+            let mut loser: NpcId = 0;
+            match self.home_score > self.visiting_score {
+                true => {
+                    score_diff = self.home_score.unwrap() - self.visiting_score.unwrap();
+                    winner = self.home;
+                    loser = self.visiting;
+                }
+                false => {
+                    score_diff = self.visiting_score.unwrap() - self.home_score.unwrap();
+                    winner = self.visiting;
+                    loser = self.home;
+                }
+            };
+            (score_diff, winner, loser)
+        }
+    }
+
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct BattleAbstract {
         pub season: SeasonId,
@@ -94,18 +121,150 @@ pub mod pallet {
     }
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-    pub struct Odds {
-        pub battle: Vec<(BattleId, NpcId)>,
-        pub o: u128,
+    pub struct OddsItem<Balance> {
+        pub win_lose: Vec<HomeOrVisiting>,
+        pub score: Vec<(Score, Score)>,
+        pub o: OddsNumber,
+        pub total_compensate_amount: Balance,
+        pub buy_in: Balance,
+        pub accounts: u32,
     }
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
-    pub struct Betting {
-        pub battles: Vec<BattleId>,
-        pub odds: Vec<Odds>,
-        pub season: SeasonId,
-        pub start_time: u64,
+    pub struct OddsItemPrams {
+        pub win_lose: Vec<HomeOrVisiting>,
+        pub score: Vec<(Score, Score)>,
+        pub o: OddsNumber,
     }
+
+    impl<Balance: Zero> Into<OddsItem<Balance>> for OddsItemPrams {
+        fn into(self) -> OddsItem<Balance> {
+            OddsItem {
+                win_lose: self.win_lose,
+                score: self.score,
+                o: self.o,
+                total_compensate_amount: Zero::zero(),
+                buy_in: Zero::zero(),
+                accounts: 0,
+            }
+        }
+    }
+
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
+    pub struct Betting<AccountId, Balance, TokenId> {
+        pub creator: AccountId,
+        pub pledge_account: AccountId,
+        pub total_pledge: Balance,
+        pub betting_type: BettingType,
+        pub battles: Vec<BattleId>,
+        pub odds: Vec<OddsItem<Balance>>,
+        pub token_id: TokenId,
+        pub min_betting_amount: Balance,
+        pub season: SeasonId,
+    }
+
+    impl<B> OddsItem<B> {
+        pub fn check(&self, betting_type: &BettingType, battle_size: usize) -> bool {
+            match betting_type {
+                BettingType::Score => {
+                    if self.score.len() != battle_size {
+                        return false;
+                    }
+                    for x in &self.score {
+                        let h = x.0;
+                        let v = x.1;
+                        if h != 3 && v != 3 {
+                            return false;
+                        }
+                        if h > 3 || v > 3 {
+                            return false;
+                        }
+                        if h == v {
+                            return false;
+                        }
+                    }
+                }
+                BettingType::WinLose => {
+                    if self.win_lose.len() != battle_size {
+                        return false;
+                    }
+                    for x in &self.win_lose {
+                        if *x != 1 && *x != 2 {
+                            return false;
+                        }
+                    }
+                }
+            }
+            if self.o <= 100 {
+                return false;
+            }
+            true
+        }
+    }
+
+    impl<A, B, TID> Betting<A, B, TID> {
+        pub fn check(&self) -> bool {
+            if self.battles.len() != 1 {
+                return false;
+            }
+            let battle_size = self.battles.len();
+            for o in &self.odds {
+                if o.check(&self.betting_type, battle_size) == false {
+                    return false;
+                }
+            }
+            match self.betting_type {
+                BettingType::Score => {
+                    let mut v = Vec::new();
+                    if self.odds.len() as u32 != 6u32.pow(self.battles.len() as u32) {
+                        return false;
+                    }
+                    for oo in &self.odds {
+                        if oo.score.len() != self.battles.len() {
+                            return false;
+                        }
+                        v.push(oo.score.clone());
+                    }
+
+                    for i in 0..v.len() - 1 {
+                        for j in (i + 1)..v.len() {
+                            if v[i] == v[j] {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                BettingType::WinLose => {
+                    let mut v = Vec::new();
+                    if self.odds.len() as u32 != 2u32.pow(self.battles.len() as u32) {
+                        return false;
+                    }
+                    for oo in &self.odds {
+                        if oo.win_lose.len() != self.battles.len() {
+                            return false;
+                        }
+                        v.push(oo.win_lose.clone());
+                    }
+                    for i in 0..v.len() - 1 {
+                        for j in (i + 1)..v.len() {
+                            if v[i] == v[j] {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+            true
+        }
+    }
+
+    #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
+    pub struct BettingCreateParms<Balance> {
+        pub betting_type: BettingType,
+        pub battles: Vec<BattleId>,
+        pub odds: Vec<OddsItem<Balance>>,
+    }
+
     #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo, Debug)]
     pub struct Season<AccountId, Balance> {
         pub id: SeasonId,
@@ -116,16 +275,13 @@ pub mod pallet {
         pub total_battles: u8,
         pub bonus_strategy: Vec<(u8, u32, Balance)>,
         pub ticket_price: Balance,
-        pub first_round_battle_type: BattleType,
-        pub current_round_battle_type: BattleType,
+        pub first_finals_battle_type: BattleType,
+        pub current_finals_battle_type: BattleType,
         pub champion: Option<NpcId>,
         pub total_tickets: u32,
     }
 
     pub const PALLET_ID: frame_support::PalletId = frame_support::PalletId(*b"abytourn");
-
-    pub type TokenId<T> =
-        <<T as Config>::Assets as Token<<T as frame_system::Config>::AccountId>>::TokenId;
 
     type AssetId<T> = <<T as bridge::Config>::Fungibles as Token<
         <T as frame_system::Config>::AccountId,
@@ -143,11 +299,17 @@ pub mod pallet {
 
     type BattleId = ObjectId;
 
+    type BettingId = ObjectId;
+
+    type OddsNumber = u16;
+
     type SelectIndex = u16;
 
     type BattleAmount = u8;
 
     type Score = u8;
+
+    type HomeOrVisiting = u8; //1 as home,and 2 as visiting
 
     #[pallet::config]
     pub trait Config: frame_system::Config + bridge::Config {
@@ -170,6 +332,9 @@ pub mod pallet {
         type MaxTicketAmount: Get<u32>;
 
         #[pallet::constant]
+        type DefaultMinBetingAmount: Get<BalanceOf<Self>>;
+
+        #[pallet::constant]
         type DonorAccount: Get<Self::AccountId>;
 
         #[pallet::constant]
@@ -180,6 +345,14 @@ pub mod pallet {
 
         #[pallet::constant]
         type BvbTreasury: Get<Self::AccountId>;
+
+        #[pallet::constant]
+        type BvbOrganizer: Get<Self::AccountId>;
+
+        #[pallet::constant]
+        type SwapPoolAccount: Get<Self::AccountId>;
+
+        type Oracle: PriceOracle<AssetId<Self>, BalanceOf<Self>, Self::BlockNumber>;
     }
 
     #[derive(Encode, Decode, Clone, PartialEq, Eq, TypeInfo, Debug, Default)]
@@ -205,9 +378,28 @@ pub mod pallet {
         QuarterFinals,
         SemiFinals,
         Finals,
-        Regular,
+        League,
     }
 
+    #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, TypeInfo, Debug)]
+    pub enum BettingType {
+        #[default]
+        Score,
+        WinLose,
+    }
+
+    impl BattleType {
+        fn total_battles(&self) -> u8 {
+            match self {
+                BattleType::SixteenthFinals => 31u8,
+                BattleType::EighthFinals => 15u8,
+                BattleType::QuarterFinals => 7u8,
+                BattleType::SemiFinals => 3u8,
+                BattleType::Finals => 1u8,
+                BattleType::League => 35u8,
+            }
+        }
+    }
     impl Into<u8> for BattleType {
         fn into(self) -> u8 {
             match self {
@@ -216,7 +408,7 @@ pub mod pallet {
                 BattleType::QuarterFinals => 4u8,
                 BattleType::SemiFinals => 2u8,
                 BattleType::Finals => 1u8,
-                BattleType::Regular => 255u8,
+                BattleType::League => 255u8,
             }
         }
     }
@@ -226,7 +418,7 @@ pub mod pallet {
 
         fn try_from(value: u8) -> Result<Self, Self::Error> {
             match value {
-                255 => Ok(BattleType::Regular),
+                255 => Ok(BattleType::League),
                 16 => Ok(BattleType::SixteenthFinals),
                 8 => Ok(BattleType::EighthFinals),
                 4 => Ok(BattleType::QuarterFinals),
@@ -240,7 +432,6 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub (super) fn deposit_event)]
     pub enum Event<T: Config> {
-        BotCreated(T::AccountId, TokenId<T>, TokenId<T>),
         NowTime(u64),
         NpcPoints(SeasonId, NpcId, BattleAmount, BattleAmount, u32, i32),
         ParticipantPoints(SeasonId, T::AccountId, BattleAmount, BattleAmount, u32),
@@ -248,6 +439,7 @@ pub mod pallet {
         Battle(BattleId, Battle),
         BattleResult(BattleId, Score, Score, Vec<u8>),
         SeasonUpdate(Season<T::AccountId, BalanceOf<T>>, bool),
+        BettingUpdate(BettingId, Betting<T::AccountId, BalanceOf<T>, AssetId<T>>),
     }
 
     #[pallet::error]
@@ -276,6 +468,13 @@ pub mod pallet {
         SelectIndexOverflow,
         BattleTypeError,
         AddrListInputError,
+        BettingParamsError,
+        PledgeAmountZero,
+        BettingNotFound,
+        BettingAmountOverflow,
+        BettingError,
+        BettingAmountTooSmall,
+        PermissonDeny,
     }
 
     #[pallet::hooks]
@@ -299,6 +498,10 @@ pub mod pallet {
     pub type NextBattleId<T: Config> = StorageValue<_, ObjectId, ValueQuery, DefaultNextId<T>>;
 
     #[pallet::storage]
+    #[pallet::getter(fn next_betting_id)]
+    pub type NextBettingId<T: Config> = StorageValue<_, ObjectId, ValueQuery, DefaultNextId<T>>;
+
+    #[pallet::storage]
     #[pallet::getter(fn default_season)]
     pub type DefaultSeason<T: Config> = StorageValue<_, SeasonId, ValueQuery>;
 
@@ -307,8 +510,33 @@ pub mod pallet {
     pub type Npcs<T: Config> = StorageMap<_, Twox64Concat, NpcId, NPC, OptionQuery>;
 
     #[pallet::storage]
+    #[pallet::getter(fn get_bettings_by_battle)]
+    pub type BettingByBattle<T: Config> =
+        StorageMap<_, Twox64Concat, BattleId, Vec<BettingId>, ValueQuery>;
+
+    #[pallet::storage]
     #[pallet::getter(fn get_battle_info)]
     pub type Battles<T: Config> = StorageMap<_, Twox64Concat, BattleId, Battle, OptionQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn get_betting_info)]
+    pub type Bettings<T: Config> = StorageMap<
+        _,
+        Twox64Concat,
+        BettingId,
+        Betting<T::AccountId, BalanceOf<T>, AssetId<T>>,
+        OptionQuery,
+    >;
+
+    #[pallet::storage]
+    #[pallet::getter(fn get_betting_records_info)]
+    pub type BettingRecords<T: Config> = StorageMap<
+        _,
+        Twox64Concat,
+        (T::AccountId, BettingId),
+        (Vec<(SelectIndex, OddsNumber, BalanceOf<T>)>, bool),
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn get_season_winners)]
@@ -435,19 +663,18 @@ pub mod pallet {
             origin: OriginFor<T>,
             name: Vec<u8>,
             start_time_str: Vec<u8>,
-            total_battles: BattleAmount,
-            first_round_battle_type: BattleType,
+            first_finals_battle_type: BattleType,
             ticket_price: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             let _ = T::OrganizerOrigin::ensure_origin(origin)?;
-            let start_time = Self::date_to_timestamp(start_time_str)
-                .map_err(|_e| Error::<T>::TimeFormatError)?;
+            let start_time = Self::date_to_timestamp(start_time_str)?;
             ensure!(
                 ticket_price > 1000000000000000000.into(),
                 Error::<T>::TicketPriceTooSmall
             );
             let id = Self::next_season_id();
             let treasury = Self::get_season_treasury(id);
+            let total_battles = first_finals_battle_type.total_battles();
             let season = Season {
                 id,
                 name,
@@ -457,8 +684,8 @@ pub mod pallet {
                 total_battles,
                 bonus_strategy: Vec::default(),
                 ticket_price,
-                first_round_battle_type: first_round_battle_type.clone(),
-                current_round_battle_type: first_round_battle_type,
+                first_finals_battle_type: first_finals_battle_type.clone(),
+                current_finals_battle_type: first_finals_battle_type,
                 champion: None,
                 total_tickets: 0u32,
             };
@@ -477,7 +704,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let _ = T::OrganizerOrigin::ensure_origin(origin)?;
             let mut s = Self::get_season_info(season_id).ok_or(Error::<T>::SeasonNotFound)?;
-            s.current_round_battle_type = battle_type;
+            s.current_finals_battle_type = battle_type;
             Seasons::<T>::insert(season_id, s.clone());
             let is_default = Self::default_season() == season_id;
             Self::deposit_event(Event::SeasonUpdate(s, is_default));
@@ -491,13 +718,12 @@ pub mod pallet {
             season_id: SeasonId,
             name: Vec<u8>,
             start_time_str: Vec<u8>,
-            total_battles: BattleAmount,
-            first_round_battle_type: BattleType,
+            first_finals_battle_type: BattleType,
+            current_finals_battle_type: BattleType,
             ticket_price: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             let _ = T::OrganizerOrigin::ensure_origin(origin)?;
-            let start_time = Self::date_to_timestamp(start_time_str)
-                .map_err(|_e| Error::<T>::TimeFormatError)?;
+            let start_time = Self::date_to_timestamp(start_time_str)?;
             ensure!(
                 ticket_price > 1000000000000000000.into(),
                 Error::<T>::TicketPriceTooSmall
@@ -505,8 +731,9 @@ pub mod pallet {
             let mut s = Self::get_season_info(season_id).ok_or(Error::<T>::SeasonNotFound)?;
             s.name = name;
             s.start_time = start_time;
-            s.total_battles = total_battles;
-            s.first_round_battle_type = first_round_battle_type;
+            s.total_battles = first_finals_battle_type.total_battles();
+            s.first_finals_battle_type = first_finals_battle_type;
+            s.current_finals_battle_type = current_finals_battle_type;
             s.ticket_price = ticket_price;
             Seasons::<T>::insert(season_id, s.clone());
             let is_default = Self::default_season() == season_id;
@@ -516,13 +743,203 @@ pub mod pallet {
 
         #[transactional]
         #[pallet::weight(195_000_000)]
+        pub fn go_bet(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+            item_index: SelectIndex,
+            amount: BalanceOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
+                Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            ensure!(
+                amount >= betting.min_betting_amount,
+                Error::<T>::BettingAmountTooSmall
+            );
+            ensure!(
+                usize::from(item_index) < betting.odds.len(),
+                Error::<T>::SelectIndexOverflow
+            );
+            let now = T::TimeProvider::now();
+            for battle_id in betting.battles {
+                let battle = Self::get_battle_info(battle_id).ok_or(Error::<T>::BattleNotFound)?;
+                ensure!(
+                    now.into() / 1000 < battle.start_time,
+                    Error::<T>::BettingOverTime
+                );
+            }
+            let select_odd = betting.odds[item_index as usize].clone();
+            let current_selected_odd_value = select_odd.o;
+            let add_compensate_amount =
+                current_selected_odd_value as u128 * amount.into() / 100 as u128;
+            let new_compensate_amount =
+                select_odd.total_compensate_amount + add_compensate_amount.into();
+            let pledge_amount =
+                T::Fungibles::free_balance(&betting.token_id, &betting.pledge_account);
+            ensure!(
+                new_compensate_amount <= pledge_amount,
+                Error::<T>::BettingAmountOverflow
+            );
+            let _ = T::Fungibles::transfer_token(&who, betting.token_id, amount, &betting.creator)?;
+            BettingRecords::<T>::mutate((&who, betting_id), |r| {
+                let mut found = false;
+                for s in &mut *r.0 {
+                    if s.0 == item_index && s.1 == current_selected_odd_value {
+                        s.2 = s.2 + amount;
+                        found = true;
+                        break;
+                    }
+                }
+                if found == false {
+                    r.0.push((item_index, current_selected_odd_value, amount));
+                }
+            });
+            Bettings::<T>::mutate(betting_id, |b| {
+                let mut betting = b.take().unwrap();
+                betting.odds[item_index as usize].total_compensate_amount = new_compensate_amount;
+                betting.odds[item_index as usize].accounts += 1;
+                betting.odds[item_index as usize].buy_in += amount;
+                Self::deposit_event(Event::BettingUpdate(betting_id, betting.clone()));
+                b.replace(betting);
+            });
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn revoke_remain_compensate(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
+                Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            ensure!(&who == &betting.creator, Error::<T>::PermissonDeny);
+            let hit_index = Self::calc_betting_hit_index(&betting)?;
+            let total_compensate_amount = betting.odds[hit_index as usize].total_compensate_amount;
+            if betting.total_pledge <= total_compensate_amount {
+                return Ok(().into());
+            }
+            let _ = T::Fungibles::transfer_token(
+                &betting.pledge_account,
+                betting.token_id,
+                betting.total_pledge - total_compensate_amount,
+                &who,
+            )?;
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn betting_claim(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let (v, b): (Vec<(SelectIndex, OddsNumber, BalanceOf<T>)>, bool) =
+                Self::get_betting_records_info((&who, betting_id));
+            ensure!(!b, Error::<T>::HaveNoBonus);
+            ensure!(!v.is_empty(), Error::<T>::HaveNoBonus);
+            let betting = Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            let hit_index = Self::calc_betting_hit_index(&betting)?;
+            let mut total_claim_amount: BalanceOf<T> = 0.into();
+            for s in v {
+                if s.0 == hit_index {
+                    total_claim_amount += s.2 * s.1.into() / 100.into();
+                }
+            }
+            if total_claim_amount > Zero::zero() {
+                let _ = T::Fungibles::transfer_token(
+                    &betting.pledge_account,
+                    betting.token_id,
+                    total_claim_amount,
+                    &who,
+                )?;
+            }
+            BettingRecords::<T>::mutate((&who, betting_id), |r| {
+                r.1 = true;
+            });
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn append_betting_pledge(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+            amount: BalanceOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            ensure!(amount > Zero::zero(), Error::<T>::PledgeAmountZero);
+            let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
+                Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            for battle_id in &betting.battles {
+                let battle = Self::get_battle_info(battle_id).ok_or(Error::<T>::BattleNotFound)?;
+                ensure!(
+                    battle.status != BattleStatus::Finalized,
+                    Error::<T>::BattleStatusError
+                );
+            }
+            let _ = T::Fungibles::transfer_token(
+                &who,
+                betting.token_id,
+                amount,
+                &betting.pledge_account,
+            )?;
+            Bettings::<T>::mutate(betting_id, |b| {
+                let mut bb = b.take().unwrap();
+                bb.total_pledge = T::Fungibles::free_balance(&bb.token_id, &bb.pledge_account);
+                b.replace(bb);
+            });
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
         pub fn create_betting(
             origin: OriginFor<T>,
-            _battles: Vec<BattleId>,
-            _odds: Vec<Odds>,
+            betting_type: BettingType,
+            battles: Vec<BattleId>,
+            odditem_params: Vec<OddsItemPrams>,
+            season_id: SeasonId,
+            pledge_amount: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             let _ = T::OrganizerOrigin::ensure_origin(origin)?;
-
+            ensure!(pledge_amount > Zero::zero(), Error::<T>::PledgeAmountZero);
+            let mut odds: Vec<OddsItem<BalanceOf<T>>> =
+                odditem_params.iter().map(|o| o.clone().into()).collect();
+            if odds.is_empty() {
+                odds = Self::generate_default_odd_item(&betting_type, battles.len())
+                    .ok_or(Error::<T>::BettingError)?;
+            }
+            let _season = Self::get_season_info(season_id).ok_or(Error::<T>::SeasonNotFound)?;
+            let betting_id: BettingId = Self::next_betting_id();
+            let betting = Betting::<T::AccountId, BalanceOf<T>, AssetId<T>> {
+                creator: T::BvbOrganizer::get(),
+                pledge_account: Self::get_betting_treasury(betting_id),
+                total_pledge: pledge_amount,
+                betting_type,
+                battles: battles.clone(),
+                odds,
+                token_id: T::AwtTokenId::get(),
+                min_betting_amount: T::DefaultMinBetingAmount::get(),
+                season: season_id,
+            };
+            ensure!(betting.check(), Error::<T>::BettingParamsError);
+            let _ = T::Fungibles::transfer_token(
+                &betting.creator,
+                betting.token_id,
+                pledge_amount,
+                &betting.pledge_account,
+            )?;
+            Bettings::<T>::insert(betting_id, betting.clone());
+            for battleid in battles {
+                BettingByBattle::<T>::mutate(battleid, |v| {
+                    v.push(betting_id);
+                })
+            }
+            NextBettingId::<T>::mutate(|id| *id += 1);
+            Self::deposit_event(Event::BettingUpdate(betting_id, betting));
             Ok(().into())
         }
 
@@ -596,9 +1013,11 @@ pub mod pallet {
             let s = Self::get_season_info(season).ok_or(Error::<T>::SeasonNotFound)?;
             Self::get_npc_info(home).ok_or(Error::<T>::NpcNotFound)?;
             Self::get_npc_info(visiting).ok_or(Error::<T>::NpcNotFound)?;
-            let start_time = Self::date_to_timestamp(start_time_str)
-                .map_err(|_e| Error::<T>::TimeFormatError)?;
-            ensure!(start_time >= s.start_time, Error::<T>::BattleTimeError);
+            let start_time = Self::date_to_timestamp(start_time_str)?;
+            ensure!(
+                battle_type == BattleType::League || start_time >= s.start_time,
+                Error::<T>::BattleTimeError
+            );
             ensure!(home != visiting, Error::<T>::BattleNpcCantSame);
             let battle = Battle {
                 season,
@@ -650,8 +1069,7 @@ pub mod pallet {
             let s = Self::get_season_info(season).ok_or(Error::<T>::SeasonNotFound)?;
             Self::get_npc_info(home).ok_or(Error::<T>::NpcNotFound)?;
             Self::get_npc_info(visiting).ok_or(Error::<T>::NpcNotFound)?;
-            let start_time = Self::date_to_timestamp(start_time_str)
-                .map_err(|_e| Error::<T>::TimeFormatError)?;
+            let start_time = Self::date_to_timestamp(start_time_str)?;
             ensure!(start_time >= s.start_time, Error::<T>::BattleTimeError);
             ensure!(home != visiting, Error::<T>::BattleNpcCantSame);
             let battle = Battle {
@@ -669,6 +1087,39 @@ pub mod pallet {
             };
             Battles::<T>::insert(battle_id, battle.clone());
             Self::deposit_event(Event::Battle(battle_id, battle));
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn transfer_ticket(
+            origin: OriginFor<T>,
+            season_id: SeasonId,
+            tickets: u32,
+            to: T::AccountId,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let (total_tickets, remain_tickets) = Self::get_ticket(season_id, &who);
+            ensure!(
+                total_tickets >= tickets && remain_tickets >= tickets && tickets > 0u32,
+                Error::<T>::TicketAmountError
+            );
+            Tickets::<T>::mutate(season_id, &who, |tickets_amount| {
+                tickets_amount.0 = tickets_amount.0 - tickets;
+                tickets_amount.1 = tickets_amount.1 - tickets;
+            });
+            Tickets::<T>::mutate(season_id, &to, |tickets_amount| {
+                tickets_amount.0 = tickets_amount.0 + tickets;
+                tickets_amount.1 = tickets_amount.1 + tickets;
+            });
+            if frame_system::Pallet::<T>::account_nonce(&to) == Zero::zero() {
+                let _ = T::Fungibles::transfer_token(
+                    &T::DonorAccount::get(),
+                    T::Fungibles::native_token_id(),
+                    T::DonationForAgent::get(),
+                    &to,
+                );
+            }
             Ok(().into())
         }
 
@@ -694,6 +1145,65 @@ pub mod pallet {
                     &to,
                 );
             }
+            Ok(())
+        }
+
+        #[pallet::weight(195_000_0000)]
+        pub fn swap(
+            origin: OriginFor<T>,
+            to: T::AccountId,
+            amt: BalanceOf<T>,
+            r_id: ResourceId,
+        ) -> DispatchResult {
+            let _ = T::BridgeOrigin::ensure_origin(origin)?;
+            let (chain_id, _, maybe_contract) =
+                decode_resource_id(r_id).map_err(|_| Error::<T>::InvalidResourceId)?;
+            let token_id = T::AssetIdByName::try_get_asset_id(chain_id, maybe_contract)
+                .map_err(|_| Error::<T>::InvalidResourceId)?;
+            let who = to.clone();
+            T::Fungibles::mint_into(token_id, &to, amt)?;
+            if frame_system::Pallet::<T>::account_nonce(&to) == Zero::zero() {
+                let _ = T::Fungibles::transfer_token(
+                    &T::DonorAccount::get(),
+                    T::Fungibles::native_token_id(),
+                    T::DonationForAgent::get(),
+                    &to,
+                );
+            }
+            if token_id == T::AwtTokenId::get() {
+                return Ok(());
+            }
+            let stable = T::Fungibles::is_stable(&token_id);
+            if stable == false {
+                return Ok(());
+            }
+            let external_decimals = T::Fungibles::token_external_decimals(&token_id)?;
+            let unified_amount =
+                T::Fungibles::transform_decimals_to_standard(amt, external_decimals);
+            let price: u128 = T::Oracle::get_price(&token_id).into();
+            if price.is_zero() {
+                return Ok(());
+            }
+            let awt_amount: u128 = unified_amount.into() / price * QUINTILL
+                + Perquintill::from_rational::<u128>(unified_amount.into() % price, price)
+                    .deconstruct() as u128;
+            if T::Fungibles::free_balance(&T::AwtTokenId::get(), &T::SwapPoolAccount::get())
+                < awt_amount.into()
+            {
+                return Ok(());
+            }
+            T::Fungibles::transfer_token(
+                &T::SwapPoolAccount::get(),
+                T::AwtTokenId::get(),
+                awt_amount.into(),
+                &who,
+            )?;
+            T::Fungibles::transfer_token(
+                &who,
+                token_id,
+                unified_amount,
+                &T::SwapPoolAccount::get(),
+            )?;
             Ok(())
         }
 
@@ -922,7 +1432,7 @@ pub mod pallet {
                     Error::<T>::BattleStatusError
                 );
                 ensure!(
-                    battle.battle_type == season.first_round_battle_type,
+                    battle.battle_type == season.first_finals_battle_type,
                     Error::<T>::BattleTypeError,
                 );
                 ensure!(battle.season == season_id, Error::<T>::BattleNotInSeason);
@@ -967,7 +1477,8 @@ pub mod pallet {
             ensure!(votes.len() > 0, Error::<T>::VoteSelectZero);
             let season = Self::get_season_info(season_id).ok_or(Error::<T>::SeasonNotFound)?;
             ensure!(
-                select_battle_type < <BattleType as Into<u8>>::into(season.first_round_battle_type)
+                select_battle_type
+                    < <BattleType as Into<u8>>::into(season.first_finals_battle_type)
                     && BattleType::try_from(select_battle_type).is_ok(),
                 Error::<T>::BattleTypeError
             );
@@ -1074,38 +1585,26 @@ pub mod pallet {
 
         #[transactional]
         #[pallet::weight(195_000_000)]
-        pub fn settle(origin: OriginFor<T>, battle_id: BattleId) -> DispatchResultWithPostInfo {
+        pub fn finals_settle(
+            origin: OriginFor<T>,
+            battle_id: BattleId,
+        ) -> DispatchResultWithPostInfo {
             let _ = T::OrganizerOrigin::ensure_origin(origin)?;
             let battle: Battle =
                 Self::get_battle_info(battle_id).ok_or(Error::<T>::BattleNotFound)?;
             let battle_season = battle.season;
             let battle_type = battle.battle_type.clone();
             ensure!(
+                battle_type == BattleType::QuarterFinals
+                    || battle_type == BattleType::SemiFinals
+                    || battle_type == BattleType::Finals,
+                Error::<T>::BattleTypeError
+            );
+            ensure!(
                 battle.status == BattleStatus::Completed,
                 Error::<T>::BattleStatusError
             );
-            let mut score_diff: Score = 0;
-            let mut winner: NpcId = 0;
-            let mut loser: NpcId = 0;
-            match battle.home_score > battle.visiting_score {
-                true => {
-                    score_diff = battle.home_score.unwrap() - battle.visiting_score.unwrap();
-                    winner = battle.home;
-                    loser = battle.visiting;
-                }
-                false => {
-                    score_diff = battle.visiting_score.unwrap() - battle.home_score.unwrap();
-                    winner = battle.visiting;
-                    loser = battle.home;
-                }
-            };
-            Self::update_npc_point(
-                battle.season,
-                winner,
-                loser,
-                score_diff,
-                battle.battle_type.clone(),
-            )?;
+            let (_score_diff, winner, _loser) = battle.calc();
             Self::update_participant_point(battle.season, battle_id, battle, winner)?;
             Battles::<T>::mutate(battle_id, |b| {
                 let mut battle = b.take().unwrap();
@@ -1126,9 +1625,217 @@ pub mod pallet {
 
             Ok(().into())
         }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn drop_betting(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
+                Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            ensure!(who == betting.creator, Error::<T>::PermissonDeny);
+
+            for o in betting.odds {
+                ensure!(
+                    o.total_compensate_amount == Zero::zero(),
+                    Error::<T>::BettingError
+                );
+            }
+            let pledge_amount =
+                T::Fungibles::free_balance(&betting.token_id, &betting.pledge_account);
+            let _ = T::Fungibles::transfer_token(
+                &betting.pledge_account,
+                betting.token_id,
+                pledge_amount,
+                &betting.creator,
+            )?;
+            Bettings::<T>::mutate(betting_id, |b| {
+                let mut bb = b.take().unwrap();
+                bb.total_pledge = Zero::zero();
+                b.replace(bb);
+            });
+
+            for battle_id in betting.battles {
+                BettingByBattle::<T>::mutate(battle_id, |v| {
+                    let mut new_v = Vec::new();
+                    for i in 0..v.len() {
+                        if v[i] != betting_id {
+                            new_v.push(v[i]);
+                        }
+                    }
+                    *v = new_v;
+                });
+            }
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn update_odds(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+            odds: Vec<(SelectIndex, OddsNumber)>,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
+                Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            ensure!(&who == &betting.creator, Error::<T>::PermissonDeny);
+            Bettings::<T>::mutate(betting_id, |b| -> DispatchResult {
+                ensure!(b.is_some(), Error::<T>::BettingNotFound);
+                let mut betting = b.take().unwrap();
+                for o in odds {
+                    ensure!(
+                        usize::from(o.0) < betting.odds.len(),
+                        Error::<T>::SelectIndexOverflow
+                    );
+                    ensure!(o.1 > 100, Error::<T>::BettingParamsError);
+                    betting.odds[o.0 as usize].o = o.1;
+                }
+                Self::deposit_event(Event::BettingUpdate(betting_id, betting.clone()));
+                b.replace(betting);
+                Ok(())
+            })?;
+
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn league_settle(
+            origin: OriginFor<T>,
+            battle_id: BattleId,
+        ) -> DispatchResultWithPostInfo {
+            let _ = T::OrganizerOrigin::ensure_origin(origin)?;
+            let battle: Battle =
+                Self::get_battle_info(battle_id).ok_or(Error::<T>::BattleNotFound)?;
+            let battle_type = battle.battle_type.clone();
+            ensure!(
+                battle.status == BattleStatus::Completed,
+                Error::<T>::BattleStatusError
+            );
+            ensure!(
+                battle_type == BattleType::League,
+                Error::<T>::BattleTypeError
+            );
+            let (score_diff, winner, loser) = battle.calc();
+            Self::update_npc_league_point(
+                battle.season,
+                winner,
+                loser,
+                score_diff,
+                battle.battle_type.clone(),
+            )?;
+            Self::update_participant_point(battle.season, battle_id, battle, winner)?;
+            Battles::<T>::mutate(battle_id, |b| {
+                let mut battle = b.take().unwrap();
+                battle.status = BattleStatus::Finalized;
+                b.replace(battle);
+            });
+            Ok(().into())
+        }
     }
 
     impl<T: Config> Pallet<T> {
+        pub fn generate_default_odd_item(
+            betting_type: &BettingType,
+            battle_size: usize,
+        ) -> Option<Vec<OddsItem<BalanceOf<T>>>> {
+            let v = [
+                (3 as Score, 0 as Score),
+                (3 as Score, 1 as Score),
+                (3 as Score, 2 as Score),
+                (0 as Score, 3 as Score),
+                (1 as Score, 3 as Score),
+                (2 as Score, 3 as Score),
+            ];
+            let home = 1 as HomeOrVisiting;
+            let visiting = 2 as HomeOrVisiting;
+            let w1 = [vec![home], vec![visiting]];
+            let w2 = [
+                vec![home, home],
+                vec![home, visiting],
+                vec![visiting, home],
+                vec![visiting, visiting],
+            ];
+            let w3 = [
+                vec![home, home, home],
+                vec![home, home, visiting],
+                vec![home, visiting, home],
+                vec![home, visiting, visiting],
+                vec![visiting, home, home],
+                vec![visiting, home, visiting],
+                vec![visiting, visiting, home],
+                vec![visiting, visiting, visiting],
+            ];
+
+            let mut r = Vec::new();
+            match betting_type {
+                BettingType::Score => {
+                    if battle_size != 1 {
+                        return None;
+                    }
+                    for s in v {
+                        let item = OddsItem {
+                            win_lose: vec![],
+                            score: vec![s],
+                            o: 600u16,
+                            total_compensate_amount: Zero::zero(),
+                            buy_in: Zero::zero(),
+                            accounts: 0,
+                        };
+                        r.push(item);
+                    }
+                }
+                BettingType::WinLose => match battle_size {
+                    1 => {
+                        for o in w1 {
+                            let item = OddsItem {
+                                win_lose: o,
+                                score: vec![],
+                                o: 200u16,
+                                total_compensate_amount: Zero::zero(),
+                                buy_in: Zero::zero(),
+                                accounts: 0,
+                            };
+                            r.push(item);
+                        }
+                    }
+                    2 => {
+                        for o in w2 {
+                            let item = OddsItem {
+                                win_lose: o,
+                                score: vec![],
+                                o: 400u16,
+                                total_compensate_amount: Zero::zero(),
+                                buy_in: Zero::zero(),
+                                accounts: 0,
+                            };
+                            r.push(item);
+                        }
+                    }
+                    3 => {
+                        for o in w3 {
+                            let item = OddsItem {
+                                win_lose: o,
+                                score: vec![],
+                                o: 800u16,
+                                total_compensate_amount: Zero::zero(),
+                                buy_in: Zero::zero(),
+                                accounts: 0,
+                            };
+                            r.push(item);
+                        }
+                    }
+                    _ => {
+                        return None;
+                    }
+                },
+            }
+            Some(r)
+        }
+
         pub fn append_vote_check_duplicate(
             old_select: &Vec<VoteSelect>,
             new_select: &Vec<VoteSelect>,
@@ -1155,6 +1862,64 @@ pub mod pallet {
                 return addr;
             }
             None
+        }
+
+        pub fn calc_betting_hit_index(
+            betting: &Betting<T::AccountId, BalanceOf<T>, AssetId<T>>,
+        ) -> Result<SelectIndex, DispatchError> {
+            let mut battles = Vec::new();
+            for battle_id in &betting.battles {
+                let battle: Battle =
+                    Self::get_battle_info(battle_id).ok_or(Error::<T>::BattleNotFound)?;
+                ensure!(
+                    battle.status == BattleStatus::Finalized,
+                    Error::<T>::BattleStatusError
+                );
+                battles.push(battle);
+            }
+            match &betting.betting_type {
+                BettingType::Score => {
+                    for i in 0..betting.odds.len() {
+                        let odd = betting.odds[i].clone();
+                        let mut hited = true;
+                        for j in 0..odd.score.len() {
+                            let s = odd.score[j];
+                            if s.0 != battles[j].home_score.clone().unwrap()
+                                || s.1 != battles[j].visiting_score.clone().unwrap()
+                            {
+                                hited = false;
+                                break;
+                            }
+                        }
+                        if hited {
+                            return Ok(i as SelectIndex);
+                        }
+                    }
+                }
+                BettingType::WinLose => {
+                    for i in 0..betting.odds.len() {
+                        let odd = betting.odds[i].clone();
+                        let mut hited = true;
+                        for j in 0..odd.win_lose.len() {
+                            let s = odd.win_lose[j];
+                            let winner_home_visiting =
+                                if battles[j].home_score > battles[j].visiting_score {
+                                    1 as HomeOrVisiting
+                                } else {
+                                    2 as HomeOrVisiting
+                                };
+                            if s != winner_home_visiting {
+                                hited = false;
+                                break;
+                            }
+                        }
+                        if hited {
+                            return Ok(i as SelectIndex);
+                        }
+                    }
+                }
+            }
+            Err(Error::<T>::BettingError.into())
         }
 
         pub fn addr_to_invite_code(addr: T::AccountId) -> Vec<u8> {
@@ -1210,28 +1975,27 @@ pub mod pallet {
             Ok(())
         }
 
-        pub fn update_npc_point(
+        pub fn update_npc_league_point(
             season_id: SeasonId,
             winner: NpcId,
             loser: NpcId,
             score_diff: Score,
             battle_type: BattleType,
         ) -> DispatchResult {
+            if battle_type != BattleType::League {
+                return Ok(());
+            }
             NpcPoints::<T>::mutate(&season_id, &winner, |e| {
                 e.0 = e.0 + 1;
                 e.1 = e.1 + 1;
                 e.2 = e.2 + 3;
                 e.3 = e.3 + (score_diff as i32);
-                if battle_type == BattleType::Regular {
-                    Self::deposit_event(Event::NpcPoints(season_id, winner, e.0, e.1, e.2, e.3));
-                }
+                Self::deposit_event(Event::NpcPoints(season_id, winner, e.0, e.1, e.2, e.3));
             });
             NpcPoints::<T>::mutate(&season_id, &loser, |e| {
                 e.0 = e.0 + 1;
                 e.3 = e.3 - (score_diff as i32);
-                if battle_type == BattleType::Regular {
-                    Self::deposit_event(Event::NpcPoints(season_id, loser, e.0, e.1, e.2, e.3));
-                }
+                Self::deposit_event(Event::NpcPoints(season_id, loser, e.0, e.1, e.2, e.3));
             });
             Ok(())
         }
@@ -1256,10 +2020,17 @@ pub mod pallet {
             Decode::decode(&mut h.as_ref()).expect("32 bytes; qed")
         }
 
-        pub fn date_to_timestamp(v: Vec<u8>) -> Result<u64, u8> {
+        pub fn get_betting_treasury(bid: BettingId) -> T::AccountId {
+            let h = (b"-*-#fusotao-abyssworld-betting#-*-", bid)
+                .using_encoded(sp_io::hashing::blake2_256);
+            Decode::decode(&mut h.as_ref()).expect("32 bytes; qed")
+        }
+
+        pub fn date_to_timestamp(v: Vec<u8>) -> Result<u64, DispatchError> {
             let fmt = "%Y-%m-%d %H:%M:%S";
-            let dt = AsciiStr::from_ascii(&v).map_err(|_e| 0u8)?;
-            let s = NaiveDateTime::parse_from_str(dt.as_str(), fmt).map_err(|_e| 1u8)?;
+            let dt = AsciiStr::from_ascii(&v).map_err(|_e| Error::<T>::TimeFormatError)?;
+            let s = NaiveDateTime::parse_from_str(dt.as_str(), fmt)
+                .map_err(|_e| Error::<T>::TimeFormatError)?;
             let timestamp: u64 = s.timestamp() as u64;
             Ok(timestamp)
         }

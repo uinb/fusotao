@@ -192,7 +192,7 @@ pub mod pallet {
 
         #[pallet::weight(0)]
         pub fn mark_stable(origin: OriginFor<T>, id: T::TokenId) -> DispatchResultWithPostInfo {
-            let _ = ensure_root(origin)?;
+            let _ = T::AdminOrigin::ensure_origin(origin)?;
             Tokens::<T>::try_mutate_exists(id, |info| -> DispatchResult {
                 ensure!(info.is_some(), Error::<T>::TokenNotFound);
                 let mut token_info = info.take().unwrap();

@@ -124,7 +124,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     //   `spec_version`, and `authoring_version` are the same between Wasm and native.
     // This value is set to 100 to notify Polkadot-JS App (https://polkadot.js.org/apps) to use
     //   the compatible custom types.
-    spec_version: 202,
+    spec_version: 203,
     impl_version: 1,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 3,
@@ -700,6 +700,10 @@ pub const BVB_ORGANIZER: AccountId = AccountId::new(hex_literal::hex!(
     "4a390a4c6da1c32cff91183a861cab95f313dafa017c5fe0a7726976097e0c4e"
 ));
 
+pub const SWAP_POOL_ACCOUNT: AccountId = AccountId::new(hex_literal::hex!(
+    "1636e5823e75c71f9f05ec07f36ba0c7bce26e700239d032891c6e7b99a89042"
+));
+
 pub const BVB_TREASURY: AccountId = AccountId::new(hex_literal::hex!(
     "760409da47a69ccab6ee4dd81ccf829fa05c14e25df43e2af556dc683f93c6dc"
 ));
@@ -850,6 +854,9 @@ parameter_types! {
     pub const MaxTicketAmount: u32 = 99;
     pub const MaxParticipantPerBattle: u32 = 10000000;
     pub const BvbTreasury: AccountId = BVB_TREASURY;
+    pub const DefaultMinBetingAmount: Balance = 100 * TAO;
+    pub const BvbOrganizerAccount: AccountId = BVB_ORGANIZER;
+    pub const SwapPoolAccount: AccountId = SWAP_POOL_ACCOUNT;
 }
 
 impl pallet_abyss_tournament::Config for Runtime {
@@ -857,13 +864,17 @@ impl pallet_abyss_tournament::Config for Runtime {
     type AwtTokenId = AwtTokenId;
     type BalanceConversion = Token;
     type BridgeOrigin = pallet_chainbridge::EnsureBridge<Runtime>;
+    type BvbOrganizer = BvbOrganizerAccount;
     type BvbTreasury = BvbTreasury;
+    type DefaultMinBetingAmount = DefaultMinBetingAmount;
     type DonationForAgent = DonationForAgent;
     type DonorAccount = DonorAccount;
     type MaxParticipantPerBattle = MaxParticipantPerBattle;
     type MaxTicketAmount = MaxTicketAmount;
+    type Oracle = Indicator;
     type OrganizerOrigin = EnsureSignedBy<BvbOrganizerMembers, Self::AccountId>;
     type RuntimeEvent = RuntimeEvent;
+    type SwapPoolAccount = SwapPoolAccount;
     type TimeProvider = Timestamp;
 }
 

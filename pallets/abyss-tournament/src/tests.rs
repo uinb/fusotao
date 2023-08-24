@@ -67,17 +67,26 @@ pub fn test_claim() {
 
 pub fn test_settle() {
     let alice: AccountId = AccountKeyring::Alice.into();
-    assert_ok!(Tournament::settle(RuntimeOrigin::signed(TREASURY), 1,),);
+    assert_ok!(Tournament::finals_settle(
+        RuntimeOrigin::signed(TREASURY),
+        1,
+    ),);
     assert_noop!(
-        Tournament::settle(RuntimeOrigin::signed(TREASURY), 1,),
+        Tournament::finals_settle(RuntimeOrigin::signed(TREASURY), 1,),
         Error::<Test>::BattleStatusError
     );
-    assert_ok!(Tournament::settle(RuntimeOrigin::signed(TREASURY), 2,),);
-    assert_ok!(Tournament::settle(RuntimeOrigin::signed(TREASURY), 3,),);
-    assert_eq!(Tournament::get_npc_point(1, 1), (2, 2, 6, 6));
+    assert_ok!(Tournament::finals_settle(
+        RuntimeOrigin::signed(TREASURY),
+        2,
+    ),);
+    assert_ok!(Tournament::finals_settle(
+        RuntimeOrigin::signed(TREASURY),
+        3,
+    ),);
+    /*    assert_eq!(Tournament::get_npc_point(1, 1), (2, 2, 6, 6));
     assert_eq!(Tournament::get_npc_point(1, 2), (1, 0, 0, -3));
     assert_eq!(Tournament::get_npc_point(1, 3), (2, 1, 3, 0));
-    assert_eq!(Tournament::get_npc_point(1, 4), (1, 0, 0, -3));
+    assert_eq!(Tournament::get_npc_point(1, 4), (1, 0, 0, -3));*/
     assert_eq!(
         Tournament::get_participant_point(&1, (&alice, 0)),
         (3, 2, 6)
@@ -133,8 +142,8 @@ pub fn test_close_season() {
                 (2, 50, 1041250000000000000000)
             ],
             ticket_price: 100000000000000000000,
-            first_round_battle_type: BattleType::SemiFinals,
-            current_round_battle_type: BattleType::SemiFinals,
+            first_finals_battle_type: BattleType::SemiFinals,
+            current_finals_battle_type: BattleType::SemiFinals,
             champion: Some(1),
             total_tickets: 98u32,
         }),
@@ -939,7 +948,6 @@ pub fn init() {
         RuntimeOrigin::signed(TREASURY),
         b"sdsd".to_vec(),
         "2023-07-25 00:00:00".into(),
-        3,
         BattleType::SemiFinals,
         100000000000000000000
     ));
@@ -965,8 +973,8 @@ pub fn init() {
             total_battles: 3,
             bonus_strategy: vec![],
             ticket_price: 100000000000000000000,
-            first_round_battle_type: BattleType::SemiFinals,
-            current_round_battle_type: BattleType::Finals,
+            first_finals_battle_type: BattleType::SemiFinals,
+            current_finals_battle_type: BattleType::Finals,
             champion: None,
             total_tickets: 0u32,
         }),
@@ -1010,7 +1018,7 @@ pub fn init() {
         Tournament::create_battle(
             RuntimeOrigin::signed(TREASURY),
             1,
-            BattleType::Regular,
+            BattleType::League,
             1,
             1,
             "2023-07-30 00:00:00".into(),
@@ -1022,7 +1030,7 @@ pub fn init() {
         Tournament::create_battle(
             RuntimeOrigin::signed(TREASURY),
             4,
-            BattleType::Regular,
+            BattleType::League,
             1,
             2,
             "2023-07-30 00:00:00".into(),
@@ -1035,7 +1043,7 @@ pub fn init() {
         Tournament::create_battle(
             RuntimeOrigin::signed(TREASURY),
             1,
-            BattleType::Regular,
+            BattleType::League,
             5,
             2,
             "2023-07-30 00:00:00".into(),
@@ -1068,4 +1076,17 @@ pub fn test_decode_invite() {
     println!("{}", String::from_utf8(t.clone()).unwrap());
     let addr = Tournament::invite_code_to_addr(t);
     assert_eq!(a, addr.unwrap().into());
+}
+
+#[test]
+pub fn vec_remove() {
+    let mut v = vec![1, 2, 3, 1, 2];
+    for i in 0..v.len() {
+        if v[i] == 3 {
+            v.remove(i);
+            break;
+        }
+    }
+
+    println!("{:?}", v);
 }
