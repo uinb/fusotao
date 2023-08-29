@@ -510,6 +510,17 @@ pub mod pallet {
     pub type Npcs<T: Config> = StorageMap<_, Twox64Concat, NpcId, NPC, OptionQuery>;
 
     #[pallet::storage]
+    #[pallet::getter(fn get_invite_amount)]
+    pub type BettingInviteAmount<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        SeasonId,
+        Blake2_128Concat,
+        T::AccountId,
+        Vec<(AssetId<T>, BalanceOf<T>)>,
+        ValueQuery,
+    >;
+    #[pallet::storage]
     #[pallet::getter(fn get_bettings_by_battle)]
     pub type BettingByBattle<T: Config> =
         StorageMap<_, Twox64Concat, BattleId, Vec<BettingId>, ValueQuery>;
@@ -748,6 +759,7 @@ pub mod pallet {
             betting_id: BettingId,
             item_index: SelectIndex,
             amount: BalanceOf<T>,
+            invite_code: Vec<u8>,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
@@ -756,6 +768,8 @@ pub mod pallet {
                 amount >= betting.min_betting_amount,
                 Error::<T>::BettingAmountTooSmall
             );
+            let season_id = betting.season;
+            let token_id = betting.token_id;
             ensure!(
                 usize::from(item_index) < betting.odds.len(),
                 Error::<T>::SelectIndexOverflow
@@ -802,6 +816,23 @@ pub mod pallet {
                 Self::deposit_event(Event::BettingUpdate(betting_id, betting.clone()));
                 b.replace(betting);
             });
+            if let Some(invitor) = Self::invite_code_to_addr(invite_code) {
+                if invitor != who {
+                    BettingInviteAmount::<T>::mutate(season_id, invitor, |v| {
+                        let mut has = false;
+                        for a in &mut *v {
+                            if a.0 == token_id {
+                                a.1 = a.1 + amount;
+                                has = true;
+                                break;
+                            }
+                        }
+                        if !has {
+                            v.push((token_id, amount));
+                        }
+                    });
+                }
+            }
             Ok(().into())
         }
 
