@@ -1202,22 +1202,23 @@ pub mod pallet {
             let external_decimals = T::Fungibles::token_external_decimals(&token_id)?;
             let unified_amount =
                 T::Fungibles::transform_decimals_to_standard(amt, external_decimals);
-            let price: u128 = T::Oracle::get_price(&token_id).into();
+            let price: u128 = T::Oracle::get_price(&T::AwtTokenId::get()).into();
             if price.is_zero() {
                 return Ok(());
             }
-            let awt_amount: u128 = unified_amount.into() / price * QUINTILL
+            let awt_amount: BalanceOf<T> = (unified_amount.into() / price * QUINTILL
                 + Perquintill::from_rational::<u128>(unified_amount.into() % price, price)
-                    .deconstruct() as u128;
+                    .deconstruct() as u128)
+                .into();
             if T::Fungibles::free_balance(&T::AwtTokenId::get(), &T::SwapPoolAccount::get())
-                < awt_amount.into()
+                < awt_amount
             {
                 return Ok(());
             }
             T::Fungibles::transfer_token(
                 &T::SwapPoolAccount::get(),
                 T::AwtTokenId::get(),
-                awt_amount.into(),
+                awt_amount,
                 &who,
             )?;
             T::Fungibles::transfer_token(
