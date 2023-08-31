@@ -520,6 +520,7 @@ pub mod pallet {
         Vec<(AssetId<T>, BalanceOf<T>)>,
         ValueQuery,
     >;
+
     #[pallet::storage]
     #[pallet::getter(fn get_bettings_by_battle)]
     pub type BettingByBattle<T: Config> =
