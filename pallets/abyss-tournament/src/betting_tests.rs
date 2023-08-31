@@ -274,8 +274,8 @@ pub fn do_bet() {
     ));
 
     assert_eq!(
-        Tournament::get_invite_amount(1, &bob),
-        vec![(1, 20_000_000_000_000_000_000)]
+        Tournament::get_invite_amount((1, &bob), 1),
+        20_000_000_000_000_000_000
     );
 
     assert_ok!(Tournament::update_odds(
@@ -292,8 +292,8 @@ pub fn do_bet() {
     ));
 
     assert_eq!(
-        Tournament::get_invite_amount(1, &bob),
-        vec![(1, 40_000_000_000_000_000_000)]
+        Tournament::get_invite_amount((1, &bob), 1),
+        40_000_000_000_000_000_000
     );
 
     assert_noop!(

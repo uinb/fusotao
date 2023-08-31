@@ -514,10 +514,10 @@ pub mod pallet {
     pub type BettingInviteAmount<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
-        SeasonId,
+        (SeasonId, T::AccountId),
         Blake2_128Concat,
-        T::AccountId,
-        Vec<(AssetId<T>, BalanceOf<T>)>,
+        AssetId<T>,
+        BalanceOf<T>,
         ValueQuery,
     >;
 
@@ -819,18 +819,8 @@ pub mod pallet {
             });
             if let Some(invitor) = Self::invite_code_to_addr(invite_code) {
                 if invitor != who {
-                    BettingInviteAmount::<T>::mutate(season_id, invitor, |v| {
-                        let mut has = false;
-                        for a in &mut *v {
-                            if a.0 == token_id {
-                                a.1 = a.1 + amount;
-                                has = true;
-                                break;
-                            }
-                        }
-                        if !has {
-                            v.push((token_id, amount));
-                        }
+                    BettingInviteAmount::<T>::mutate((season_id, invitor), token_id, |balance| {
+                        *balance += amount;
                     });
                 }
             }
