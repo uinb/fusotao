@@ -2,6 +2,7 @@
 
 use crate::mock::*;
 use crate::{BattleType, Betting, BettingType, Error, OddsItem, Pallet, NPC};
+use ascii::AsciiChar::v;
 use frame_support::{assert_noop, assert_ok};
 use fuso_support::XToken;
 use pallet_fuso_token::TokenAccountData;
@@ -162,12 +163,14 @@ pub fn set_result() {
 
 pub fn do_bet() {
     let alice: AccountId = AccountKeyring::Alice.into();
+    let bob: AccountId = AccountKeyring::Bob.into();
     assert_noop!(
         Tournament::go_bet(
             RuntimeOrigin::signed(alice.clone()),
             1u32,
             1,
-            10_000_000_000_000_000_000
+            10_000_000_000_000_000_000,
+            vec![]
         ),
         Error::<Test>::BettingAmountTooSmall
     );
@@ -176,7 +179,8 @@ pub fn do_bet() {
             RuntimeOrigin::signed(alice.clone()),
             1u32,
             1,
-            100_000_000_000_000_000_000
+            100_000_000_000_000_000_000,
+            vec![]
         ),
         Error::<Test>::BettingAmountOverflow
     );
@@ -185,7 +189,8 @@ pub fn do_bet() {
             RuntimeOrigin::signed(alice.clone()),
             1u32,
             3,
-            20_000_000_000_000_000_000
+            20_000_000_000_000_000_000,
+            vec![]
         ),
         Error::<Test>::SelectIndexOverflow
     );
@@ -194,7 +199,8 @@ pub fn do_bet() {
         RuntimeOrigin::signed(alice.clone()),
         1u32,
         1,
-        20_000_000_000_000_000_000
+        20_000_000_000_000_000_000,
+        vec![]
     ));
 
     assert_eq!(
@@ -234,7 +240,8 @@ pub fn do_bet() {
             RuntimeOrigin::signed(alice.clone()),
             2u32,
             0,
-            10_000_000_000_000_000_000
+            10_000_000_000_000_000_000,
+            vec![]
         ),
         Error::<Test>::BettingAmountTooSmall
     );
@@ -243,7 +250,8 @@ pub fn do_bet() {
             RuntimeOrigin::signed(alice.clone()),
             2u32,
             0,
-            100_000_000_000_000_000_000
+            100_000_000_000_000_000_000,
+            vec![]
         ),
         Error::<Test>::BettingAmountOverflow
     );
@@ -252,7 +260,8 @@ pub fn do_bet() {
             RuntimeOrigin::signed(alice.clone()),
             2u32,
             6,
-            20_000_000_000_000_000_000
+            20_000_000_000_000_000_000,
+            vec![]
         ),
         Error::<Test>::SelectIndexOverflow
     );
@@ -260,8 +269,15 @@ pub fn do_bet() {
         RuntimeOrigin::signed(alice.clone()),
         2u32,
         0,
-        20_000_000_000_000_000_000
+        20_000_000_000_000_000_000,
+        Tournament::addr_to_invite_code(bob.clone().into())
     ));
+
+    assert_eq!(
+        Tournament::get_invite_amount((1, &bob), 1),
+        20_000_000_000_000_000_000
+    );
+
     assert_ok!(Tournament::update_odds(
         RuntimeOrigin::signed(TREASURY),
         2u32,
@@ -271,14 +287,22 @@ pub fn do_bet() {
         RuntimeOrigin::signed(alice.clone()),
         2u32,
         0,
-        20_000_000_000_000_000_000
+        20_000_000_000_000_000_000,
+        Tournament::addr_to_invite_code(bob.clone().into())
     ));
+
+    assert_eq!(
+        Tournament::get_invite_amount((1, &bob), 1),
+        40_000_000_000_000_000_000
+    );
+
     assert_noop!(
         Tournament::go_bet(
             RuntimeOrigin::signed(alice.clone()),
             2u32,
             0,
-            40_000_000_000_000_000_000
+            40_000_000_000_000_000_000,
+            vec![]
         ),
         Error::<Test>::BettingAmountOverflow
     );
@@ -287,7 +311,8 @@ pub fn do_bet() {
             RuntimeOrigin::signed(alice.clone()),
             5u32,
             0,
-            20_000_000_000_000_000_000
+            20_000_000_000_000_000_000,
+            vec![]
         ),
         Error::<Test>::BettingNotFound
     );

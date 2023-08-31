@@ -510,6 +510,18 @@ pub mod pallet {
     pub type Npcs<T: Config> = StorageMap<_, Twox64Concat, NpcId, NPC, OptionQuery>;
 
     #[pallet::storage]
+    #[pallet::getter(fn get_invite_amount)]
+    pub type BettingInviteAmount<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        (SeasonId, T::AccountId),
+        Blake2_128Concat,
+        AssetId<T>,
+        BalanceOf<T>,
+        ValueQuery,
+    >;
+
+    #[pallet::storage]
     #[pallet::getter(fn get_bettings_by_battle)]
     pub type BettingByBattle<T: Config> =
         StorageMap<_, Twox64Concat, BattleId, Vec<BettingId>, ValueQuery>;
@@ -748,6 +760,7 @@ pub mod pallet {
             betting_id: BettingId,
             item_index: SelectIndex,
             amount: BalanceOf<T>,
+            invite_code: Vec<u8>,
         ) -> DispatchResultWithPostInfo {
             let who = ensure_signed(origin)?;
             let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
@@ -756,6 +769,8 @@ pub mod pallet {
                 amount >= betting.min_betting_amount,
                 Error::<T>::BettingAmountTooSmall
             );
+            let season_id = betting.season;
+            let token_id = betting.token_id;
             ensure!(
                 usize::from(item_index) < betting.odds.len(),
                 Error::<T>::SelectIndexOverflow
@@ -802,6 +817,13 @@ pub mod pallet {
                 Self::deposit_event(Event::BettingUpdate(betting_id, betting.clone()));
                 b.replace(betting);
             });
+            if let Some(invitor) = Self::invite_code_to_addr(invite_code) {
+                if invitor != who {
+                    BettingInviteAmount::<T>::mutate((season_id, invitor), token_id, |balance| {
+                        *balance += amount;
+                    });
+                }
+            }
             Ok(().into())
         }
 
@@ -1180,22 +1202,23 @@ pub mod pallet {
             let external_decimals = T::Fungibles::token_external_decimals(&token_id)?;
             let unified_amount =
                 T::Fungibles::transform_decimals_to_standard(amt, external_decimals);
-            let price: u128 = T::Oracle::get_price(&token_id).into();
+            let price: u128 = T::Oracle::get_price(&T::AwtTokenId::get()).into();
             if price.is_zero() {
                 return Ok(());
             }
-            let awt_amount: u128 = unified_amount.into() / price * QUINTILL
+            let awt_amount: BalanceOf<T> = (unified_amount.into() / price * QUINTILL
                 + Perquintill::from_rational::<u128>(unified_amount.into() % price, price)
-                    .deconstruct() as u128;
+                    .deconstruct() as u128)
+                .into();
             if T::Fungibles::free_balance(&T::AwtTokenId::get(), &T::SwapPoolAccount::get())
-                < awt_amount.into()
+                < awt_amount
             {
                 return Ok(());
             }
             T::Fungibles::transfer_token(
                 &T::SwapPoolAccount::get(),
                 T::AwtTokenId::get(),
-                awt_amount.into(),
+                awt_amount,
                 &who,
             )?;
             T::Fungibles::transfer_token(
