@@ -755,7 +755,7 @@ pub mod pallet {
 
         #[transactional]
         #[pallet::weight(195_000_000)]
-        pub fn go_bet(
+        pub fn go_bet_with_invite(
             origin: OriginFor<T>,
             betting_id: BettingId,
             item_index: SelectIndex,
@@ -824,6 +824,72 @@ pub mod pallet {
                     });
                 }
             }
+            Ok(().into())
+        }
+
+        #[transactional]
+        #[pallet::weight(195_000_000)]
+        pub fn go_bet(
+            origin: OriginFor<T>,
+            betting_id: BettingId,
+            item_index: SelectIndex,
+            amount: BalanceOf<T>,
+        ) -> DispatchResultWithPostInfo {
+            let who = ensure_signed(origin)?;
+            let betting: Betting<T::AccountId, BalanceOf<T>, AssetId<T>> =
+                Self::get_betting_info(betting_id).ok_or(Error::<T>::BettingNotFound)?;
+            ensure!(
+                amount >= betting.min_betting_amount,
+                Error::<T>::BettingAmountTooSmall
+            );
+            let season_id = betting.season;
+            let token_id = betting.token_id;
+            ensure!(
+                usize::from(item_index) < betting.odds.len(),
+                Error::<T>::SelectIndexOverflow
+            );
+            let now = T::TimeProvider::now();
+            for battle_id in betting.battles {
+                let battle = Self::get_battle_info(battle_id).ok_or(Error::<T>::BattleNotFound)?;
+                ensure!(
+                    now.into() / 1000 < battle.start_time,
+                    Error::<T>::BettingOverTime
+                );
+            }
+            let select_odd = betting.odds[item_index as usize].clone();
+            let current_selected_odd_value = select_odd.o;
+            let add_compensate_amount =
+                current_selected_odd_value as u128 * amount.into() / 100 as u128;
+            let new_compensate_amount =
+                select_odd.total_compensate_amount + add_compensate_amount.into();
+            let pledge_amount =
+                T::Fungibles::free_balance(&betting.token_id, &betting.pledge_account);
+            ensure!(
+                new_compensate_amount <= pledge_amount,
+                Error::<T>::BettingAmountOverflow
+            );
+            let _ = T::Fungibles::transfer_token(&who, betting.token_id, amount, &betting.creator)?;
+            BettingRecords::<T>::mutate((&who, betting_id), |r| {
+                let mut found = false;
+                for s in &mut *r.0 {
+                    if s.0 == item_index && s.1 == current_selected_odd_value {
+                        s.2 = s.2 + amount;
+                        found = true;
+                        break;
+                    }
+                }
+                if found == false {
+                    r.0.push((item_index, current_selected_odd_value, amount));
+                }
+            });
+            Bettings::<T>::mutate(betting_id, |b| {
+                let mut betting = b.take().unwrap();
+                betting.odds[item_index as usize].total_compensate_amount = new_compensate_amount;
+                betting.odds[item_index as usize].accounts += 1;
+                betting.odds[item_index as usize].buy_in += amount;
+                Self::deposit_event(Event::BettingUpdate(betting_id, betting.clone()));
+                b.replace(betting);
+            });
             Ok(().into())
         }
 

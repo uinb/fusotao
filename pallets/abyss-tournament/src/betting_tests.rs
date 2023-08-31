@@ -165,7 +165,7 @@ pub fn do_bet() {
     let alice: AccountId = AccountKeyring::Alice.into();
     let bob: AccountId = AccountKeyring::Bob.into();
     assert_noop!(
-        Tournament::go_bet(
+        Tournament::go_bet_with_invite(
             RuntimeOrigin::signed(alice.clone()),
             1u32,
             1,
@@ -175,7 +175,7 @@ pub fn do_bet() {
         Error::<Test>::BettingAmountTooSmall
     );
     assert_noop!(
-        Tournament::go_bet(
+        Tournament::go_bet_with_invite(
             RuntimeOrigin::signed(alice.clone()),
             1u32,
             1,
@@ -185,7 +185,7 @@ pub fn do_bet() {
         Error::<Test>::BettingAmountOverflow
     );
     assert_noop!(
-        Tournament::go_bet(
+        Tournament::go_bet_with_invite(
             RuntimeOrigin::signed(alice.clone()),
             1u32,
             3,
@@ -195,7 +195,7 @@ pub fn do_bet() {
         Error::<Test>::SelectIndexOverflow
     );
 
-    assert_ok!(Tournament::go_bet(
+    assert_ok!(Tournament::go_bet_with_invite(
         RuntimeOrigin::signed(alice.clone()),
         1u32,
         1,
@@ -236,7 +236,7 @@ pub fn do_bet() {
     );
 
     assert_noop!(
-        Tournament::go_bet(
+        Tournament::go_bet_with_invite(
             RuntimeOrigin::signed(alice.clone()),
             2u32,
             0,
@@ -246,7 +246,7 @@ pub fn do_bet() {
         Error::<Test>::BettingAmountTooSmall
     );
     assert_noop!(
-        Tournament::go_bet(
+        Tournament::go_bet_with_invite(
             RuntimeOrigin::signed(alice.clone()),
             2u32,
             0,
@@ -256,7 +256,7 @@ pub fn do_bet() {
         Error::<Test>::BettingAmountOverflow
     );
     assert_noop!(
-        Tournament::go_bet(
+        Tournament::go_bet_with_invite(
             RuntimeOrigin::signed(alice.clone()),
             2u32,
             6,
@@ -265,7 +265,7 @@ pub fn do_bet() {
         ),
         Error::<Test>::SelectIndexOverflow
     );
-    assert_ok!(Tournament::go_bet(
+    assert_ok!(Tournament::go_bet_with_invite(
         RuntimeOrigin::signed(alice.clone()),
         2u32,
         0,
@@ -283,7 +283,7 @@ pub fn do_bet() {
         2u32,
         vec![(0u16, 400u16)]
     ));
-    assert_ok!(Tournament::go_bet(
+    assert_ok!(Tournament::go_bet_with_invite(
         RuntimeOrigin::signed(alice.clone()),
         2u32,
         0,
@@ -297,7 +297,7 @@ pub fn do_bet() {
     );
 
     assert_noop!(
-        Tournament::go_bet(
+        Tournament::go_bet_with_invite(
             RuntimeOrigin::signed(alice.clone()),
             2u32,
             0,
@@ -307,7 +307,7 @@ pub fn do_bet() {
         Error::<Test>::BettingAmountOverflow
     );
     assert_noop!(
-        Tournament::go_bet(
+        Tournament::go_bet_with_invite(
             RuntimeOrigin::signed(alice.clone()),
             5u32,
             0,
